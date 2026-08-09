@@ -71,7 +71,7 @@ model Event {
   date           DateTime
   recurrenceRule String   @default("annual")
   reminderDays   Int[]    @default([30, 7, 1])
-  nextOccurrence DateTime
+  nextOccurrence DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

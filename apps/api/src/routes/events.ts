@@ -40,16 +40,24 @@ export async function eventRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { userId } = request.user as { userId: string }
-      const { contactId, type, name, date, recurrenceRule = 'annual', reminderDays = [30, 7, 1] } = request.body
+      const { contactId, type, name, date, recurrenceRule, reminderDays = [30, 7, 1] } = request.body
 
       const contact = await db.contact.findFirst({ where: { id: contactId, ownerId: userId } })
       if (!contact) return reply.status(403).send({ error: 'Contact not found or not owned by you' })
 
       const parsedDate = new Date(date)
-      const nextOccurrence = computeNextOccurrence(parsedDate, recurrenceRule)
+      const nextOccurrence = recurrenceRule ? computeNextOccurrence(parsedDate, recurrenceRule) : null
 
       const event = await db.event.create({
-        data: { contactId, type, name, date: parsedDate, recurrenceRule, reminderDays, nextOccurrence },
+        data: {
+          contactId,
+          type,
+          name,
+          date: parsedDate,
+          recurrenceRule: recurrenceRule ?? 'none',
+          reminderDays,
+          nextOccurrence,
+        },
       })
       return reply.status(201).send(event)
     }
@@ -65,8 +73,35 @@ export async function eventRoutes(app: FastifyInstance) {
     return event
   })
 
-  app.patch<{ Params: { id: string }; Body: { type?: string; name?: string; date?: string; recurrenceRule?: string; reminderDays?: number[] } }>(
+  app.patch<{
+    Params: { id: string }
+    Body: {
+      type?: string
+      name?: string
+      date?: string
+      recurrenceRule?: string
+      contactId?: string
+      notes?: string
+      reminderDays?: number[]
+    }
+  }>(
     '/events/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            contactId: { type: 'string' },
+            type: { type: 'string' },
+            name: { type: 'string' },
+            date: { type: 'string' },
+            recurrenceRule: { type: 'string' },
+            notes: { type: 'string' },
+            reminderDays: { type: 'array', items: { type: 'integer' } },
+          },
+        },
+      },
+    },
     async (request, reply) => {
       const { userId } = request.user as { userId: string }
       const event = await db.event.findUnique({
@@ -77,7 +112,7 @@ export async function eventRoutes(app: FastifyInstance) {
 
       const { type, name, date, recurrenceRule, reminderDays } = request.body
       const parsedDate = date ? new Date(date) : event.date
-      const rule = recurrenceRule ?? event.recurrenceRule
+      const rule = recurrenceRule !== undefined ? recurrenceRule : event.recurrenceRule
       const nextOccurrence = computeNextOccurrence(parsedDate, rule)
 
       return db.event.update({
