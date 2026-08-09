@@ -1,0 +1,19 @@
+{
+  "name": "@bestowd/types",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "@bestowd/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

@@ -17,6 +17,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@bestowd/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@fastify/cors':
         specifier: ^9.0.0
         version: 9.0.1
@@ -65,6 +68,15 @@ importers:
         version: 1.6.1(@types/node@20.19.43)
 
   packages/config: {}
+
+  packages/types:
+    devDependencies:
+      '@bestowd/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
 
 packages:
 
