@@ -62,6 +62,28 @@ describe('PATCH /connections/:requesterId', () => {
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('accepted')
   })
+
+  it('requester cannot accept their own outgoing connection', async () => {
+    const userC = await createTestUser(app)
+    const userD = await createTestUser(app)
+
+    await supertest(app.server)
+      .post('/connections')
+      .set('Authorization', userC.authHeader)
+      .send({ addresseeEmail: userD.user.email })
+
+    const res = await supertest(app.server)
+      .patch(`/connections/${userC.user.id}`)
+      .set('Authorization', userC.authHeader)
+      .send({ status: 'accepted' })
+
+    expect(res.status).toBe(404)
+
+    await db.userConnection.deleteMany({
+      where: { OR: [{ requesterId: userC.user.id }, { addresseeId: userC.user.id }] }
+    })
+    await db.user.deleteMany({ where: { id: { in: [userC.user.id, userD.user.id] } } })
+  })
 })
 
 describe('GET /connections', () => {

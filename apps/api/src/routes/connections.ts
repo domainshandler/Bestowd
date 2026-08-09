@@ -26,6 +26,11 @@ export async function connectionRoutes(app: FastifyInstance) {
       })
       if (existing) return reply.status(409).send({ error: 'Connection already exists' })
 
+      const reverseExisting = await db.userConnection.findUnique({
+        where: { requesterId_addresseeId: { requesterId: addressee.id, addresseeId: userId } },
+      })
+      if (reverseExisting) return reply.status(409).send({ error: 'Connection already exists' })
+
       const connection = await db.userConnection.create({
         data: { requesterId: userId, addresseeId: addressee.id, status: 'pending' },
       })
@@ -35,6 +40,17 @@ export async function connectionRoutes(app: FastifyInstance) {
 
   app.patch<{ Params: { requesterId: string }; Body: { status: 'accepted' | 'blocked' } }>(
     '/connections/:requesterId',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['status'],
+          properties: {
+            status: { type: 'string', enum: ['accepted', 'blocked'] },
+          },
+        },
+      },
+    },
     async (request, reply) => {
       const { userId } = request.user as { userId: string }
       const connection = await db.userConnection.findUnique({
