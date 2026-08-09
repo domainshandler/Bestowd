@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  googleId           String?  @unique
+  email              String   @unique
+  name               String
+  avatarUrl          String?
+  identitySource     String   @default("google")
+  emailVerified      Boolean  @default(false)
+  aiProviderConfig   String?
+  stripeCustomerId   String?
+  subscriptionStatus String   @default("free")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  ownedContacts       Contact[]        @relation("OwnedContacts")
+  linkedContact       Contact?         @relation("LinkedUser")
+  sentConnections     UserConnection[] @relation("Requester")
+  receivedConnections UserConnection[] @relation("Addressee")
+  createdGifts        Gift[]
+  giftAssignments     GiftAssignment[] @relation("Giver")
+  exportConfigs       ExportConfig[]
+}
+
+model UserConnection {
+  requesterId String
+  addresseeId String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@id([requesterId, addresseeId])
+}
+
+model Contact {
+  id           String   @id @default(cuid())
+  ownerId      String
+  linkedUserId String?  @unique
+  name         String
+  avatarUrl    String?
+  email        String?
+  notes        String?
+  attributes   Json     @default("[]")
+  isManaged    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner       User             @relation("OwnedContacts", fields: [ownerId], references: [id], onDelete: Cascade)
+  linkedUser  User?            @relation("LinkedUser", fields: [linkedUserId], references: [id])
+  events      Event[]
+  assignments GiftAssignment[]
+}
+
+model Event {
+  id             String   @id @default(cuid())
+  contactId      String
+  type           String
+  name           String
+  date           DateTime
+  recurrenceRule String   @default("annual")
+  reminderDays   Int[]    @default([30, 7, 1])
+  nextOccurrence DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  assignments GiftAssignment[]
+}
+
+model Gift {
+  id          String   @id @default(cuid())
+  createdById String
+  type        String   @default("product")
+  title       String
+  description String?
+  imageUrl    String?
+  upc         String?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy   User             @relation(fields: [createdById], references: [id])
+  listings    ProductListing[]
+  assignments GiftAssignment[]
+  basketId    String?
+  basket      Gift?            @relation("BasketItems", fields: [basketId], references: [id])
+  basketItems Gift[]           @relation("BasketItems")
+}
+
+model ProductListing {
+  id              String   @id @default(cuid())
+  giftId          String
+  vendor          String
+  vendorProductId String?
+  vendorUrl       String
+  listedPrice     Decimal?
+  currency        String   @default("USD")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  gift Gift @relation(fields: [giftId], references: [id], onDelete: Cascade)
+}
+
+model GiftAssignment {
+  id            String    @id @default(cuid())
+  giftId        String
+  giverId       String
+  contactId     String
+  eventId       String?
+  status        String    @default("idea")
+  givenAt       DateTime?
+  purchasePrice Decimal?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  gift    Gift     @relation(fields: [giftId], references: [id])
+  giver   User     @relation("Giver", fields: [giverId], references: [id])
+  contact Contact  @relation(fields: [contactId], references: [id])
+  event   Event?   @relation(fields: [eventId], references: [id])
+}
+
+model ExportConfig {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String
+  credentials String
+  targetId    String?
+  schedule    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  records ExportRecord[]
+}
+
+model ExportRecord {
+  id             String    @id @default(cuid())
+  exportConfigId String
+  entityType     String
+  lastExportedAt DateTime?
+  status         String
+  createdAt      DateTime  @default(now())
+
+  exportConfig ExportConfig @relation(fields: [exportConfigId], references: [id], onDelete: Cascade)
+}
