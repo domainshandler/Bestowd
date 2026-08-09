@@ -10,11 +10,20 @@ let userId: string
 let contactId: string
 let giftId: string
 
+let otherAuthHeader: string
+let otherUserId: string
+
 beforeAll(async () => {
   app = await createTestApp()
+
   const result = await createTestUser(app)
   authHeader = result.authHeader
   userId = result.user.id
+
+  const otherResult = await createTestUser(app)
+  otherAuthHeader = otherResult.authHeader
+  otherUserId = otherResult.user.id
+
   const contact = await db.contact.create({ data: { ownerId: userId, name: 'Recipient' } })
   contactId = contact.id
   const gift = await db.gift.create({ data: { createdById: userId, title: 'Headphones' } })
@@ -22,9 +31,13 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await db.giftAssignment.deleteMany({ where: { giverId: otherUserId } })
   await db.giftAssignment.deleteMany({ where: { giverId: userId } })
+  await db.gift.deleteMany({ where: { createdById: otherUserId } })
   await db.gift.deleteMany({ where: { createdById: userId } })
+  await db.contact.deleteMany({ where: { ownerId: otherUserId } })
   await db.contact.deleteMany({ where: { ownerId: userId } })
+  await db.user.delete({ where: { id: otherUserId } })
   await db.user.delete({ where: { id: userId } })
   await app.close()
 })
@@ -70,10 +83,41 @@ describe('GET /assignments', () => {
   })
 })
 
+describe('GET /assignments/:id', () => {
+  it('returns the assignment with correct fields', async () => {
+    const assignment = await db.giftAssignment.create({
+      data: { giftId, giverId: userId, contactId, status: 'idea' },
+    })
+
+    const res = await supertest(app.server)
+      .get(`/assignments/${assignment.id}`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(200)
+    expect(res.body.id).toBe(assignment.id)
+    expect(res.body.giftId).toBe(giftId)
+    expect(res.body.contactId).toBe(contactId)
+    expect(res.body.giverId).toBe(userId)
+    expect(res.body.status).toBe('idea')
+  })
+
+  it('returns 404 when another user requests the assignment', async () => {
+    const assignment = await db.giftAssignment.create({
+      data: { giftId, giverId: userId, contactId, status: 'idea' },
+    })
+
+    const res = await supertest(app.server)
+      .get(`/assignments/${assignment.id}`)
+      .set('Authorization', otherAuthHeader)
+
+    expect(res.status).toBe(404)
+  })
+})
+
 describe('PATCH /assignments/:id', () => {
   it('updates assignment status to given with givenAt timestamp', async () => {
     const assignment = await db.giftAssignment.create({
-      data: { giftId, giverId: userId, contactId, status: 'purchased' }
+      data: { giftId, giverId: userId, contactId, status: 'purchased' },
     })
     const givenAt = new Date().toISOString()
 
@@ -84,7 +128,53 @@ describe('PATCH /assignments/:id', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('given')
-    // Decimal precision may cause small floating point differences
-    expect(parseFloat(res.body.purchasePrice)).toBeCloseTo(79.99, 2)
+    expect(typeof res.body.purchasePrice).toBe('string')
+    expect(res.body.purchasePrice).toBe('79.99')
+  })
+
+  it('returns 404 when another user tries to patch the assignment', async () => {
+    const assignment = await db.giftAssignment.create({
+      data: { giftId, giverId: userId, contactId, status: 'idea' },
+    })
+
+    const res = await supertest(app.server)
+      .patch(`/assignments/${assignment.id}`)
+      .set('Authorization', otherAuthHeader)
+      .send({ status: 'purchased' })
+
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('DELETE /assignments/:id', () => {
+  it('deletes the assignment and returns 204', async () => {
+    const assignment = await db.giftAssignment.create({
+      data: { giftId, giverId: userId, contactId, status: 'idea' },
+    })
+
+    const res = await supertest(app.server)
+      .delete(`/assignments/${assignment.id}`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(204)
+
+    const gone = await db.giftAssignment.findUnique({ where: { id: assignment.id } })
+    expect(gone).toBeNull()
+  })
+
+  it('returns 404 when another user tries to delete the assignment', async () => {
+    const assignment = await db.giftAssignment.create({
+      data: { giftId, giverId: userId, contactId, status: 'idea' },
+    })
+
+    const res = await supertest(app.server)
+      .delete(`/assignments/${assignment.id}`)
+      .set('Authorization', otherAuthHeader)
+
+    expect(res.status).toBe(404)
+
+    // Assignment should still exist
+    const still = await db.giftAssignment.findUnique({ where: { id: assignment.id } })
+    expect(still).not.toBeNull()
   })
 })

@@ -77,7 +77,7 @@ export async function assignmentRoutes(app: FastifyInstance) {
         ...(status !== undefined ? { status } : {}),
         ...(notes !== undefined ? { notes } : {}),
         ...(givenAt !== undefined ? { givenAt: new Date(givenAt) } : {}),
-        ...(purchasePrice !== undefined ? { purchasePrice: parseFloat(purchasePrice) } : {}),
+        ...(purchasePrice !== undefined ? { purchasePrice: purchasePrice } : {}),
       },
     })
     // Return purchasePrice as string to match Decimal serialization
