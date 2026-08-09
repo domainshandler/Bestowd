@@ -6,6 +6,7 @@ import { authRoutes } from './routes/auth.js'
 import { contactRoutes } from './routes/contacts.js'
 import { connectionRoutes } from './routes/connections.js'
 import { eventRoutes } from './routes/events.js'
+import { giftRoutes } from './routes/gifts.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: process.env['NODE_ENV'] !== 'test' })
@@ -17,6 +18,7 @@ export async function buildApp() {
   await app.register(contactRoutes)
   await app.register(connectionRoutes)
   await app.register(eventRoutes)
+  await app.register(giftRoutes)
 
   return app
 }
