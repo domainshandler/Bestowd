@@ -40,6 +40,13 @@ export async function assignmentRoutes(app: FastifyInstance) {
       const { userId } = request.user as { userId: string }
       const { giftId, contactId, eventId, status = 'idea', notes } = request.body
 
+      if (eventId) {
+        const event = await db.event.findFirst({
+          where: { id: eventId, contact: { ownerId: userId } },
+        })
+        if (!event) return reply.status(404).send({ error: 'Event not found' })
+      }
+
       const contact = await db.contact.findFirst({ where: { id: contactId, ownerId: userId } })
       if (!contact) return reply.status(404).send({ error: 'Contact not found' })
 

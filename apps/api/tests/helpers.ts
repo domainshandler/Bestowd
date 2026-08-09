@@ -13,7 +13,7 @@ export async function createTestUser(app: FastifyInstance, overrides: Partial<{
 }> = {}) {
   const user = await db.user.create({
     data: {
-      googleId: overrides.googleId ?? `google-${Date.now()}`,
+      googleId: overrides.googleId ?? `test-${Math.random().toString(36).slice(2)}-${Date.now()}`,
       email: overrides.email ?? `test-${Date.now()}@example.com`,
       name: overrides.name ?? 'Test User',
       identitySource: 'google',
