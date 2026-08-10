@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null)
       })
     }
-  }, [token])
+  }, [token, user])
 
   async function login(idToken: string) {
     const result = await googleLogin(idToken)
