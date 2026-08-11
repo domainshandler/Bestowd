@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getGift, deleteGift, listAssignments, updateAssignment, listListings } from '@bestowd/api-client'
+import { getGift, deleteGift, listAssignments, updateAssignment, listListings, listContacts } from '@bestowd/api-client'
 import AssignmentStatusBadge from '../components/AssignmentStatusBadge.tsx'
 import type { AssignmentStatus } from '@bestowd/types'
 
@@ -9,17 +9,20 @@ export default function GiftDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
-  const { data: gift, isLoading } = useQuery({ queryKey: ['gifts', id], queryFn: () => getGift(id!) })
+  const { data: gift, isLoading } = useQuery({ queryKey: ['gifts', id], queryFn: () => getGift(id!), enabled: !!id })
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments-by-gift', id],
-    queryFn: () => listAssignments(),
-    select: data => data.filter(a => a.giftId === id),
+    queryFn: () => listAssignments({ giftId: id! }),
     enabled: !!id,
   })
   const { data: listings = [] } = useQuery({
     queryKey: ['listings', id],
     queryFn: () => listListings(id!),
     enabled: !!id,
+  })
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: listContacts,
   })
 
   const remove = useMutation({
@@ -32,6 +35,11 @@ export default function GiftDetailPage() {
       updateAssignment(assignmentId, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['assignments-by-gift', id] }),
   })
+
+  function contactName(contactId: string): string {
+    const contact = contacts.find(c => c.id === contactId)
+    return contact ? contact.name : contactId
+  }
 
   if (isLoading) return <p className="text-sm text-gray-400">Loading…</p>
   if (!gift) return <p className="text-sm text-red-500">Gift not found.</p>
@@ -52,7 +60,13 @@ export default function GiftDetailPage() {
             {gift.description && <p className="text-sm text-gray-600 mb-3">{gift.description}</p>}
             {gift.upc && <p className="text-xs text-gray-400">UPC: {gift.upc}</p>}
           </div>
-          <button onClick={() => remove.mutate()} className="text-sm text-red-500 hover:underline shrink-0">Delete</button>
+          <button
+            onClick={() => { if (window.confirm('Delete this gift?')) remove.mutate() }}
+            disabled={remove.isPending}
+            className="text-sm text-red-500 hover:underline shrink-0 disabled:opacity-50"
+          >
+            Delete
+          </button>
         </div>
 
         {gift.tags.length > 0 && (
@@ -84,7 +98,7 @@ export default function GiftDetailPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-800 capitalize">{listing.vendor}</p>
                   {listing.listedPrice && (
-                    <p className="text-xs text-gray-500">${parseFloat(listing.listedPrice).toFixed(2)} {listing.currency}</p>
+                    <p className="text-xs text-gray-500">${listing.listedPrice} {listing.currency}</p>
                   )}
                 </div>
                 <a href={listing.vendorUrl} target="_blank" rel="noopener noreferrer"
@@ -106,9 +120,9 @@ export default function GiftDetailPage() {
             {assignments.map(a => (
               <div key={a.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-400">Contact: {a.contactId}</p>
+                  <p className="text-xs text-gray-400">Contact: {contactName(a.contactId)}</p>
                   {a.givenAt && <p className="text-xs text-gray-400">Given: {new Date(a.givenAt).toLocaleDateString()}</p>}
-                  {a.purchasePrice && <p className="text-xs text-gray-400">Paid: ${parseFloat(a.purchasePrice).toFixed(2)}</p>}
+                  {a.purchasePrice && <p className="text-xs text-gray-400">Paid: ${a.purchasePrice}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   <AssignmentStatusBadge status={a.status} />

@@ -21,7 +21,11 @@ export default function GiftsPage() {
 
   const createAssignmentMutation = useMutation({
     mutationFn: createAssignment,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assignments'] }); setShowAssignForm(false) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assignments'] })
+      qc.invalidateQueries({ queryKey: ['assignments-by-gift'] })
+      setShowAssignForm(false)
+    },
   })
 
   return (

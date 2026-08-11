@@ -4,14 +4,15 @@ import { db } from '../db.js'
 export async function assignmentRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
-  app.get<{ Querystring: { contactId?: string; eventId?: string } }>('/assignments', async (request) => {
+  app.get<{ Querystring: { contactId?: string; eventId?: string; giftId?: string } }>('/assignments', async (request) => {
     const { userId } = request.user as { userId: string }
-    const { contactId, eventId } = request.query
+    const { contactId, eventId, giftId } = request.query
     return db.giftAssignment.findMany({
       where: {
         giverId: userId,
         ...(contactId ? { contactId } : {}),
         ...(eventId ? { eventId } : {}),
+        ...(giftId ? { giftId } : {}),
       },
       orderBy: { createdAt: 'desc' },
     })
