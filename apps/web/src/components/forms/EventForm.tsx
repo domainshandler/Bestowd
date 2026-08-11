@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Contact } from '@bestowd/types'
+import type { Contact, EventType } from '@bestowd/types'
 import type { CreateEventBody } from '@bestowd/types'
 
 interface Props {
@@ -13,21 +13,21 @@ const EVENT_TYPES = ['birthday', 'anniversary', 'christmas', 'custom'] as const
 
 export default function EventForm({ contacts, onSubmit, onCancel, loading }: Props) {
   const [contactId, setContactId] = useState('')
-  const [type, setType] = useState<string>('birthday')
+  const [type, setType] = useState<EventType>('birthday')
   const [name, setName] = useState('')
   const [date, setDate] = useState('')
-  const [recurrenceRule, setRecurrenceRule] = useState<string>('annual')
-  const [reminderDays, setReminderDays] = useState('30,7,1')
+  const [recurrenceRule, setRecurrenceRule] = useState<string>('yearly')
+  const [reminderDays, setReminderDays] = useState('30')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     onSubmit({
       contactId,
-      type: type as any,
+      type,
       name,
-      date: new Date(date).toISOString(),
+      date,
       recurrenceRule,
-      reminderDays: reminderDays.split(',').map(d => parseInt(d.trim())).filter(Boolean),
+      reminderDays: [parseInt(reminderDays, 10)],
     })
   }
 
@@ -48,7 +48,7 @@ export default function EventForm({ contacts, onSubmit, onCancel, loading }: Pro
           <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
           <select
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-            value={type} onChange={e => setType(e.target.value)}
+            value={type} onChange={e => setType(e.target.value as EventType)}
           >
             {EVENT_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
           </select>
@@ -59,8 +59,10 @@ export default function EventForm({ contacts, onSubmit, onCancel, loading }: Pro
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
             value={recurrenceRule} onChange={e => setRecurrenceRule(e.target.value)}
           >
-            <option value="annual">Annual</option>
-            <option value="once">Once</option>
+            <option value="yearly">Yearly</option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="none">None</option>
           </select>
         </div>
       </div>
@@ -81,8 +83,10 @@ export default function EventForm({ contacts, onSubmit, onCancel, loading }: Pro
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Remind me (days before, comma-separated)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Remind me (days before)</label>
         <input
+          type="number"
+          min="0"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           value={reminderDays} onChange={e => setReminderDays(e.target.value)}
         />

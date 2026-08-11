@@ -29,7 +29,7 @@ export default function EventsPage() {
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-        <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium">
+        <button onClick={() => setShowForm(v => !v)} className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium">
           + Add Event
         </button>
       </div>
@@ -52,7 +52,8 @@ export default function EventsPage() {
           <div key={event.id} className="relative group">
             <EventCard event={event} />
             <button
-              onClick={() => remove.mutate(event.id)}
+              onClick={() => { if (window.confirm('Delete this event?')) remove.mutate(event.id) }}
+              disabled={remove.isPending}
               className="absolute top-3 right-3 text-xs text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               Remove
