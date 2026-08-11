@@ -19,6 +19,7 @@ export default function AccountPage() {
         body: JSON.stringify({ aiProviderConfig: { provider: aiProvider, apiKey, model } }),
       }),
     onSuccess: () => { setSaved(true); setTimeout(() => setSaved(false), 2000) },
+    onError: () => { setTimeout(() => saveAi.reset(), 2000) },
   })
 
   function handleLogout() {
@@ -89,6 +90,8 @@ export default function AccountPage() {
           >
             {saved ? '✓ Saved' : saveAi.isPending ? 'Saving…' : 'Save AI Config'}
           </button>
+          {saved && <p className="text-sm text-green-600 mt-2">Configuration saved successfully</p>}
+          {saveAi.isError && <p className="text-sm text-red-600 mt-2">{(saveAi.error as Error)?.message ?? 'Failed to save. Please try again.'}</p>}
         </div>
       </div>
 
