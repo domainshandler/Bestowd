@@ -5,5 +5,5 @@ export * from './events.js';
 export * from './gifts.js';
 export * from './listings.js';
 export * from './assignments.js';
-export { ApiError } from './client.js';
+export { apiFetch, ApiError } from './client.js';
 //# sourceMappingURL=index.js.map
