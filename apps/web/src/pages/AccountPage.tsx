@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.ts'
-import { apiFetch } from '@bestowd/api-client'
+import { updateMe } from '@bestowd/api-client'
 
 export default function AccountPage() {
   const { user, logout } = useAuth()
@@ -14,10 +14,7 @@ export default function AccountPage() {
 
   const saveAi = useMutation({
     mutationFn: () =>
-      apiFetch('/users/me', {
-        method: 'PATCH',
-        body: JSON.stringify({ aiProviderConfig: { provider: aiProvider, apiKey, model } }),
-      }),
+      updateMe({ aiProviderConfig: { provider: aiProvider as 'openai' | 'anthropic' | 'gemini', apiKey, model } }),
     onSuccess: () => { setSaved(true); setTimeout(() => setSaved(false), 2000) },
     onError: () => { setTimeout(() => saveAi.reset(), 2000) },
   })
