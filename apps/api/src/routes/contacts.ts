@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db.js'
+import { sendContactInvite } from '../services/mailer.js'
 
 export async function contactRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
@@ -96,5 +97,24 @@ export async function contactRoutes(app: FastifyInstance) {
       data: { linkedUserId: userId, isManaged: false },
     })
     return updated
+  })
+
+  // Invite flow: email an unmanaged contact a Bestowd sign-up invite
+  app.post<{ Params: { id: string } }>('/contacts/:id/invite', async (request, reply) => {
+    const { userId } = request.user as { userId: string }
+    const contact = await db.contact.findFirst({
+      where: { id: request.params.id, ownerId: userId },
+    })
+    if (!contact) return reply.status(404).send({ error: 'Not found' })
+    if (!contact.email) return reply.status(400).send({ error: 'Contact has no email' })
+    if (!contact.isManaged) return reply.status(409).send({ error: 'Contact already linked' })
+
+    const owner = await db.user.findUniqueOrThrow({ where: { id: userId } })
+    await sendContactInvite(contact.email, owner.name)
+
+    return db.contact.update({
+      where: { id: contact.id },
+      data: { invitedAt: new Date() },
+    })
   })
 }

@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import supertest from 'supertest'
 import { createTestApp, createTestUser } from './helpers.js'
 import { db } from '../src/db.js'
+import { sendContactInvite } from '../src/services/mailer.js'
 import type { FastifyInstance } from 'fastify'
+
+vi.mock('../src/services/mailer.js', () => ({
+  sendContactInvite: vi.fn().mockResolvedValue(undefined),
+}))
 
 let app: FastifyInstance
 let authHeader: string
@@ -108,5 +113,79 @@ describe('DELETE /contacts/:id', () => {
     expect(res.status).toBe(204)
     const found = await db.contact.findUnique({ where: { id: contact.id } })
     expect(found).toBeNull()
+  })
+})
+
+describe('POST /contacts/:id/invite', () => {
+  it('sends an invite and sets invitedAt', async () => {
+    const contact = await db.contact.create({
+      data: { ownerId: userId, name: 'Dana', email: 'dana@example.com' },
+    })
+
+    const res = await supertest(app.server)
+      .post(`/contacts/${contact.id}/invite`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(200)
+    expect(res.body.invitedAt).not.toBeNull()
+
+    await db.contact.delete({ where: { id: contact.id } })
+  })
+
+  it('returns 400 when the contact has no email', async () => {
+    const contact = await db.contact.create({
+      data: { ownerId: userId, name: 'NoEmail' },
+    })
+
+    const res = await supertest(app.server)
+      .post(`/contacts/${contact.id}/invite`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(400)
+    await db.contact.delete({ where: { id: contact.id } })
+  })
+
+  it('returns 404 for a contact owned by another user', async () => {
+    const other = await createTestUser(app)
+    const contact = await db.contact.create({
+      data: { ownerId: other.user.id, name: 'Private', email: 'private@example.com' },
+    })
+
+    const res = await supertest(app.server)
+      .post(`/contacts/${contact.id}/invite`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(404)
+    await db.contact.delete({ where: { id: contact.id } })
+    await db.user.delete({ where: { id: other.user.id } })
+  })
+
+  it('does not set invitedAt when sending the email fails', async () => {
+    const contact = await db.contact.create({
+      data: { ownerId: userId, name: 'SmtpFail', email: 'smtp-fail@example.com' },
+    })
+    vi.mocked(sendContactInvite).mockRejectedValueOnce(new Error('SMTP down'))
+
+    const res = await supertest(app.server)
+      .post(`/contacts/${contact.id}/invite`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(500)
+    const after = await db.contact.findUniqueOrThrow({ where: { id: contact.id } })
+    expect(after.invitedAt).toBeNull()
+    await db.contact.delete({ where: { id: contact.id } })
+  })
+
+  it('returns 409 when the contact is already linked', async () => {
+    const contact = await db.contact.create({
+      data: { ownerId: userId, name: 'Linked', email: 'linked@example.com', isManaged: false },
+    })
+
+    const res = await supertest(app.server)
+      .post(`/contacts/${contact.id}/invite`)
+      .set('Authorization', authHeader)
+
+    expect(res.status).toBe(409)
+    await db.contact.delete({ where: { id: contact.id } })
   })
 })
