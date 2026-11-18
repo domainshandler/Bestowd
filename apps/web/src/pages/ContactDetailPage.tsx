@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getContact, updateContact, deleteContact, listAssignments } from '@bestowd/api-client'
+import { getContact, updateContact, deleteContact, listAssignments, sendInvite } from '@bestowd/api-client'
 import ContactForm from '../components/forms/ContactForm.tsx'
 import type { UpdateContactBody } from '@bestowd/types'
 
@@ -32,6 +32,11 @@ export default function ContactDetailPage() {
     onSuccess: () => navigate('/contacts'),
   })
 
+  const invite = useMutation({
+    mutationFn: () => sendInvite(id!),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['contacts', id] }),
+  })
+
   if (isLoading) return <p className="text-sm text-gray-400">Loading…</p>
   if (!contact) return <p className="text-sm text-red-500">Contact not found.</p>
 
@@ -59,7 +64,7 @@ export default function ContactDetailPage() {
         {contact.notes && <p className="text-sm text-gray-600 mb-4">{contact.notes}</p>}
 
         {contact.attributes.length > 0 && (
-          <div>
+          <div className="mb-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Interests</p>
             <div className="flex flex-wrap gap-2">
               {contact.attributes.map((a, i) => (
@@ -68,6 +73,26 @@ export default function ContactDetailPage() {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {contact.isManaged && contact.email && (
+          <div className="pt-4 border-t border-gray-100 flex items-center gap-3">
+            <button
+              onClick={() => invite.mutate()}
+              disabled={invite.isPending}
+              className="text-sm px-3 py-1.5 bg-brand text-white rounded-lg font-medium disabled:opacity-50"
+            >
+              {invite.isPending ? 'Sending…' : contact.invitedAt ? 'Resend Invite' : 'Send Invite'}
+            </button>
+            {contact.invitedAt && (
+              <span className="text-xs text-gray-400">
+                Invited on {new Date(contact.invitedAt).toLocaleDateString()}
+              </span>
+            )}
+            {invite.isError && (
+              <span className="text-xs text-red-500">Failed to send invite.</span>
+            )}
           </div>
         )}
       </div>

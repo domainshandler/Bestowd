@@ -14,6 +14,7 @@ export interface Contact {
   notes: string | null
   attributes: ContactAttribute[]
   isManaged: boolean
+  invitedAt: string | null
   createdAt: string
   updatedAt: string
 }

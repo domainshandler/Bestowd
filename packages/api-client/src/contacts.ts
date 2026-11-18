@@ -24,3 +24,7 @@ export function deleteContact(id: string): Promise<void> {
 export function claimContact(id: string): Promise<Contact> {
   return apiFetch(`/contacts/${id}/claim`, { method: 'POST' })
 }
+
+export function sendInvite(id: string): Promise<Contact> {
+  return apiFetch(`/contacts/${id}/invite`, { method: 'POST' })
+}
