@@ -45,17 +45,18 @@ model UserConnection {
 }
 
 model Contact {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   ownerId      String
-  linkedUserId String?  @unique
+  linkedUserId String?   @unique
   name         String
   avatarUrl    String?
   email        String?
   notes        String?
-  attributes   Json     @default("[]")
-  isManaged    Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  attributes   Json      @default("[]")
+  isManaged    Boolean   @default(true)
+  invitedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   owner       User             @relation("OwnedContacts", fields: [ownerId], references: [id], onDelete: Cascade)
   linkedUser  User?            @relation("LinkedUser", fields: [linkedUserId], references: [id])
