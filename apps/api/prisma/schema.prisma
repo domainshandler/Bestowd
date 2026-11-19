@@ -8,152 +8,318 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum FamilyType {
+  FAMILY
+  FRIENDS
+  SCHOOL
+  OTHER
+}
+
+enum FamilyStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum OccasionType {
+  BIRTHDAY
+  HOLIDAY
+  ONE_OFF
+}
+
+enum OccasionStatus {
+  NOT_STARTED
+  IDEA_SAVED
+  BOUGHT
+  GIVEN
+}
+
+enum Rsvp {
+  NONE
+  YES
+  NO
+  MAYBE
+}
+
+enum GiftDirection {
+  GIVEN
+  RECEIVED
+}
+
+enum GiftStatus {
+  BOUGHT
+  GIVEN
+}
+
+enum Reaction {
+  LOVED_IT
+  LIKED_IT
+  ALREADY_HAD_IT
+  NOT_A_HIT
+}
+
+enum IdeaStatus {
+  SAVED
+  BOUGHT
+  DISMISSED
+}
+
+enum InviteKind {
+  FAMILY
+  GROUP
+}
+
 model User {
-  id                 String   @id @default(cuid())
-  googleId           String?  @unique
-  email              String   @unique
-  name               String
-  avatarUrl          String?
-  identitySource     String   @default("google")
-  emailVerified      Boolean  @default(false)
-  aiProviderConfig   String?
-  stripeCustomerId   String?
-  subscriptionStatus String   @default("free")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  ownedContacts       Contact[]        @relation("OwnedContacts")
-  linkedContact       Contact?         @relation("LinkedUser")
-  sentConnections     UserConnection[] @relation("Requester")
-  receivedConnections UserConnection[] @relation("Addressee")
-  createdGifts        Gift[]
-  giftAssignments     GiftAssignment[] @relation("Giver")
-  exportConfigs       ExportConfig[]
-}
-
-model UserConnection {
-  requesterId String
-  addresseeId String
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
-  addressee User @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
-
-  @@id([requesterId, addresseeId])
-}
-
-model Contact {
-  id           String    @id @default(cuid())
-  ownerId      String
-  linkedUserId String?   @unique
-  name         String
-  avatarUrl    String?
-  email        String?
-  notes        String?
-  attributes   Json      @default("[]")
-  isManaged    Boolean   @default(true)
-  invitedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  owner       User             @relation("OwnedContacts", fields: [ownerId], references: [id], onDelete: Cascade)
-  linkedUser  User?            @relation("LinkedUser", fields: [linkedUserId], references: [id])
-  events      Event[]
-  assignments GiftAssignment[]
-}
-
-model Event {
   id             String   @id @default(cuid())
-  contactId      String
-  type           String
+  googleId       String?  @unique
+  email          String   @unique
   name           String
-  date           DateTime
-  recurrenceRule String   @default("annual")
-  reminderDays   Int[]    @default([30, 7, 1])
-  nextOccurrence DateTime?
+  avatarUrl      String?
+  identitySource String   @default("google")
+  emailVerified  Boolean  @default(false)
+  primaryGroupId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  assignments GiftAssignment[]
+  primaryGroup    Group?            @relation("PrimaryGroup", fields: [primaryGroupId], references: [id], onDelete: SetNull)
+  memberships     GroupMembership[]
+  createdGifts    GiftEntry[]       @relation("GiftCreatedBy")
+  createdIdeas    Idea[]            @relation("IdeaCreatedBy")
+  createdInvites  InviteLink[]      @relation("InviteCreatedBy")
+  acceptedInvites InviteLink[]      @relation("InviteAcceptedBy")
 }
 
-model Gift {
-  id          String   @id @default(cuid())
-  createdById String
-  type        String   @default("product")
+model Group {
+  id                  String   @id @default(cuid())
+  name                String
+  currency            String   @default("CAD")
+  defaultBudgets      Json     @default("{}")
+  defaultReminderDays Int[]    @default([14, 3])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  memberships     GroupMembership[]
+  primaryFor      User[]            @relation("PrimaryGroup")
+  families        Family[]          @relation("GroupFamilies")
+  householdFamily Family?           @relation("GroupHousehold")
+  people          Person[]
+  occasions       Occasion[]
+  gifts           GiftEntry[]
+  ideas           Idea[]
+  invites         InviteLink[]
+}
+
+model GroupMembership {
+  groupId   String
+  userId    String
+  role      MembershipRole @default(MEMBER)
+  createdAt DateTime       @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+model Family {
+  id                 String       @id @default(cuid())
+  groupId            String
+  householdOfGroupId String?      @unique
+  name               String
+  type               FamilyType   @default(FAMILY)
+  status             FamilyStatus @default(ACTIVE)
+  photoUrl           String?
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  group             Group              @relation("GroupFamilies", fields: [groupId], references: [id], onDelete: Cascade)
+  householdOf       Group?             @relation("GroupHousehold", fields: [householdOfGroupId], references: [id], onDelete: Cascade)
+  people            Person[]
+  occasions         Occasion[]
+  gifts             GiftEntry[]
+  invites           InviteLink[]
+  connection        FamilyConnection?  @relation("ConnectedFamily")
+  sharedConnections FamilyConnection[] @relation("SourceFamily")
+
+  @@index([groupId])
+}
+
+model Person {
+  id           String    @id @default(cuid())
+  groupId      String
+  familyId     String
+  name         String
+  relationship String?
+  birthMonth   Int?
+  birthDay     Int?
+  birthYear    Int?
+  likes        String[]  @default([])
+  avoid        String[]  @default([])
+  sizes        Json      @default("{}")
+  foodNotes    String?
+  photoUrl     String?
+  notes        String?
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  group     Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  family    Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  occasions Occasion[]
+  gifts     GiftEntry[]
+  credits   GiftCredit[]
+  ideaTags  IdeaPerson[]
+
+  @@index([familyId])
+}
+
+model Occasion {
+  id               String         @id @default(cuid())
+  groupId          String
+  personId         String?
+  familyId         String?
+  type             OccasionType
+  name             String
+  date             DateTime
+  recursAnnually   Boolean        @default(true)
+  recurrenceEndsAt DateTime?
+  nextOccurrence   DateTime?
+  budget           Decimal?       @db.Decimal(10, 2)
+  status           OccasionStatus @default(NOT_STARTED)
+  needsCard        Boolean        @default(false)
+  cardDone         Boolean        @default(false)
+  reminderDays     Int[]          @default([])
+  partyAt          DateTime?
+  location         String?
+  rsvp             Rsvp           @default(NONE)
+  hostGiftRequest  String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  group  Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  person Person?     @relation(fields: [personId], references: [id], onDelete: Cascade)
+  family Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  gifts  GiftEntry[]
+  ideas  Idea[]
+
+  @@index([groupId, nextOccurrence])
+}
+
+model GiftEntry {
+  id             String        @id @default(cuid())
+  groupId        String
+  direction      GiftDirection
+  title          String
+  category       String?
+  occasionId     String?
+  occasionDate   DateTime?
+  date           DateTime
+  personId       String?
+  familyId       String?
+  amount         Decimal?      @db.Decimal(10, 2)
+  status         GiftStatus?
+  valueHidden    Boolean       @default(false)
+  hasGiftReceipt Boolean       @default(false)
+  returnBy       DateTime?
+  thankYouSent   Boolean       @default(false)
+  thankYouDueAt  DateTime?
+  reaction       Reaction?
+  photoUrl       String?
+  notes          String?
+  ideaId         String?
+  createdById    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  group     Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  occasion  Occasion?    @relation(fields: [occasionId], references: [id], onDelete: SetNull)
+  person    Person?      @relation(fields: [personId], references: [id], onDelete: Cascade)
+  family    Family?      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  idea      Idea?        @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+  createdBy User         @relation("GiftCreatedBy", fields: [createdById], references: [id])
+  credits   GiftCredit[]
+
+  @@index([groupId, date])
+}
+
+model GiftCredit {
+  giftEntryId String
+  personId    String
+
+  giftEntry GiftEntry @relation(fields: [giftEntryId], references: [id], onDelete: Cascade)
+  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([giftEntryId, personId])
+}
+
+model Idea {
+  id          String     @id @default(cuid())
+  groupId     String
   title       String
-  description String?
+  category    String?
+  url         String?
   imageUrl    String?
-  upc         String?
-  tags        String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Decimal?   @db.Decimal(10, 2)
+  notes       String?
+  ageMin      Int?
+  ageMax      Int?
+  status      IdeaStatus @default(SAVED)
+  occasionId  String?
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  createdBy   User             @relation(fields: [createdById], references: [id])
-  listings    ProductListing[]
-  assignments GiftAssignment[]
-  basketId    String?
-  basket      Gift?            @relation("BasketItems", fields: [basketId], references: [id])
-  basketItems Gift[]           @relation("BasketItems")
+  group     Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  occasion  Occasion?    @relation(fields: [occasionId], references: [id], onDelete: SetNull)
+  createdBy User         @relation("IdeaCreatedBy", fields: [createdById], references: [id])
+  tags      IdeaPerson[]
+  gifts     GiftEntry[]
+
+  @@index([groupId])
 }
 
-model ProductListing {
-  id              String   @id @default(cuid())
-  giftId          String
-  vendor          String
-  vendorProductId String?
-  vendorUrl       String
-  listedPrice     Decimal?
-  currency        String   @default("USD")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model IdeaPerson {
+  ideaId   String
+  personId String
 
-  gift Gift @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([ideaId, personId])
 }
 
-model GiftAssignment {
-  id            String    @id @default(cuid())
-  giftId        String
-  giverId       String
-  contactId     String
-  eventId       String?
-  status        String    @default("idea")
-  givenAt       DateTime?
-  purchasePrice Decimal?
-  notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model InviteLink {
+  id           String     @id @default(cuid())
+  token        String     @unique
+  kind         InviteKind
+  groupId      String
+  familyId     String?
+  createdById  String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedById String?
+  createdAt    DateTime   @default(now())
 
-  gift    Gift     @relation(fields: [giftId], references: [id])
-  giver   User     @relation("Giver", fields: [giverId], references: [id])
-  contact Contact  @relation(fields: [contactId], references: [id])
-  event   Event?   @relation(fields: [eventId], references: [id])
+  group      Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  family     Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy  User    @relation("InviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  acceptedBy User?   @relation("InviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
 }
 
-model ExportConfig {
-  id          String   @id @default(cuid())
-  userId      String
-  provider    String
-  credentials String
-  targetId    String?
-  schedule    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model FamilyConnection {
+  id             String   @id @default(cuid())
+  familyId       String   @unique
+  sourceFamilyId String
+  sharedFields   String[]
+  createdAt      DateTime @default(now())
 
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  records ExportRecord[]
-}
-
-model ExportRecord {
-  id             String    @id @default(cuid())
-  exportConfigId String
-  entityType     String
-  lastExportedAt DateTime?
-  status         String
-  createdAt      DateTime  @default(now())
-
-  exportConfig ExportConfig @relation(fields: [exportConfigId], references: [id], onDelete: Cascade)
+  family       Family @relation("ConnectedFamily", fields: [familyId], references: [id], onDelete: Cascade)
+  sourceFamily Family @relation("SourceFamily", fields: [sourceFamilyId], references: [id], onDelete: Cascade)
 }

@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify'
-import { Prisma } from '@prisma/client'
 import { db } from '../db.js'
 import { verifyGoogleToken } from '../services/google-auth.js'
 
@@ -33,8 +32,6 @@ export async function authRoutes(app: FastifyInstance) {
       },
     })
 
-    await autoLinkContact(user.id, user.email)
-
     const token = app.jwt.sign({ userId: user.id })
     return reply.send({ token, user: toUserDto(user) })
   })
@@ -46,35 +43,7 @@ export async function authRoutes(app: FastifyInstance) {
   })
 }
 
-async function autoLinkContact(userId: string, email: string): Promise<void> {
-  // Contact.linkedUserId is @unique, so a user can be linked to at most one contact.
-  const alreadyLinked = await db.contact.findUnique({ where: { linkedUserId: userId } })
-  if (alreadyLinked) return
-
-  const linkableContact = await db.contact.findFirst({
-    where: {
-      email: { equals: email, mode: 'insensitive' },
-      isManaged: true,
-      linkedUserId: null,
-    },
-    orderBy: { createdAt: 'asc' },
-  })
-
-  if (!linkableContact) return
-
-  try {
-    await db.contact.update({
-      where: { id: linkableContact.id },
-      data: { linkedUserId: userId, isManaged: false },
-    })
-  } catch (err) {
-    // A concurrent sign-in linked this user first; auto-link must never block login.
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return
-    throw err
-  }
-}
-
-function toUserDto(user: { id: string; email: string; name: string; avatarUrl: string | null; identitySource: string; emailVerified: boolean; subscriptionStatus: string; createdAt: Date }) {
+function toUserDto(user: { id: string; email: string; name: string; avatarUrl: string | null; identitySource: string; emailVerified: boolean; createdAt: Date }) {
   return {
     id: user.id,
     email: user.email,
@@ -82,7 +51,6 @@ function toUserDto(user: { id: string; email: string; name: string; avatarUrl: s
     avatarUrl: user.avatarUrl,
     identitySource: user.identitySource,
     emailVerified: user.emailVerified,
-    subscriptionStatus: user.subscriptionStatus,
     createdAt: user.createdAt.toISOString(),
   }
 }

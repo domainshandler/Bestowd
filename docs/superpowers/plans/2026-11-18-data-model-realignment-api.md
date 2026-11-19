@@ -145,17 +145,71 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum MembershipRole { OWNER MEMBER }
-enum FamilyType { FAMILY FRIENDS SCHOOL OTHER }
-enum FamilyStatus { ACTIVE PAUSED ARCHIVED }
-enum OccasionType { BIRTHDAY HOLIDAY ONE_OFF }
-enum OccasionStatus { NOT_STARTED IDEA_SAVED BOUGHT GIVEN }
-enum Rsvp { NONE YES NO MAYBE }
-enum GiftDirection { GIVEN RECEIVED }
-enum GiftStatus { BOUGHT GIVEN }
-enum Reaction { LOVED_IT LIKED_IT ALREADY_HAD_IT NOT_A_HIT }
-enum IdeaStatus { SAVED BOUGHT DISMISSED }
-enum InviteKind { FAMILY GROUP }
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum FamilyType {
+  FAMILY
+  FRIENDS
+  SCHOOL
+  OTHER
+}
+
+enum FamilyStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum OccasionType {
+  BIRTHDAY
+  HOLIDAY
+  ONE_OFF
+}
+
+enum OccasionStatus {
+  NOT_STARTED
+  IDEA_SAVED
+  BOUGHT
+  GIVEN
+}
+
+enum Rsvp {
+  NONE
+  YES
+  NO
+  MAYBE
+}
+
+enum GiftDirection {
+  GIVEN
+  RECEIVED
+}
+
+enum GiftStatus {
+  BOUGHT
+  GIVEN
+}
+
+enum Reaction {
+  LOVED_IT
+  LIKED_IT
+  ALREADY_HAD_IT
+  NOT_A_HIT
+}
+
+enum IdeaStatus {
+  SAVED
+  BOUGHT
+  DISMISSED
+}
+
+enum InviteKind {
+  FAMILY
+  GROUP
+}
 
 model User {
   id             String   @id @default(cuid())

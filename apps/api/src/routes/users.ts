@@ -1,30 +1,25 @@
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db.js'
-import { encrypt } from '../crypto.js'
 
 export async function userRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
-  app.patch<{
-    Body: {
-      name?: string
-      avatarUrl?: string
-      aiProviderConfig?: { provider: string; apiKey: string; model: string }
-    }
-  }>('/users/me', async (request) => {
-    const { userId } = request.user as { userId: string }
-    const { name, avatarUrl, aiProviderConfig } = request.body
-
-    const user = await db.user.update({
-      where: { id: userId },
-      data: {
-        name,
-        avatarUrl,
-        ...(aiProviderConfig
-          ? { aiProviderConfig: encrypt(JSON.stringify(aiProviderConfig)) }
-          : {}),
+  app.patch<{ Body: { name?: string; avatarUrl?: string } }>('/users/me', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          name: { type: 'string', minLength: 1, maxLength: 100 },
+          avatarUrl: { type: 'string', maxLength: 2000 },
+        },
       },
-    })
+    },
+  }, async (request) => {
+    const { userId } = request.user as { userId: string }
+    const { name, avatarUrl } = request.body
+
+    const user = await db.user.update({ where: { id: userId }, data: { name, avatarUrl } })
 
     return {
       id: user.id,
@@ -33,7 +28,6 @@ export async function userRoutes(app: FastifyInstance) {
       avatarUrl: user.avatarUrl,
       identitySource: user.identitySource,
       emailVerified: user.emailVerified,
-      subscriptionStatus: user.subscriptionStatus,
       createdAt: user.createdAt.toISOString(),
     }
   })

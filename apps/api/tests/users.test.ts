@@ -30,20 +30,4 @@ describe('PATCH /users/me', () => {
     expect(res.status).toBe(200)
     expect(res.body.name).toBe('Updated Name')
   })
-
-  it('stores aiProviderConfig encrypted and does not return the raw apiKey', async () => {
-    const res = await supertest(app.server)
-      .patch('/users/me')
-      .set('Authorization', authHeader)
-      .send({ aiProviderConfig: { provider: 'openai', apiKey: 'sk-secret', model: 'gpt-4o' } })
-
-    expect(res.status).toBe(200)
-    // aiProviderConfig is not returned in user DTO
-    expect(res.body.aiProviderConfig).toBeUndefined()
-
-    // Verify it was encrypted in DB
-    const dbUser = await db.user.findUnique({ where: { id: userId } })
-    expect(dbUser?.aiProviderConfig).not.toBe('sk-secret')
-    expect(dbUser?.aiProviderConfig).toContain(':') // AES format: iv:cipher
-  })
 })
