@@ -8,6 +8,7 @@ import { ageOn } from '../services/age.js'
 import { familyGiftsWhere, giftTotals } from '../services/gift-totals.js'
 import { startOfUtcDay } from '../services/next-occurrence.js'
 import { occasionInclude, serialiseOccasions } from '../services/occasions.js'
+import { sharedPersonView } from '../services/tokens.js'
 import { nullableString } from './schemas.js'
 
 interface FamilyBody {
@@ -148,6 +149,22 @@ export async function familyProfile(familyId: string) {
     })),
     occasions: await serialiseOccasions(occasions),
     totals: await giftTotals({ groupId: family.groupId, ...familyGiftsWhere(familyId) }),
-    connection: null,
+    connection: await connectionView(familyId),
+  }
+}
+
+/** What a connected family shares: its non-archived people, limited to the fields it chose. */
+async function connectionView(familyId: string) {
+  const connection = await db.familyConnection.findUnique({
+    where: { familyId },
+    include: { sourceFamily: { include: { people: { where: { archivedAt: null }, orderBy: { createdAt: 'asc' } } } } },
+  })
+  if (!connection) return null
+  return {
+    id: connection.id,
+    sourceFamilyName: connection.sourceFamily.name,
+    sharedFields: connection.sharedFields,
+    createdAt: connection.createdAt.toISOString(),
+    people: connection.sourceFamily.people.map((p) => sharedPersonView(p, connection.sharedFields)),
   }
 }
