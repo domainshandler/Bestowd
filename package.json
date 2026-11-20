@@ -1,6 +1,7 @@
 {
   "name": "bestowd",
   "private": true,
+  "packageManager": "pnpm@12.21.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
