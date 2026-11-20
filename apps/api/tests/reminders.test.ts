@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { createTestApp, createTestUser, cleanupUser } from './helpers.js'
 import { db } from '../src/db.js'
-import { runReminderScan } from '../src/services/reminder-job.js'
+import { occasionReminderKinds, runReminderScan } from '../src/services/reminder-job.js'
+import { deliverReminders, type PushSender } from '../src/services/push.js'
 import type { FastifyInstance } from 'fastify'
 
 let app: FastifyInstance
@@ -71,5 +72,66 @@ describe('runReminderScan', () => {
     const after = await db.occasion.findUniqueOrThrow({ where: { id: occ.id } })
     expect(after.nextOccurrence).toBeNull()
     expect(after.status).toBe('GIVEN')
+  })
+})
+
+describe('occasionReminderKinds', () => {
+  const base = { reminderDays: [14, 3], status: 'NOT_STARTED' as const, needsCard: false, cardDone: false }
+  it('sends the regular reminder on reminder days', () => {
+    expect(occasionReminderKinds({ ...base, daysUntil: 14 })).toEqual(['OCCASION'])
+    expect(occasionReminderKinds({ ...base, daysUntil: 10 })).toEqual([])
+  })
+  it('adds a buy reminder a week out only when nothing is planned and 7 is not a reminder day', () => {
+    expect(occasionReminderKinds({ ...base, daysUntil: 7 })).toEqual(['BUY'])
+    expect(occasionReminderKinds({ ...base, daysUntil: 7, status: 'IDEA_SAVED' })).toEqual([])
+    expect(occasionReminderKinds({ ...base, daysUntil: 7, reminderDays: [7] })).toEqual(['OCCASION'])
+  })
+  it('adds a card reminder 3 days out while the card is not done', () => {
+    expect(occasionReminderKinds({ ...base, daysUntil: 3, needsCard: true })).toEqual(['OCCASION', 'CARD'])
+    expect(occasionReminderKinds({ ...base, daysUntil: 3, needsCard: true, cardDone: true })).toEqual(['OCCASION'])
+  })
+})
+
+describe('buy, card and thank-you reminders', () => {
+  it('sends a buy reminder a week before an unplanned occasion, saying it needs a gift', async () => {
+    const occ = await occasion('Week out', { nextOccurrence: day(7) })
+    const due = await remindersFor(occ.id)
+    expect(due).toHaveLength(2)
+    expect(due[0]).toMatchObject({ kind: 'BUY', title: 'Week out', data: { kind: 'BUY', occasionId: occ.id, personId: mia } })
+  })
+
+  it('mentions a missing gift in the regular reminder and sends a card reminder', async () => {
+    const occ = await occasion('Three days', { nextOccurrence: day(3), needsCard: true })
+    const due = await remindersFor(occ.id)
+    expect(due.map((r) => r.kind).sort()).toEqual(['CARD', 'CARD', 'OCCASION', 'OCCASION'])
+    expect(due.find((r) => r.kind === 'OCCASION')!.body).toBe('Three days is in 3 days and still needs a gift.')
+  })
+
+  it('reminds every member to send a thank-you on the due date', async () => {
+    const g = await db.giftEntry.create({
+      data: { groupId: a.groupId, createdById: a.user.id, direction: 'RECEIVED', title: 'cookie tin', date: day(-14), personId: mia, thankYouDueAt: day(0) },
+    })
+    await db.giftEntry.create({
+      data: { groupId: a.groupId, createdById: a.user.id, direction: 'RECEIVED', title: 'already thanked', date: day(-14), personId: mia, thankYouDueAt: day(0), thankYouSent: true },
+    })
+    const due = (await runReminderScan(now)).filter((r) => r.kind === 'THANK_YOU' && r.groupId === a.groupId)
+    expect(due).toHaveLength(2)
+    expect(due[0]).toMatchObject({ giftEntryId: g.id, body: 'Send a thank-you to Mia for the cookie tin.' })
+  })
+})
+
+describe('deliverReminders', () => {
+  it('sends to each device of the user and removes tokens FCM rejects', async () => {
+    await db.device.create({ data: { userId: a.user.id, platform: 'ANDROID', token: 'good-token' } })
+    await db.device.create({ data: { userId: a.user.id, platform: 'IOS', token: 'stale-token' } })
+    const sent: string[] = []
+    const sender: PushSender = {
+      async send(token) { sent.push(token); return token === 'stale-token' ? 'invalid-token' : 'sent' },
+    }
+    const reminder = { kind: 'OCCASION' as const, userId: a.user.id, email: '', groupId: a.groupId, occasionId: null, giftEntryId: null, occasionName: 'x', daysUntil: 3, title: 't', body: 'b', data: {} }
+    const stats = await deliverReminders([reminder, reminder], sender)
+    expect(stats).toEqual({ sent: 2, removed: 1, failed: 0 })
+    expect(sent.filter((t) => t === 'stale-token')).toHaveLength(1)
+    expect(await db.device.findUnique({ where: { token: 'stale-token' } })).toBeNull()
   })
 })

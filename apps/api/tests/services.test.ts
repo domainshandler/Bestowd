@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createTestApp, createTestUser, cleanupUser } from './helpers.js'
 import { db } from '../src/db.js'
 import { provisionPersonalGroup, firstName } from '../src/services/groups.js'
+import { googleAudiences, verifyGoogleToken } from '../src/services/google-auth.js'
 import { assertSubject, assertInGroup, requireMember, requireOwner, loadOr404 } from '../src/services/access.js'
 import type { FastifyInstance } from 'fastify'
 
@@ -90,5 +91,16 @@ describe('assertInGroup', () => {
 
   it('rejects any id outside the group', async () => {
     await expect(assertInGroup('person', a.groupId, [personA, personB])).rejects.toMatchObject({ statusCode: 400 })
+  })
+})
+
+describe('Google sign-in', () => {
+  it('accepts the web client ID plus any extra mobile client IDs', () => {
+    expect(googleAudiences('web.apps', undefined)).toEqual(['web.apps'])
+    expect(googleAudiences('web.apps', ' android.apps, ios.apps,,web.apps ')).toEqual(['web.apps', 'android.apps', 'ios.apps'])
+  })
+
+  it('answers 401 for a token that does not verify', async () => {
+    await expect(verifyGoogleToken('not-a-real-token')).rejects.toMatchObject({ statusCode: 401 })
   })
 })

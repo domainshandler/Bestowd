@@ -69,6 +69,11 @@ enum IdeaStatus {
   DISMISSED
 }
 
+enum DevicePlatform {
+  ANDROID
+  IOS
+}
+
 enum InviteKind {
   FAMILY
   GROUP
@@ -92,6 +97,7 @@ model User {
   createdIdeas    Idea[]            @relation("IdeaCreatedBy")
   createdInvites  InviteLink[]      @relation("InviteCreatedBy")
   acceptedInvites InviteLink[]      @relation("InviteAcceptedBy")
+  devices         Device[]
 }
 
 model Group {
@@ -322,4 +328,17 @@ model FamilyConnection {
 
   family       Family @relation("ConnectedFamily", fields: [familyId], references: [id], onDelete: Cascade)
   sourceFamily Family @relation("SourceFamily", fields: [sourceFamilyId], references: [id], onDelete: Cascade)
+}
+
+model Device {
+  id         String         @id @default(cuid())
+  userId     String
+  platform   DevicePlatform
+  token      String         @unique
+  createdAt  DateTime       @default(now())
+  lastSeenAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

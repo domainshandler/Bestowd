@@ -71,3 +71,24 @@ describe('GET /me/occasions', () => {
     await db.groupMembership.delete({ where: { groupId_userId: { groupId: b.groupId, userId: a.user.id } } })
   })
 })
+
+describe('/me/devices', () => {
+  it('registers a device, moves a reused token to the new user, and removes only your own', async () => {
+    const res = await supertest(app.server).post('/me/devices').set('Authorization', a.authHeader).send({ platform: 'ANDROID', token: 'fcm-1' })
+    expect(res.status).toBe(201)
+    expect(res.body.platform).toBe('ANDROID')
+
+    await supertest(app.server).post('/me/devices').set('Authorization', b.authHeader).send({ platform: 'ANDROID', token: 'fcm-1' })
+    expect((await db.device.findUniqueOrThrow({ where: { token: 'fcm-1' } })).userId).toBe(b.user.id)
+
+    await supertest(app.server).delete('/me/devices/fcm-1').set('Authorization', a.authHeader)
+    expect(await db.device.findUnique({ where: { token: 'fcm-1' } })).not.toBeNull()
+    expect((await supertest(app.server).delete('/me/devices/fcm-1').set('Authorization', b.authHeader)).status).toBe(204)
+    expect(await db.device.findUnique({ where: { token: 'fcm-1' } })).toBeNull()
+  })
+
+  it('rejects an unknown platform', async () => {
+    const res = await supertest(app.server).post('/me/devices').set('Authorization', a.authHeader).send({ platform: 'WEB', token: 'x' })
+    expect(res.status).toBe(400)
+  })
+})

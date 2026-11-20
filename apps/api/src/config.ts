@@ -5,6 +5,10 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32),
   ENCRYPTION_KEY: z.string().length(64),
   GOOGLE_CLIENT_ID: z.string(),
+  /** Extra Google client IDs (mobile apps), comma-separated. */
+  GOOGLE_CLIENT_IDS: z.string().optional(),
+  /** Firebase service-account JSON for push. Without it, reminders are only logged. */
+  FCM_SERVICE_ACCOUNT: z.string().optional(),
   GMAIL_USER: z.string().email(),
   GMAIL_APP_PASSWORD: z.string().min(1),
   WEB_APP_URL: z.string().url(),
