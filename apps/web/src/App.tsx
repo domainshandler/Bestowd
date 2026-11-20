@@ -1,25 +1,40 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext.tsx'
 import ProtectedRoute from './auth/ProtectedRoute.tsx'
+import { GroupProvider } from './groups/GroupContext.tsx'
 import Layout from './components/Layout.tsx'
 import LoginPage from './pages/LoginPage.tsx'
-import DashboardPage from './pages/DashboardPage.tsx'
+import HomePage from './pages/HomePage.tsx'
+import PeoplePage from './pages/PeoplePage.tsx'
+import FamilyPage from './pages/FamilyPage.tsx'
+import PersonPage from './pages/PersonPage.tsx'
+import GiftsPage from './pages/GiftsPage.tsx'
+import IdeasPage from './pages/IdeasPage.tsx'
+import JoinPage from './pages/JoinPage.tsx'
 import AccountPage from './pages/AccountPage.tsx'
 
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/account" element={<AccountPage />} />
+      <GroupProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/join/:token" element={<JoinPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/people" element={<PeoplePage />} />
+              <Route path="/families/:id" element={<FamilyPage />} />
+              <Route path="/people/:id" element={<PersonPage />} />
+              <Route path="/gifts" element={<GiftsPage />} />
+              <Route path="/ideas" element={<IdeasPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+            </Route>
           </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </GroupProvider>
     </AuthProvider>
   )
 }
