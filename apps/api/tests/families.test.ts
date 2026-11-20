@@ -96,7 +96,7 @@ describe('families', () => {
     expect(res.body.people).toHaveLength(1)
     expect(res.body.people[0]).toMatchObject({ name: 'Mia', nextBirthday: bday.toISOString() })
     expect(typeof res.body.people[0].age).toBe('number')
-    expect(res.body.occasions[0]).toMatchObject({ name: "Mia's birthday", subjectName: 'Mia', needsGift: true })
+    expect(res.body.occasions[0]).toMatchObject({ name: "Mia's birthday", subjectName: 'Mia', needsGift: true, effectiveBudget: null, spent: 0 })
     expect(res.body.totals).toEqual({
       givenCount: 1, receivedCount: 2, spent: 25, receivedValue: 12, hiddenReceivedCount: 1, thankYouDueCount: 1,
     })

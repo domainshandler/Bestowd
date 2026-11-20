@@ -8,6 +8,7 @@ import { meRoutes } from './routes/me.js'
 import { groupRoutes } from './routes/groups.js'
 import { familyRoutes } from './routes/families.js'
 import { personRoutes } from './routes/people.js'
+import { occasionRoutes } from './routes/occasions.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: process.env['NODE_ENV'] !== 'test' })
@@ -27,6 +28,7 @@ export async function buildApp() {
   await app.register(groupRoutes)
   await app.register(familyRoutes)
   await app.register(personRoutes)
+  await app.register(occasionRoutes)
 
   return app
 }

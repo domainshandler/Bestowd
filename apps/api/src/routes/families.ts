@@ -7,6 +7,7 @@ import { loadOr404, requireMember, userIdOf } from '../services/access.js'
 import { ageOn } from '../services/age.js'
 import { familyGiftsWhere, giftTotals } from '../services/gift-totals.js'
 import { startOfUtcDay } from '../services/next-occurrence.js'
+import { occasionInclude, serialiseOccasions } from '../services/occasions.js'
 import { nullableString } from './schemas.js'
 
 interface FamilyBody {
@@ -134,7 +135,7 @@ export async function familyProfile(familyId: string) {
       nextOccurrence: { gte: today, lte: yearAhead },
       OR: [{ familyId }, { person: { is: { familyId, archivedAt: null } } }],
     },
-    include: { person: { select: { name: true } } },
+    include: occasionInclude,
     orderBy: { nextOccurrence: 'asc' },
   })
 
@@ -145,16 +146,7 @@ export async function familyProfile(familyId: string) {
       age: ageOn(p, today),
       nextBirthday: birthdays[0]?.nextOccurrence?.toISOString() ?? null,
     })),
-    occasions: occasions.map((o) => ({
-      id: o.id,
-      name: o.name,
-      type: o.type,
-      status: o.status,
-      nextOccurrence: o.nextOccurrence!.toISOString(),
-      personId: o.personId,
-      subjectName: o.person?.name ?? family.name,
-      needsGift: o.status === 'NOT_STARTED',
-    })),
+    occasions: await serialiseOccasions(occasions),
     totals: await giftTotals({ groupId: family.groupId, ...familyGiftsWhere(familyId) }),
     connection: null,
   }
