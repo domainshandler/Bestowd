@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db.js'
+import { toUserDto } from '../dto.js'
 
 export async function userRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
@@ -21,14 +22,6 @@ export async function userRoutes(app: FastifyInstance) {
 
     const user = await db.user.update({ where: { id: userId }, data: { name, avatarUrl } })
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      avatarUrl: user.avatarUrl,
-      identitySource: user.identitySource,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt.toISOString(),
-    }
+    return toUserDto(user)
   })
 }

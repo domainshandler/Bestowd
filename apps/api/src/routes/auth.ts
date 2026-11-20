@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db.js'
+import { toUserDto } from '../dto.js'
 import { verifyGoogleToken } from '../services/google-auth.js'
 import { provisionPersonalGroup } from '../services/groups.js'
 
@@ -44,16 +45,4 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await db.user.findUniqueOrThrow({ where: { id: userId } })
     return toUserDto(user)
   })
-}
-
-function toUserDto(user: { id: string; email: string; name: string; avatarUrl: string | null; identitySource: string; emailVerified: boolean; createdAt: Date }) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    avatarUrl: user.avatarUrl,
-    identitySource: user.identitySource,
-    emailVerified: user.emailVerified,
-    createdAt: user.createdAt.toISOString(),
-  }
 }
