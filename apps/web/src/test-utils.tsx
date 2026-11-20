@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
-import { render, type RenderResult } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { Me, Membership, Occasion, Gift, Idea } from '@bestowd/types'
@@ -17,7 +17,7 @@ export function me(memberships: Membership[], primaryGroupId = memberships[0]?.g
 }
 
 /** Renders inside query client, router, a signed-in auth context and the group provider. */
-export function renderApp(ui: ReactElement, { route = '/', path = '*', token = 'tok' }: { route?: string; path?: string; token?: string | null } = {}): RenderResult & { client: QueryClient } {
+export function renderApp(ui: ReactElement, { route = '/', path = '*', token = 'tok' }: { route?: string; path?: string; token?: string | null } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
