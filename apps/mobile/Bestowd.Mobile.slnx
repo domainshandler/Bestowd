@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Bestowd.Core.Tests/Bestowd.Core.Tests.csproj" />
+  <Project Path="Bestowd.Core/Bestowd.Core.csproj" />
+  <Project Path="Bestowd.Mobile/Bestowd.Mobile.csproj" />
+</Solution>
