@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client'
 import { db } from '../db.js'
 import { iso, toPersonDto } from '../dto.js'
 import { badRequest } from '../http-error.js'
-import { loadOr404, userIdOf } from '../services/access.js'
+import { loadOr404, requireMember, userIdOf } from '../services/access.js'
 import { ageOn } from '../services/age.js'
 import { personGiftsWhere } from '../services/gift-totals.js'
 import { id, nullableString, stringList } from './schemas.js'
@@ -48,6 +48,24 @@ function toData(body: PersonBody): Prisma.PersonUncheckedUpdateInput {
 
 export async function personRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
+
+  // Everyone in the group (not archived, in active families unless asked), for the People "Everyone" view and pickers.
+  app.get<{ Params: { groupId: string }; Querystring: { includeArchived?: boolean } }>('/groups/:groupId/people', {
+    schema: { querystring: { type: 'object', properties: { includeArchived: { type: 'boolean' } } } },
+  }, async (request) => {
+    const { groupId } = request.params
+    await requireMember(userIdOf(request), groupId)
+    const people = await db.person.findMany({
+      where: {
+        groupId,
+        ...(request.query.includeArchived ? {} : { archivedAt: null, family: { status: { not: 'ARCHIVED' } } }),
+      },
+      include: { family: { select: { name: true } } },
+      orderBy: { name: 'asc' },
+    })
+    const today = new Date()
+    return people.map(({ family, ...p }) => ({ ...toPersonDto(p), age: ageOn(p, today), familyName: family.name }))
+  })
 
   app.post<{ Params: { id: string }; Body: PersonBody & { name: string } }>('/families/:id/people', {
     schema: { body: { type: 'object', additionalProperties: false, required: ['name'], properties: personProperties } },

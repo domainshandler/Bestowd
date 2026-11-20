@@ -47,3 +47,9 @@ export interface UpdatePersonBody extends Partial<CreatePersonBody> {
   /** Move to another family in the same group. */
   familyId?: string
 }
+
+/** GET /groups/:groupId/people */
+export interface PersonListItem extends Person {
+  age: number | null
+  familyName: string
+}

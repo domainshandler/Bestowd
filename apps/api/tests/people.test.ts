@@ -92,6 +92,21 @@ describe('people', () => {
     expect(res.body.history.map((h: any) => h.id)).toEqual([credited.id])
   })
 
+  it('lists everyone in the group with age and family name, hiding archived people', async () => {
+    const fam = await db.family.create({ data: { groupId: a.groupId, name: 'Zed family' } })
+    await db.person.create({ data: { groupId: a.groupId, familyId: fam.id, name: 'Aaron', birthYear: 2015 } })
+    await db.person.create({ data: { groupId: a.groupId, familyId: fam.id, name: 'Archie', archivedAt: new Date() } })
+    const res = await api().get(`/groups/${a.groupId}/people`).set('Authorization', a.authHeader)
+    expect(res.status).toBe(200)
+    const aaron = res.body.find((p: any) => p.name === 'Aaron')
+    expect(aaron).toMatchObject({ familyName: 'Zed family' })
+    expect(typeof aaron.age).toBe('number')
+    expect(res.body.map((p: any) => p.name)).not.toContain('Archie')
+    const all = await api().get(`/groups/${a.groupId}/people?includeArchived=true`).set('Authorization', a.authHeader)
+    expect(all.body.map((p: any) => p.name)).toContain('Archie')
+    expect((await api().get(`/groups/${b.groupId}/people`).set('Authorization', a.authHeader)).status).toBe(404)
+  })
+
   it('deletes a person', async () => {
     const person = await db.person.create({ data: { groupId: a.groupId, familyId: a.householdId, name: 'Gone' } })
     expect((await api().delete(`/people/${person.id}`).set('Authorization', a.authHeader)).status).toBe(204)

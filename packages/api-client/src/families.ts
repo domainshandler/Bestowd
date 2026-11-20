@@ -1,7 +1,7 @@
 import { apiFetch } from './client.js'
 import { json, toQuery } from './query.js'
 import type {
-  CreateFamilyBody, CreatePersonBody, Family, FamilyListItem, FamilyProfile, FamilyStatus, Person, PersonDetail,
+  CreateFamilyBody, CreatePersonBody, Family, FamilyListItem, FamilyProfile, FamilyStatus, Person, PersonDetail, PersonListItem,
   UpdateFamilyBody, UpdatePersonBody,
 } from '@bestowd/types'
 
@@ -39,4 +39,9 @@ export function updatePerson(id: string, body: UpdatePersonBody): Promise<Person
 
 export function deletePerson(id: string): Promise<void> {
   return apiFetch(`/people/${id}`, { method: 'DELETE' })
+}
+
+/** Everyone in the group, sorted by name. */
+export function listPeople(groupId: string, query: { includeArchived?: boolean } = {}): Promise<PersonListItem[]> {
+  return apiFetch(`/groups/${groupId}/people${toQuery(query)}`)
 }
