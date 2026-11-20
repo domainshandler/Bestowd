@@ -44,3 +44,30 @@ describe('GET /me', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('GET /me/occasions', () => {
+  const inDays = (n: number) => { const t = new Date(Date.now() + n * 86_400_000); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate())) }
+
+  it('covers every group the user is in, labelled with the group', async () => {
+    const mia = await db.person.create({ data: { groupId: a.groupId, familyId: a.householdId, name: 'Mia' } })
+    const leo = await db.person.create({ data: { groupId: b.groupId, familyId: b.householdId, name: 'Leo' } })
+    await db.group.update({ where: { id: b.groupId }, data: { currency: 'USD', defaultBudgets: { BIRTHDAY: 25 } } })
+    await db.group.update({ where: { id: a.groupId }, data: { defaultBudgets: { BIRTHDAY: 40 } } })
+    await db.occasion.create({ data: { groupId: a.groupId, personId: mia.id, type: 'BIRTHDAY', name: 'Mia bday', date: inDays(3), nextOccurrence: inDays(3) } })
+    await db.occasion.create({ data: { groupId: b.groupId, personId: leo.id, type: 'BIRTHDAY', name: 'Leo bday', date: inDays(5), nextOccurrence: inDays(5) } })
+    const paused = await db.family.create({ data: { groupId: b.groupId, name: 'Paused', status: 'PAUSED' } })
+    await db.occasion.create({ data: { groupId: b.groupId, familyId: paused.id, type: 'HOLIDAY', name: 'Paused hol', date: inDays(4), nextOccurrence: inDays(4) } })
+
+    const solo = await supertest(app.server).get('/me/occasions').set('Authorization', a.authHeader)
+    expect(solo.body.multipleGroups).toBe(false)
+    expect(solo.body.occasions.map((o: any) => o.name)).toEqual(['Mia bday'])
+
+    await db.groupMembership.create({ data: { groupId: b.groupId, userId: a.user.id, role: 'MEMBER' } })
+    const res = await supertest(app.server).get('/me/occasions').set('Authorization', a.authHeader)
+    expect(res.status).toBe(200)
+    expect(res.body.multipleGroups).toBe(true)
+    expect(res.body.occasions.map((o: any) => [o.name, o.groupName])).toEqual([['Mia bday', "Alice's group"], ['Leo bday', "Bob's group"]])
+    expect(res.body.plannedSpend).toEqual([{ currency: 'CAD', amount: 40 }, { currency: 'USD', amount: 25 }])
+    await db.groupMembership.delete({ where: { groupId_userId: { groupId: b.groupId, userId: a.user.id } } })
+  })
+})
