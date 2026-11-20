@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { db } from '../db.js'
 import { verifyGoogleToken } from '../services/google-auth.js'
+import { provisionPersonalGroup } from '../services/groups.js'
 
 export async function authRoutes(app: FastifyInstance) {
   app.post<{ Body: { idToken: string } }>('/auth/google', {
@@ -31,6 +32,8 @@ export async function authRoutes(app: FastifyInstance) {
         email: profile.email,
       },
     })
+
+    await provisionPersonalGroup(user)
 
     const token = app.jwt.sign({ userId: user.id })
     return reply.send({ token, user: toUserDto(user) })

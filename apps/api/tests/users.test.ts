@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import supertest from 'supertest'
-import { createTestApp, createTestUser } from './helpers.js'
-import { db } from '../src/db.js'
+import { createTestApp, createTestUser, cleanupUser } from './helpers.js'
 import type { FastifyInstance } from 'fastify'
 
 let app: FastifyInstance
@@ -16,7 +15,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await db.user.delete({ where: { id: userId } })
+  await cleanupUser(userId)
   await app.close()
 })
 
