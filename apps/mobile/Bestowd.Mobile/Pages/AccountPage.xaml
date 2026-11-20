@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:AccountViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.AccountPage"
+             x:DataType="vm:AccountViewModel"
+             Title="Account">
+    <ScrollView>
+        <VerticalStackLayout Padding="20,8,20,32" Spacing="22">
+            <Border Style="{StaticResource Card}" Padding="16">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                    <pages:Avatar Name="{Binding User.Name}" Size="56" />
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                        <Label Text="{Binding User.Name}" Style="{StaticResource Strong}" />
+                        <Label Text="{Binding User.Email}" Style="{StaticResource Small}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout Spacing="10" IsVisible="{Binding Groups.MultipleGroups}">
+                <Label Text="Your groups" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}" Padding="0">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Groups.Memberships}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="m:Membership">
+                                <VerticalStackLayout Padding="14,12">
+                                    <VerticalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AccountViewModel}}, Path=SwitchGroupCommand, x:DataType=vm:AccountViewModel}" CommandParameter="{Binding .}" />
+                                    </VerticalStackLayout.GestureRecognizers>
+                                    <Label Text="{Binding GroupName}" Style="{StaticResource Strong}" />
+                                    <Label Text="{Binding Role}" Style="{StaticResource Small}" />
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="{Binding Groups.Current.GroupName, StringFormat='Viewing {0}. Tap a group to switch.'}" Style="{StaticResource Small}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="12">
+                <Label Text="Settings" Style="{StaticResource SectionTitle}" />
+                <Label Text="Only the group's owner can change its settings." Style="{StaticResource Small}" IsVisible="{Binding IsOwner, Converter={StaticResource Not}}" />
+                <VerticalStackLayout Spacing="12" IsVisible="{Binding IsOwner}">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Group name" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding GroupName}" /></Border>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Currency" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Currency}" MaxLength="3" Keyboard="Text" /></Border>
+                    </VerticalStackLayout>
+                    <Label Text="Default budget per occasion" Style="{StaticResource FieldLabel}" />
+                    <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Budgets}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BudgetField">
+                                <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
+                                    <Label Text="{Binding Label}" VerticalOptions="Center" />
+                                    <Border Grid.Column="1" Style="{StaticResource FieldBox}"><Entry Text="{Binding Text}" Keyboard="Numeric" Placeholder="None" SemanticProperties.Description="{Binding Label}" /></Border>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Remind me (days before, comma-separated)" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding ReminderDays}" Placeholder="14, 3" /></Border>
+                    </VerticalStackLayout>
+                    <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+                    <Button Text="Save settings" Command="{Binding SaveCommand}" />
+                    <Label Text="{Binding SavedText}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding SavedText, Converter={StaticResource Has}}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <Border Style="{StaticResource Card}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <Label Text="Plan gifts with a partner or co-parent. They'll see everything in this group." Style="{StaticResource Small}" FontSize="14" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="Invite" Style="{StaticResource Secondary}" Command="{Binding InviteCommand}" />
+                </Grid>
+            </Border>
+
+            <Button Text="Sign out" Style="{StaticResource DangerButton}" Command="{Binding SignOutCommand}" HorizontalOptions="Start" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

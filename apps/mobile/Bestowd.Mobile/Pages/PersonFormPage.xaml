@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:PersonFormViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.PersonFormPage"
+             x:DataType="vm:PersonFormViewModel"
+             Title="Person">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Name" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Name}" MaxLength="100" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Relationship" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Relationship}" Placeholder="Daughter, Teacher, Grandma" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Birthday" Style="{StaticResource FieldLabel}" />
+                <Grid ColumnDefinitions="2*,*,1.3*" ColumnSpacing="8">
+                    <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Months}" SelectedIndex="{Binding BirthMonth}" Title="Month" SemanticProperties.Description="Birth month" /></Border>
+                    <Border Grid.Column="1" Style="{StaticResource FieldBox}"><Entry Text="{Binding BirthDay}" Placeholder="Day" Keyboard="Numeric" SemanticProperties.Description="Birth day" /></Border>
+                    <Border Grid.Column="2" Style="{StaticResource FieldBox}"><Entry Text="{Binding BirthYear}" Placeholder="Year" Keyboard="Numeric" SemanticProperties.Description="Birth year" /></Border>
+                </Grid>
+                <Label Text="The year is optional; with it, Bestowd shows their age." Style="{StaticResource Small}" FontSize="12" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Loves (separate with commas)" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Likes}" Placeholder="Painting, Dinosaurs" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Avoid (separate with commas)" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Avoid}" Placeholder="Glitter, Loud toys" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Clothing size" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding ClothingSize}" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Shoe size" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding ShoeSize}" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Food note" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding FoodNotes}" Placeholder="Nut-free treats" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Notes" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>
+            </VerticalStackLayout>
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Save" Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:JoinViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.JoinPage"
+             x:DataType="vm:JoinViewModel"
+             Title="Invite">
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16,20,32" Spacing="16">
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding LinkUnusable}">
+                <Label Text="This link has been used or has expired" Style="{StaticResource SectionTitle}" />
+                <Label Text="Ask whoever sent it for a new link." Style="{StaticResource Small}" />
+                <Button Text="Go to Home" Command="{Binding DoneCommand}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="16" IsVisible="{Binding Preview, Converter={StaticResource Has}}">
+                <Label Text="{Binding Preview.InviterName, StringFormat='{0} invited you'}" Style="{StaticResource Small}" />
+                <Label Text="{Binding Title}" Style="{StaticResource Title}" FontSize="26" />
+                <Label Text="{Binding Explanation}" Style="{StaticResource Small}" FontSize="14" />
+
+                <Button Text="Sign in to accept" Command="{Binding SignInCommand}" IsVisible="{Binding NeedsSignIn}" />
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding Connected}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Connected." Style="{StaticResource Strong}" />
+                        <Label Text="They can now see what you shared. You can disconnect from the family's settings." Style="{StaticResource Small}" />
+                        <Button Text="Go to Home" Command="{Binding DoneCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="16" IsVisible="{Binding NeedsSignIn, Converter={StaticResource Not}}">
+                    <VerticalStackLayout Spacing="16" IsVisible="{Binding IsFamily}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Which of your families is this?" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource FieldBox}">
+                                <Picker ItemsSource="{Binding Families}" SelectedItem="{Binding SourceFamily}" ItemDisplayBinding="{Binding Name, x:DataType=m:FamilyListItem}" Title="Family" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout>
+                                <Label Text="Share" Style="{StaticResource FieldLabel}" Margin="0,0,0,4" />
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Fields}">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ShareOption">
+                                            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
+                                                <Label Text="{Binding Label}" VerticalOptions="Center" />
+                                                <Switch Grid.Column="1" IsToggled="{Binding IsOn}" SemanticProperties.Description="{Binding Label}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                                <Label Text="Names are always shared." Style="{StaticResource Small}" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                    <Button Text="Accept" Command="{Binding AcceptCommand}" IsVisible="{Binding Connected, Converter={StaticResource Not}}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

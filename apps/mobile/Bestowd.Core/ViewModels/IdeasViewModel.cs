@@ -12,7 +12,7 @@ public sealed record IdeaCard(Idea Idea, bool IsTopPick, string? PriceText, stri
 public sealed record PersonChoice(string? Id, string Label);
 
 /// <summary>Ideas: saved ideas for a person (matched by tag or age on the occasion date), with repeat warnings.</summary>
-public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget
+public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
 {
     private string? _requestedOccasionId;
 

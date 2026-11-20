@@ -7,12 +7,12 @@ using Bestowd.Core.Models;
 
 namespace Bestowd.Core.ViewModels;
 
-public sealed record FamilyCard(FamilyListItem Family, string Subtitle, string? NextLine, IReadOnlyList<string> Initials, string? MoreText);
+public sealed record FamilyCard(FamilyListItem Family, string Subtitle, string? NextLine, IReadOnlyList<string> Names, string? MoreText);
 
 public sealed record PersonRow(PersonListItem Person, string Initials, string Subtitle);
 
 /// <summary>People: families or everyone in the current group, with search.</summary>
-public sealed partial class PeopleViewModel(BestowdApi api, GroupState groups, INavigator nav) : ViewModelBase
+public sealed partial class PeopleViewModel(BestowdApi api, GroupState groups, INavigator nav) : ViewModelBase, ILoadable
 {
     private List<FamilyListItem> _families = [];
     private List<PersonListItem> _people = [];
@@ -58,7 +58,7 @@ public sealed partial class PeopleViewModel(BestowdApi api, GroupState groups, I
                 var kind = f.IsOwnHousehold ? "Your household" : Format.Label(f.Type);
                 var subtitle = $"{kind} · {f.MemberCount} {(f.MemberCount == 1 ? "person" : "people")}";
                 var next = f.NextOccasion is { } n ? $"Next: {n.Name} · {Format.ShortDate(n.NextOccurrence)}" : null;
-                return new FamilyCard(f, subtitle, next, names.Take(2).Select(Format.Initials).ToList(), names.Count > 2 ? $"+{names.Count - 2}" : null);
+                return new FamilyCard(f, subtitle, next, names.Take(2).ToList(), names.Count > 2 ? $"+{names.Count - 2}" : null);
             })
             .ToList();
 

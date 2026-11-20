@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:OccasionFormViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.OccasionFormPage"
+             x:DataType="vm:OccasionFormViewModel"
+             Title="Occasion">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Type" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" Title="Type" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding ChoosesSubject}">
+                <Label Text="For" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Subjects}" SelectedItem="{Binding Subject}" ItemDisplayBinding="{Binding Label, x:DataType=vm:SubjectOption}" Title="Who is it for?" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Name" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Name}" Placeholder="Maya&apos;s birthday" MaxLength="120" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Date" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><DatePicker Date="{Binding Date}" /></Border>
+            </VerticalStackLayout>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Every year" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding RecursAnnually}" SemanticProperties.Description="Every year" /></Grid>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Budget (empty uses your group default)" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Budget}" Keyboard="Numeric" /></Border>
+            </VerticalStackLayout>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Needs a card" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding NeedsCard}" SemanticProperties.Description="Needs a card" /></Grid>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Party location" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Location}" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Host&apos;s gift request" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding HostGiftRequest}" Placeholder="Books only, under $20" /></Border>
+            </VerticalStackLayout>
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Save" Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

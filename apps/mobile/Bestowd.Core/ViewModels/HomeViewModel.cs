@@ -7,7 +7,7 @@ using Bestowd.Core.Models;
 namespace Bestowd.Core.ViewModels;
 
 /// <summary>Home: the next 30 days across all of the user's groups.</summary>
-public sealed partial class HomeViewModel(BestowdApi api, INavigator nav) : ViewModelBase
+public sealed partial class HomeViewModel(BestowdApi api, INavigator nav) : ViewModelBase, ILoadable
 {
     [ObservableProperty] public partial IReadOnlyList<OccasionItem> Occasions { get; private set; } = [];
     [ObservableProperty] public partial OccasionType? Filter { get; private set; }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:IdeaFormViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.IdeaFormPage"
+             x:DataType="vm:IdeaFormViewModel"
+             Title="Idea">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Idea" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Watercolour paint kit" MaxLength="200" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Category" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" Placeholder="Art" MaxLength="60" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Price" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Price}" Keyboard="Numeric" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Link" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Url}" Keyboard="Url" Placeholder="https://" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Good for ages" Style="{StaticResource FieldLabel}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding AgeMin}" Placeholder="From" Keyboard="Numeric" SemanticProperties.Description="Minimum age" /></Border>
+                    <Border Grid.Column="1" Style="{StaticResource FieldBox}"><Entry Text="{Binding AgeMax}" Placeholder="To" Keyboard="Numeric" SemanticProperties.Description="Maximum age" /></Border>
+                </Grid>
+            </VerticalStackLayout>
+            <Label Text="For" Style="{StaticResource FieldLabel}" />
+            <Border Style="{StaticResource Card}" Padding="14,4">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding People}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PersonToggle">
+                            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
+                                <Label Text="{Binding Person.Name}" VerticalOptions="Center" />
+                                <Switch Grid.Column="1" IsToggled="{Binding IsOn}" SemanticProperties.Description="{Binding Person.Name}" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Why it fits" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>
+            </VerticalStackLayout>
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Save" Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

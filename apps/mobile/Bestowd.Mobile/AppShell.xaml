@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell x:Class="Bestowd.Mobile.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+       Shell.FlyoutBehavior="Disabled"
+       Title="Bestowd">
+
+    <ShellContent Route="launch" ContentTemplate="{DataTemplate pages:LaunchPage}" Shell.NavBarIsVisible="False" />
+    <ShellContent Route="signin" ContentTemplate="{DataTemplate pages:SignInPage}" Shell.NavBarIsVisible="False" />
+
+    <TabBar Route="main">
+        <ShellContent Route="home" Title="Home" Icon="tab_home.png" ContentTemplate="{DataTemplate pages:HomePage}" />
+        <ShellContent Route="people" Title="People" Icon="tab_people.png" ContentTemplate="{DataTemplate pages:PeoplePage}" />
+        <ShellContent Route="gifts" Title="Gifts" Icon="tab_gifts.png" ContentTemplate="{DataTemplate pages:GiftsPage}" />
+        <ShellContent Route="ideas" Title="Ideas" Icon="tab_ideas.png" ContentTemplate="{DataTemplate pages:IdeasPage}" />
+    </TabBar>
+</Shell>

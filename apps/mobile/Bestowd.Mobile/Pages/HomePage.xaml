@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:HomeViewModel" xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.HomePage"
+             x:DataType="vm:HomeViewModel"
+             Shell.NavBarIsVisible="False"
+             Title="Home">
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <CollectionView ItemsSource="{Binding Occasions}" SelectionMode="None">
+            <CollectionView.Header>
+                <VerticalStackLayout Padding="20,24,20,8" Spacing="20">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="4">
+                            <Label x:Name="GreetingLabel" Style="{StaticResource Small}" FontSize="14" />
+                            <Label Text="Coming up" Style="{StaticResource Title}" />
+                        </VerticalStackLayout>
+                        <pages:AccountButton Grid.Column="1" />
+                    </Grid>
+
+                    <Border BackgroundColor="{StaticResource Brand}" StrokeThickness="0" StrokeShape="RoundRectangle 20" Padding="20">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="Next 30 days" FontFamily="InterMedium" FontSize="13" TextColor="{StaticResource BrandFaint}" VerticalOptions="Center" />
+                                <Border Grid.Column="1" BackgroundColor="{StaticResource Amber}" StrokeThickness="0" StrokeShape="RoundRectangle 999" Padding="10,4"
+                                        IsVisible="{Binding NeedGiftsText, Converter={StaticResource Has}}">
+                                    <Label Text="{Binding NeedGiftsText}" FontFamily="InterSemiBold" FontSize="12" />
+                                </Border>
+                            </Grid>
+                            <Label Text="{Binding Headline}" FontFamily="JakartaBold" FontSize="22" TextColor="White" />
+                            <Label Text="{Binding PlannedText}" FontSize="13" TextColor="{StaticResource BrandFaint}"
+                                   IsVisible="{Binding PlannedText, Converter={StaticResource Has}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout Spacing="8">
+                            <Button Text="All" Command="{Binding SetFilterCommand}" CommandParameter="ALL" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=ALL}" />
+                            <Button Text="Birthdays" Command="{Binding SetFilterCommand}" CommandParameter="BIRTHDAY" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=Birthday}" />
+                            <Button Text="Holidays" Command="{Binding SetFilterCommand}" CommandParameter="HOLIDAY" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=Holiday}" />
+                            <Button Text="Events" Command="{Binding SetFilterCommand}" CommandParameter="ONE_OFF" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=OneOff}" />
+                        </HorizontalStackLayout>
+                    </ScrollView>
+
+                    <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+                    <Border Style="{StaticResource Card}" StrokeDashArray="4,3" IsVisible="{Binding IsEmpty}">
+                        <Label Text="Nothing in the next 30 days. Add people and their birthdays under People." Style="{StaticResource Small}" HorizontalTextAlignment="Center" />
+                    </Border>
+                </VerticalStackLayout>
+            </CollectionView.Header>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:OccasionItem">
+                    <pages:OccasionRow Margin="20,5" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenCommand, x:DataType=vm:HomeViewModel}" />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <CollectionView.Footer>
+                <Button Text="+ Log a gift" Style="{StaticResource Dashed}" Command="{Binding LogGiftCommand}" Margin="20,12,20,24" />
+            </CollectionView.Footer>
+        </CollectionView>
+    </RefreshView>
+</pages:BasePage>

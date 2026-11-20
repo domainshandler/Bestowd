@@ -15,7 +15,7 @@ public sealed partial class ShareOption(string field, string label, bool isOn) :
 }
 
 /// <summary>Accepting an invite link: connect one of your families (choosing what to share), or join a group.</summary>
-public sealed partial class JoinViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget
+public sealed partial class JoinViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
 {
     [ObservableProperty] public partial string Token { get; private set; } = "";
     [ObservableProperty] public partial InvitePreview? Preview { get; private set; }
@@ -107,7 +107,7 @@ public sealed partial class BudgetField(OccasionType type, string label, string 
 }
 
 /// <summary>Account: profile, groups, the current group's settings (owner only), inviting someone, signing out.</summary>
-public sealed partial class AccountViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, IPrompts prompts) : ViewModelBase
+public sealed partial class AccountViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, IPrompts prompts) : ViewModelBase, ILoadable
 {
     [ObservableProperty] public partial string GroupName { get; set; } = "";
     [ObservableProperty] public partial string Currency { get; set; } = "";

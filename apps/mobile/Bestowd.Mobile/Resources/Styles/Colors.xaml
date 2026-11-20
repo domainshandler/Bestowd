@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Colours from the Bestowd navigation-tabs mockup (same tokens as the web app's Tailwind theme). -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Color x:Key="Ground">#FAFAF7</Color>
+    <Color x:Key="Ink">#1C1B19</Color>
+    <Color x:Key="Muted">#5F5D57</Color>
+    <Color x:Key="Line">#E7E4DC</Color>
+    <Color x:Key="Divider">#EFEDE7</Color>
+    <Color x:Key="Brand">#0F6E68</Color>
+    <Color x:Key="BrandDark">#0A524D</Color>
+    <Color x:Key="BrandLight">#E3F1EF</Color>
+    <Color x:Key="BrandFaint">#CFE7E4</Color>
+    <Color x:Key="Amber">#F2B33D</Color>
+    <Color x:Key="AmberSoft">#FDF0D5</Color>
+    <Color x:Key="AmberInk">#8A4B00</Color>
+    <Color x:Key="Danger">#9A2A1E</Color>
+    <Color x:Key="DangerSoft">#FBE6E2</Color>
+    <Color x:Key="Chip">#EFEDE7</Color>
+    <Color x:Key="ChipInk">#3D3B36</Color>
+    <Color x:Key="White">#FFFFFF</Color>
+</ResourceDictionary>

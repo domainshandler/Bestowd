@@ -9,7 +9,7 @@ namespace Bestowd.Core.ViewModels;
 public sealed record IdeaRow(Idea Idea, string? PriceText);
 
 /// <summary>A person: notes, occasions, given/received history by year, and ideas with repeat warnings.</summary>
-public sealed partial class PersonViewModel(BestowdApi api, INavigator nav, IPrompts prompts, DataChanged changes) : ViewModelBase, INavigationTarget
+public sealed partial class PersonViewModel(BestowdApi api, INavigator nav, IPrompts prompts, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
 {
     private GiftList? _gifts;
 

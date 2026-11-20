@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:PeopleViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.PeoplePage"
+             x:DataType="vm:PeopleViewModel"
+             Shell.NavBarIsVisible="False"
+             Title="People">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+            <ScrollView>
+                <VerticalStackLayout Padding="20,24,20,100" Spacing="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="People" Style="{StaticResource Title}" />
+                        <pages:AccountButton Grid.Column="1" />
+                    </Grid>
+
+                    <Border Style="{StaticResource FieldBox}" StrokeShape="RoundRectangle 14">
+                        <Entry Text="{Binding Search}" Placeholder="Search people or families" ClearButtonVisibility="WhileEditing"
+                               SemanticProperties.Description="Search people" />
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="4" BackgroundColor="{StaticResource Chip}" Padding="4">
+                        <Button Text="Families" Clicked="OnFamilies" x:Name="FamiliesButton" Style="{StaticResource ChipOn}" CornerRadius="9" />
+                        <Button Grid.Column="1" Text="Everyone" Clicked="OnEveryone" x:Name="EveryoneButton" Style="{StaticResource ChipOff}" CornerRadius="9" BorderWidth="0" />
+                    </Grid>
+
+                    <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Families}" Spacing="10" IsVisible="{Binding ShowEveryone, Converter={StaticResource Not}}">
+                        <BindableLayout.EmptyView>
+                            <Label Text="Add the families you give gifts to, starting with friends and relatives." Style="{StaticResource Small}" HorizontalTextAlignment="Center" Margin="0,24" />
+                        </BindableLayout.EmptyView>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FamilyCard">
+                                <Border Style="{StaticResource Card}" Padding="16">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PeopleViewModel}}, Path=OpenFamilyCommand, x:DataType=vm:PeopleViewModel}" CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <VerticalStackLayout Spacing="2">
+                                                <HorizontalStackLayout Spacing="8">
+                                                    <Label Text="{Binding Family.Name}" FontFamily="InterSemiBold" FontSize="16" />
+                                                    <pages:Badge Text="On Bestowd" Tone="Brand" IsVisible="{Binding Family.OnBestowd}" />
+                                                </HorizontalStackLayout>
+                                                <Label Text="{Binding Subtitle}" Style="{StaticResource Small}" />
+                                            </VerticalStackLayout>
+                                            <HorizontalStackLayout Grid.Column="1" Spacing="-8" BindableLayout.ItemsSource="{Binding Names}">
+                                                <BindableLayout.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:String">
+                                                        <pages:Avatar Name="{Binding .}" Size="32" Stroke="White" StrokeThickness="2" />
+                                                    </DataTemplate>
+                                                </BindableLayout.ItemTemplate>
+                                            </HorizontalStackLayout>
+                                        </Grid>
+                                        <Border BackgroundColor="{StaticResource Ground}" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="10,8"
+                                                IsVisible="{Binding NextLine, Converter={StaticResource Has}}">
+                                            <HorizontalStackLayout Spacing="8">
+                                                <Ellipse Fill="{StaticResource Amber}" WidthRequest="8" HeightRequest="8" VerticalOptions="Center" />
+                                                <Label Text="{Binding NextLine}" FontSize="13" TextColor="{StaticResource ChipInk}" />
+                                            </HorizontalStackLayout>
+                                        </Border>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <Border Style="{StaticResource Card}" Padding="0" IsVisible="{Binding ShowEveryone}">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding People}">
+                            <BindableLayout.EmptyView>
+                                <Label Text="No people yet. Add a family, then its people." Style="{StaticResource Small}" Margin="16" />
+                            </BindableLayout.EmptyView>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PersonRow">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="14,12">
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PeopleViewModel}}, Path=OpenPersonCommand, x:DataType=vm:PeopleViewModel}" CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                        <pages:Avatar Name="{Binding Person.Name}" />
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                            <Label Text="{Binding Person.Name}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Subtitle}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+
+        <Button Text="+ Add family" Command="{Binding AddFamilyCommand}" CornerRadius="26" HeightRequest="52"
+                HorizontalOptions="End" VerticalOptions="End" Margin="20" Shadow="{Shadow Brush=#4D0F6E68, Offset='0,6', Radius=16}" />
+    </Grid>
+</pages:BasePage>

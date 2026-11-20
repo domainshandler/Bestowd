@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:FamilyViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.FamilyPage"
+             x:DataType="vm:FamilyViewModel"
+             Title="{Binding Profile.Name}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Edit" Command="{Binding EditCommand}" />
+    </ContentPage.ToolbarItems>
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,8,20,32" Spacing="22">
+                <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+
+                <!-- Header -->
+                <VerticalStackLayout Spacing="10">
+                    <HorizontalStackLayout Spacing="8">
+                        <pages:Badge Text="{Binding StatusText}" Tone="Brand" />
+                        <pages:Badge Text="{Binding KindText}" Tone="Neutral" />
+                        <pages:Badge Text="On Bestowd" Tone="Brand" IsVisible="{Binding IsConnected}" />
+                    </HorizontalStackLayout>
+                    <Label Text="{Binding Profile.Name}" Style="{StaticResource Title}" />
+                    <Label Text="{Binding CoGivers}" Style="{StaticResource Small}" IsVisible="{Binding CoGivers, Converter={StaticResource Has}}" />
+                </VerticalStackLayout>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding Profile.Totals.GivenCount}" FontFamily="JakartaBold" FontSize="20" /><Label Text="Gifts given" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding Profile.Totals.ReceivedCount}" FontFamily="JakartaBold" FontSize="20" /><Label Text="Received" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding SpentText}" FontFamily="JakartaBold" FontSize="20" /><Label Text="Spent" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Members -->
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Members" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="+ Add person" Style="{StaticResource Ghost}" Command="{Binding AddPersonCommand}" />
+                    </Grid>
+                    <Border Style="{StaticResource Card}" Padding="0">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Members}">
+                            <BindableLayout.EmptyView>
+                                <Label Text="No one here yet. Add the people in this family." Style="{StaticResource Small}" Margin="14" />
+                            </BindableLayout.EmptyView>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MemberRow">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="14,12">
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FamilyViewModel}}, Path=OpenPersonCommand, x:DataType=vm:FamilyViewModel}" CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                        <pages:Avatar Name="{Binding Person.Name}" />
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                            <Label Text="{Binding Person.Name}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Line}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <pages:Badge Grid.Column="2" Text="{Binding SoonBadge}" Tone="Amber" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Upcoming -->
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Upcoming" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="+ Add occasion" Style="{StaticResource Ghost}" Command="{Binding AddOccasionCommand}" />
+                    </Grid>
+                    <Border BackgroundColor="{StaticResource Brand}" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="16" IsVisible="{Binding Featured, Converter={StaticResource Has}}">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding Featured.Title}" FontFamily="InterSemiBold" FontSize="16" TextColor="White" />
+                                    <Label Text="{Binding Featured.Subtitle}" FontSize="13" TextColor="{StaticResource BrandFaint}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" BackgroundColor="{StaticResource Amber}" StrokeThickness="0" StrokeShape="RoundRectangle 999" Padding="10,4" VerticalOptions="Center">
+                                    <Label Text="Needs gift" FontFamily="InterSemiBold" FontSize="12" />
+                                </Border>
+                            </Grid>
+                            <Button Text="See gift ideas" BackgroundColor="White" TextColor="{StaticResource Brand}" Command="{Binding SeeIdeasCommand}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Upcoming}" Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:OccasionItem">
+                                <pages:OccasionRow Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FamilyViewModel}}, Path=OpenOccasionCommand, x:DataType=vm:FamilyViewModel}" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Gifting notes -->
+                <VerticalStackLayout Spacing="10" IsVisible="{Binding Notes, Converter={StaticResource Has}}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Gifting notes" Style="{StaticResource SectionTitle}" />
+                        <Label Grid.Column="1" Text="Only your group" Style="{StaticResource Small}" FontSize="12" VerticalOptions="Center" />
+                    </Grid>
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Notes}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NotesView">
+                                    <Button Text="{Binding Name}" Style="{StaticResource ChipOff}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:FamilyViewModel}}, Path=SelectNotesCommand, x:DataType=vm:FamilyViewModel}" CommandParameter="{Binding .}" />
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+                    <pages:NotesCard BindingContext="{Binding SelectedNotes}" />
+                    <Button Text="Edit notes" Style="{StaticResource Secondary}" Command="{Binding EditNotesCommand}" />
+                </VerticalStackLayout>
+
+                <!-- Connected family -->
+                <VerticalStackLayout Spacing="10" IsVisible="{Binding IsConnected}">
+                    <Label Text="{Binding Profile.Connection.SourceFamilyName, StringFormat='Shared by {0}'}" Style="{StaticResource SectionTitle}" />
+                    <Border Style="{StaticResource Card}" Padding="0">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Shared}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SharedRow">
+                                    <VerticalStackLayout Padding="14,12" Spacing="2">
+                                        <Label Text="{Binding Name}" Style="{StaticResource Strong}" />
+                                        <Label Text="{Binding Details}" Style="{StaticResource Small}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
+                    <Label Text="Read-only. This updates when they change their profile." Style="{StaticResource Small}" FontSize="12" />
+                </VerticalStackLayout>
+                <Border Style="{StaticResource Card}" IsVisible="{Binding CanInvite}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Are they on Bestowd? Connect to see the birthdays and likes they choose to share." Style="{StaticResource Small}" FontSize="14" LineBreakMode="WordWrap" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="Invite" Style="{StaticResource Secondary}" Command="{Binding InviteCommand}" />
+                    </Grid>
+                </Border>
+
+                <!-- History -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Gift history" Style="{StaticResource SectionTitle}" />
+                    <Label Text="No gifts logged with this family yet." Style="{StaticResource Small}" IsVisible="{Binding History, Converter={StaticResource Has}, ConverterParameter=invert}" />
+                    <Border Style="{StaticResource Card}" Padding="0" IsVisible="{Binding History, Converter={StaticResource Has}}">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding History}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GiftItem">
+                                    <pages:GiftRow />
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
+                    <Button Text="+ Log a gift" Style="{StaticResource Dashed}" Command="{Binding LogGiftCommand}" />
+                </VerticalStackLayout>
+
+                <!-- Settings -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Family settings" Style="{StaticResource SectionTitle}" />
+                    <Button Text="{Binding PauseText}" Style="{StaticResource Secondary}" Command="{Binding TogglePauseCommand}" />
+                    <Button Text="{Binding ArchiveText}" Style="{StaticResource DangerButton}" Command="{Binding ToggleArchiveCommand}" IsVisible="{Binding CanArchive}" />
+                    <Button Text="Disconnect" Style="{StaticResource Secondary}" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" />
+                    <Button Text="Delete family" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" IsVisible="{Binding CanArchive}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</pages:BasePage>

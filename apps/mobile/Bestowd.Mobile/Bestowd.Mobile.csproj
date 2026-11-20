@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Android builds anywhere; iOS needs macOS with Xcode. -->
+		<TargetFrameworks>net10.0-android</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net10.0-ios</TargetFrameworks>
+
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Bestowd.Mobile</RootNamespace>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<MauiXamlInflator>SourceGen</MauiXamlInflator>
+
+		<ApplicationTitle>Bestowd</ApplicationTitle>
+		<ApplicationId>app.bestowd.mobile</ApplicationId>
+		<ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
+
+		<!--
+		  Per-environment settings, overridable on the command line, e.g.
+		  dotnet build -p:BestowdApiUrl=https://api.bestowd.app -p:GoogleAndroidClientId=...
+		  They are written into BuildSettings.g.cs at build time.
+		-->
+		<BestowdApiUrl Condition="'$(BestowdApiUrl)' == ''">http://10.0.2.2:3000</BestowdApiUrl>
+		<BestowdWebUrl Condition="'$(BestowdWebUrl)' == ''">http://localhost:5173</BestowdWebUrl>
+		<GoogleAndroidClientId Condition="'$(GoogleAndroidClientId)' == ''"></GoogleAndroidClientId>
+		<GoogleIosClientId Condition="'$(GoogleIosClientId)' == ''"></GoogleIosClientId>
+		<!-- Host whose https://<host>/join/<token> links open the app (Android App Links / iOS Universal Links). -->
+		<BestowdLinkHost Condition="'$(BestowdLinkHost)' == ''">bestowd.app</BestowdLinkHost>
+		<!-- Google redirects mobile sign-in to the reversed client ID scheme. -->
+		<GoogleAndroidRedirectScheme Condition="'$(GoogleAndroidClientId)' != ''">com.googleusercontent.apps.$(GoogleAndroidClientId.Replace('.apps.googleusercontent.com', ''))</GoogleAndroidRedirectScheme>
+		<GoogleAndroidRedirectScheme Condition="'$(GoogleAndroidClientId)' == ''">app.bestowd.mobile.oauth</GoogleAndroidRedirectScheme>
+	</PropertyGroup>
+
+	<!-- Push is built in only when a Firebase config file is present (Platforms/Android/google-services.json). -->
+	<PropertyGroup Condition="Exists('Platforms\Android\google-services.json') And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<DefineConstants>$(DefineConstants);FIREBASE</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="Exists('Platforms\Android\google-services.json') And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<GoogleServicesJson Include="Platforms\Android\google-services.json" />
+		<PackageReference Include="Xamarin.Firebase.Messaging" Version="125.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0F6E68" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0F6E68" BaseSize="128,128" />
+		<MauiImage Include="Resources\Images\*" />
+		<MauiFont Include="Resources\Fonts\*" />
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Bestowd.Core\Bestowd.Core.csproj" />
+	</ItemGroup>
+
+	<Target Name="WriteBuildSettings" BeforeTargets="CoreCompile">
+		<PropertyGroup>
+			<_BuildSettingsFile>$(IntermediateOutputPath)BuildSettings.g.cs</_BuildSettingsFile>
+		</PropertyGroup>
+		<WriteLinesToFile File="$(_BuildSettingsFile)" Overwrite="true" WriteOnlyWhenDifferent="true" Lines="
+namespace Bestowd.Mobile%3B
+internal static class BuildSettings
+{
+    public const string ApiUrl = &quot;$(BestowdApiUrl)&quot;%3B
+    public const string WebUrl = &quot;$(BestowdWebUrl)&quot;%3B
+    public const string GoogleAndroidClientId = &quot;$(GoogleAndroidClientId)&quot;%3B
+    public const string GoogleIosClientId = &quot;$(GoogleIosClientId)&quot;%3B
+    public const string GoogleAndroidRedirectScheme = &quot;$(GoogleAndroidRedirectScheme)&quot;%3B
+    public const string LinkHost = &quot;$(BestowdLinkHost)&quot;%3B
+}" />
+		<ItemGroup>
+			<Compile Include="$(_BuildSettingsFile)" />
+			<FileWrites Include="$(_BuildSettingsFile)" />
+		</ItemGroup>
+	</Target>
+
+</Project>

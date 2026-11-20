@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Bestowd.Mobile.Pages.SignInPage"
+             Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="*,Auto,*" Padding="28">
+        <VerticalStackLayout Grid.Row="1" Spacing="20">
+            <Border BackgroundColor="{StaticResource Brand}" StrokeThickness="0" StrokeShape="RoundRectangle 24"
+                    WidthRequest="88" HeightRequest="88" HorizontalOptions="Center">
+                <Label Text="B" FontFamily="JakartaBold" FontSize="44" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" SemanticProperties.Description="Bestowd" />
+            </Border>
+            <Label Text="Bestowd" Style="{StaticResource Title}" TextColor="{StaticResource Brand}" HorizontalOptions="Center" />
+            <Label Text="Remember every birthday, and every gift, both ways." Style="{StaticResource Small}"
+                   HorizontalTextAlignment="Center" />
+            <Button x:Name="GoogleButton" Text="Continue with Google" Clicked="OnGoogleClicked" Margin="0,12,0,0" />
+            <ActivityIndicator x:Name="Busy" IsRunning="False" IsVisible="False" />
+            <Label x:Name="ErrorLabel" Style="{StaticResource ErrorText}" HorizontalTextAlignment="Center" IsVisible="False" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

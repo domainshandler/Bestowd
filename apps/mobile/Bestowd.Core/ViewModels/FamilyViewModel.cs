@@ -11,18 +11,20 @@ public sealed record MemberRow(ProfilePerson Person, string Initials, string Lin
 public sealed record SharedRow(string Name, string Details);
 
 /// <summary>Per-person gifting notes (loves, avoid, sizes, food note).</summary>
-public sealed record NotesView(string PersonId, string Name, IReadOnlyList<string> Loves, IReadOnlyList<string> Avoid, IReadOnlyList<(string Label, string Value)> Facts, string? Notes)
+public sealed record Fact(string Label, string Value);
+
+public sealed record NotesView(string PersonId, string Name, IReadOnlyList<string> Loves, IReadOnlyList<string> Avoid, IReadOnlyList<Fact> Facts, string? Notes)
 {
     public bool IsEmpty => Loves.Count == 0 && Avoid.Count == 0 && Facts.Count == 0 && string.IsNullOrEmpty(Notes);
 
     public static NotesView From(Person p) => new(
         p.Id, p.Name, p.Likes, p.Avoid,
-        p.Sizes.Select(kv => ($"{kv.Key} size", kv.Value)).Concat(p.FoodNotes is { Length: > 0 } f ? [("Food note", f)] : []).ToList(),
+        p.Sizes.Select(kv => new Fact($"{kv.Key} size", kv.Value)).Concat(p.FoodNotes is { Length: > 0 } f ? [new Fact("Food note", f)] : []).ToList(),
         p.Notes);
 }
 
 /// <summary>A family's profile: members, upcoming occasions, notes, what a connected family shares, history and settings.</summary>
-public sealed partial class FamilyViewModel(BestowdApi api, INavigator nav, IPrompts prompts, DataChanged changes) : ViewModelBase, INavigationTarget
+public sealed partial class FamilyViewModel(BestowdApi api, INavigator nav, IPrompts prompts, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
 {
     [ObservableProperty] public partial string FamilyId { get; private set; } = "";
     [ObservableProperty] public partial FamilyProfile? Profile { get; private set; }
@@ -106,6 +108,8 @@ public sealed partial class FamilyViewModel(BestowdApi api, INavigator nav, IPro
         foreach (var (k, v) in extra) d[k] = v;
         return d;
     }
+
+    [RelayCommand] public void SelectNotes(NotesView notes) => SelectedNotes = notes;
 
     [RelayCommand] public Task OpenPersonAsync(MemberRow row) => nav.GoToAsync(Routes.Person, new Dictionary<string, object> { [Params.Id] = row.Person.Id });
     [RelayCommand] public Task OpenOccasionAsync(OccasionItem item) { var (r, id) = item.Target; return nav.GoToAsync(r, new Dictionary<string, object> { [Params.Id] = id }); }

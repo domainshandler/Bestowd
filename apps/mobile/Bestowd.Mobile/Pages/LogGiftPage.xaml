@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:LogGiftViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.LogGiftPage"
+             x:DataType="vm:LogGiftViewModel"
+             Title="Gift">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <Label Text="{Binding ScreenTitle}" Style="{StaticResource Title}" FontSize="26" />
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44" IsVisible="{Binding GiftId, Converter={StaticResource Has}, ConverterParameter=invert}">
+                <Label Text="We received this" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding IsReceived}" SemanticProperties.Description="We received this" />
+            </Grid>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Gift" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Wooden art easel" MaxLength="200" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="{Binding SubjectLabel}" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Subjects}" SelectedItem="{Binding Subject}" ItemDisplayBinding="{Binding Label, x:DataType=vm:SubjectOption}" Title="Choose who" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Occasion" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Occasions}" SelectedItem="{Binding Occasion}" ItemDisplayBinding="{Binding Name, x:DataType=m:Occasion}" Title="None" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Date" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><DatePicker Date="{Binding Date}" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="{Binding AmountLabel}" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Amount}" Keyboard="Numeric" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Category (warns about repeats, e.g. Puzzle)" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" MaxLength="60" /></Border>
+            </VerticalStackLayout>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Bought, not given yet" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding BoughtNotGiven}" SemanticProperties.Description="Bought, not given yet" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Keep value hidden" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding ValueHidden}" SemanticProperties.Description="Keep value hidden" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Has a gift receipt" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding HasGiftReceipt}" SemanticProperties.Description="Has a gift receipt" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Thank-you sent" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding ThankYouSent}" SemanticProperties.Description="Thank-you sent" /></Grid>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Notes" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>
+            </VerticalStackLayout>
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Save" Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

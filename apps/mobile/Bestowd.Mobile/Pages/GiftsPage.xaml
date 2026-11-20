@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:GiftsViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Class="Bestowd.Mobile.Pages.GiftsPage"
+             x:DataType="vm:GiftsViewModel"
+             x:Name="Root"
+             Shell.NavBarIsVisible="False"
+             Title="Gifts">
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,24,20,24" Spacing="16">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Label Text="Gifts" Style="{StaticResource Title}" />
+                    <Border Grid.Column="1" Style="{StaticResource FieldBox}" VerticalOptions="Center">
+                        <Picker ItemsSource="{Binding Years}" SelectedItem="{Binding Year}" ItemDisplayBinding="{Binding ., Converter={StaticResource YearLabel}, x:DataType=sys:Int32}"
+                                Title="Year" SemanticProperties.Description="Year" WidthRequest="96" />
+                    </Border>
+                    <pages:AccountButton Grid.Column="2" />
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding GivenText}" FontFamily="JakartaBold" FontSize="22" /><Label Text="Given" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding ReceivedText}" FontFamily="JakartaBold" FontSize="22" /><Label Text="Received" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Padding="12">
+                        <VerticalStackLayout><Label Text="{Binding SpentText}" FontFamily="JakartaBold" FontSize="22" /><Label Text="Spent" Style="{StaticResource Small}" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Border BackgroundColor="{StaticResource AmberSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12,8"
+                        IsVisible="{Binding ThankYouText, Converter={StaticResource Has}}">
+                    <Label Text="{Binding ThankYouText}" FontSize="13" TextColor="{StaticResource AmberInk}" />
+                </Border>
+
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="All" Command="{Binding SetFilterCommand}" CommandParameter="All" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=All}" />
+                        <Button Text="Given" Command="{Binding SetFilterCommand}" CommandParameter="Given" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=Given}" />
+                        <Button Text="Received" Command="{Binding SetFilterCommand}" CommandParameter="Received" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=Received}" />
+                        <Button Text="Planned" Command="{Binding SetFilterCommand}" CommandParameter="Planned" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=Planned}" />
+                    </HorizontalStackLayout>
+                </ScrollView>
+
+                <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+                <Label Text="{Binding EmptyText}" Style="{StaticResource Small}" HorizontalTextAlignment="Center" Margin="0,16" IsVisible="{Binding IsEmpty}" />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Sections}" Spacing="8">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GiftSection">
+                            <VerticalStackLayout Spacing="8" Margin="0,4,0,0">
+                                <Label Text="{Binding Title}" Style="{StaticResource Caps}" FontSize="13" />
+                                <Border Style="{StaticResource Card}" Padding="0">
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:GiftItem">
+                                                <pages:GiftRow Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GiftsViewModel}}, Path=EditCommand, x:DataType=vm:GiftsViewModel}"
+                                                               RevealCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:GiftsViewModel}}, Path=RevealCommand, x:DataType=vm:GiftsViewModel}"
+                                                               ThankCommand="{Binding Source={RelativeSource AncestorType={x:Type vm:GiftsViewModel}}, Path=MarkThankedCommand, x:DataType=vm:GiftsViewModel}" />
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Button Text="+ Log a gift" Style="{StaticResource Dashed}" Command="{Binding LogGiftCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</pages:BasePage>

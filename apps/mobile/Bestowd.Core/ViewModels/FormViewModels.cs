@@ -47,7 +47,7 @@ public abstract partial class FormViewModel(INavigator nav, DataChanged changes)
 
 // ---------------- Family ----------------
 
-public sealed partial class FamilyFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget
+public sealed partial class FamilyFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
     [ObservableProperty] public partial string? FamilyId { get; private set; }
@@ -82,7 +82,7 @@ public sealed partial class FamilyFormViewModel(BestowdApi api, INavigator nav, 
 
 // ---------------- Person ----------------
 
-public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget
+public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private Dictionary<string, string> _otherSizes = [];
     [ObservableProperty] public partial string FamilyId { get; private set; } = "";
@@ -161,7 +161,7 @@ public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, 
 
 // ---------------- Occasion ----------------
 
-public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget
+public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
     [ObservableProperty] public partial string? FixedPersonId { get; private set; }
@@ -225,7 +225,7 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
 // ---------------- Gift ----------------
 
 /// <summary>Log a given or received gift, or edit one.</summary>
-public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget
+public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
     private string? _defaultPersonId, _defaultFamilyId;
@@ -355,7 +355,7 @@ public sealed partial class PersonToggle(PersonListItem person, bool isOn) : Obs
     [ObservableProperty] public partial bool IsOn { get; set; } = isOn;
 }
 
-public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget
+public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
     private string? _personId, _occasionId;

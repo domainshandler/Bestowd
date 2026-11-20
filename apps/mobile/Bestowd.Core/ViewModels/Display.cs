@@ -63,6 +63,9 @@ public sealed record OccasionItem(
 public sealed record GiftItem(Gift Gift, string Title, string Line, string? AmountText, bool ShowReveal, string? BadgeText, Tone BadgeTone)
 {
     public bool IsReceived => Gift.Direction == GiftDirection.Received;
+    public string Arrow => IsReceived ? "↙" : "↗";
+    public string DirectionText => IsReceived ? "Received" : "Given";
+    public bool HasAmount => AmountText is not null;
     public bool CanMarkThanked => IsReceived && !Gift.ThankYouSent;
 
     public static GiftItem From(Gift g, string currency, bool showYear = true)
@@ -124,4 +127,10 @@ public sealed record SubjectOption(string Label, string? PersonId, string? Famil
         people.Select(p => new SubjectOption($"{p.Name} ({p.FamilyName})", p.Id, null))
             .Concat(families.Select(f => new SubjectOption($"{f.Name} (whole family)", null, f.Id)))
             .ToList();
+}
+
+/// <summary>Screens that load data when shown. The generated LoadCommand satisfies it.</summary>
+public interface ILoadable
+{
+    CommunityToolkit.Mvvm.Input.IAsyncRelayCommand LoadCommand { get; }
 }

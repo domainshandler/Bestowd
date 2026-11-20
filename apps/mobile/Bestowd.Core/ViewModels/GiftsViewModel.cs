@@ -10,7 +10,7 @@ namespace Bestowd.Core.ViewModels;
 public enum GiftFilter { All, Given, Received, Planned }
 
 /// <summary>Gifts: a year's history in the current group, grouped by occasion, with given/received/spent totals.</summary>
-public sealed partial class GiftsViewModel(BestowdApi api, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase
+public sealed partial class GiftsViewModel(BestowdApi api, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, ILoadable
 {
     [ObservableProperty] public partial int? Year { get; set; } = DateTime.UtcNow.Year;
     [ObservableProperty] public partial GiftFilter Filter { get; private set; }
