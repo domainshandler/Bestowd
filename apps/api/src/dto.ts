@@ -40,3 +40,48 @@ export function toGroupDto(group: {
     updatedAt: iso(group.updatedAt),
   }
 }
+
+export function toFamilyDto(family: {
+  id: string; groupId: string; householdOfGroupId: string | null; name: string; type: string; status: string
+  photoUrl: string | null; notes: string | null; createdAt: Date; updatedAt: Date
+}) {
+  return {
+    id: family.id,
+    groupId: family.groupId,
+    name: family.name,
+    type: family.type,
+    status: family.status,
+    isOwnHousehold: family.householdOfGroupId !== null,
+    photoUrl: family.photoUrl,
+    notes: family.notes,
+    createdAt: iso(family.createdAt),
+    updatedAt: iso(family.updatedAt),
+  }
+}
+
+export function toPersonDto(person: {
+  id: string; groupId: string; familyId: string; name: string; relationship: string | null
+  birthMonth: number | null; birthDay: number | null; birthYear: number | null
+  likes: string[]; avoid: string[]; sizes: Prisma.JsonValue; foodNotes: string | null
+  photoUrl: string | null; notes: string | null; archivedAt: Date | null; createdAt: Date; updatedAt: Date
+}) {
+  return {
+    id: person.id,
+    groupId: person.groupId,
+    familyId: person.familyId,
+    name: person.name,
+    relationship: person.relationship,
+    birthMonth: person.birthMonth,
+    birthDay: person.birthDay,
+    birthYear: person.birthYear,
+    likes: person.likes,
+    avoid: person.avoid,
+    sizes: (person.sizes ?? {}) as Record<string, string>,
+    foodNotes: person.foodNotes,
+    photoUrl: person.photoUrl,
+    notes: person.notes,
+    archivedAt: iso(person.archivedAt),
+    createdAt: iso(person.createdAt),
+    updatedAt: iso(person.updatedAt),
+  }
+}

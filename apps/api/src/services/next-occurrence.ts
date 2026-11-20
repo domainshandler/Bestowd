@@ -1,48 +1,32 @@
-function addMonths(date: Date, months: number): Date {
-  const d = new Date(date)
-  d.setUTCMonth(d.getUTCMonth() + months)
-  return d
+export function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
 }
 
-function addWeeks(date: Date, weeks: number): Date {
-  const d = new Date(date)
-  d.setUTCDate(d.getUTCDate() + weeks * 7)
-  return d
+export function addDays(d: Date, days: number): Date {
+  return new Date(d.getTime() + days * 86_400_000)
 }
 
-export function computeNextOccurrence(date: Date, recurrenceRule: string | null | undefined): Date | null {
-  if (!recurrenceRule || recurrenceRule === 'none' || recurrenceRule === 'once') {
-    return null
+/**
+ * The next occurrence on or after today (UTC), or null when there is none.
+ * Feb 29 falls on Mar 1 in non-leap years (Date.UTC rollover).
+ */
+export function computeNextOccurrence(
+  occasion: { date: Date; recursAnnually: boolean; recurrenceEndsAt: Date | null },
+  now: Date = new Date(),
+): Date | null {
+  const today = startOfUtcDay(now)
+  const first = startOfUtcDay(occasion.date)
+  let next: Date
+  if (!occasion.recursAnnually) {
+    next = first
+  } else {
+    const month = first.getUTCMonth()
+    const day = first.getUTCDate()
+    next = new Date(Date.UTC(today.getUTCFullYear(), month, day))
+    if (next < today) next = new Date(Date.UTC(today.getUTCFullYear() + 1, month, day))
+    if (next < first) next = first
   }
-
-  const now = new Date()
-
-  if (recurrenceRule === 'annual' || recurrenceRule === 'yearly') {
-    const month = date.getUTCMonth()
-    const day = date.getUTCDate()
-    const thisYear = new Date(Date.UTC(now.getUTCFullYear(), month, day))
-    if (thisYear > now) return thisYear
-    return new Date(Date.UTC(now.getUTCFullYear() + 1, month, day))
-  }
-
-  if (recurrenceRule === 'monthly') {
-    let candidate = addMonths(date, 0)
-    // Find the next monthly occurrence after now
-    while (candidate <= now) {
-      candidate = addMonths(candidate, 1)
-    }
-    return candidate
-  }
-
-  if (recurrenceRule === 'weekly') {
-    let candidate = addWeeks(date, 0)
-    // Find the next weekly occurrence after now
-    while (candidate <= now) {
-      candidate = addWeeks(candidate, 1)
-    }
-    return candidate
-  }
-
-  // Unknown rule — return null
-  return null
+  if (next < today) return null
+  if (occasion.recurrenceEndsAt && next > occasion.recurrenceEndsAt) return null
+  return next
 }
