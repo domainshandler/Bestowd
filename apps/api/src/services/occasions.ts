@@ -44,6 +44,7 @@ export async function serialiseOccasions(occasions: OccasionRow[]) {
       id: o.id,
       groupId: o.groupId,
       groupName: o.group.name,
+      currency: o.group.currency,
       personId: o.personId,
       familyId: o.familyId,
       type: o.type,

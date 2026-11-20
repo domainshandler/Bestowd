@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { googleLogin, getMe } from '@bestowd/api-client'
+import { googleLogin, getAuthMe } from '@bestowd/api-client'
 import type { User } from '@bestowd/types'
 
 const TOKEN_KEY = 'bestowd_token'
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (token && !user) {
-      getMe().then(setUser).catch(() => {
+      getAuthMe().then(setUser).catch(() => {
         localStorage.removeItem(TOKEN_KEY)
         setToken(null)
       })

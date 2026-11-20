@@ -40,7 +40,7 @@ describe('POST /groups/:groupId/occasions', () => {
     const res = await post({ type: 'BIRTHDAY', name: "Mia's birthday", date: dateOnly(inDays(10)), personId: mia })
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({
-      recursAnnually: true, nextOccurrence: inDays(10).toISOString(), budget: null, effectiveBudget: 40,
+      recursAnnually: true, nextOccurrence: inDays(10).toISOString(), budget: null, effectiveBudget: 40, currency: 'CAD', groupName: "Test's group",
       spent: 0, overBudget: false, status: 'NOT_STARTED', subjectName: 'Mia', subjectFamilyId: a.householdId, rsvp: 'NONE',
     })
   })

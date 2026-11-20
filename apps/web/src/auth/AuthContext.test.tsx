@@ -7,9 +7,9 @@ import { useAuth } from './useAuth.ts'
 vi.mock('@bestowd/api-client', () => ({
   googleLogin: vi.fn().mockResolvedValue({
     token: 'test-jwt',
-    user: { id: '1', email: 'alice@example.com', name: 'Alice', subscriptionStatus: 'free', identitySource: 'google', emailVerified: true, createdAt: new Date().toISOString() },
+    user: { id: '1', email: 'alice@example.com', name: 'Alice', identitySource: 'google', emailVerified: true, createdAt: new Date().toISOString() },
   }),
-  getMe: vi.fn(),
+  getAuthMe: vi.fn(),
 }))
 
 function TestConsumer() {
