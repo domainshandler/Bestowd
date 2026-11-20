@@ -10,6 +10,7 @@ import { familyRoutes } from './routes/families.js'
 import { personRoutes } from './routes/people.js'
 import { occasionRoutes } from './routes/occasions.js'
 import { giftRoutes } from './routes/gifts.js'
+import { ideaRoutes } from './routes/ideas.js'
 
 export async function buildApp() {
   const app = Fastify({ logger: process.env['NODE_ENV'] !== 'test' })
@@ -18,6 +19,11 @@ export async function buildApp() {
     const status = (err as { statusCode?: number }).statusCode ?? 500
     if (status >= 500) app.log.error(err)
     reply.code(status).send({ error: status >= 500 ? 'Internal Server Error' : err.message })
+  })
+
+  // apiFetch sends bodyless POSTs without a content type; validate those as an empty object.
+  app.addHook('preValidation', async (request) => {
+    if (request.body === undefined && request.method !== 'GET' && request.method !== 'DELETE') request.body = {}
   })
 
   await app.register(corsPlugin)
@@ -31,6 +37,7 @@ export async function buildApp() {
   await app.register(personRoutes)
   await app.register(occasionRoutes)
   await app.register(giftRoutes)
+  await app.register(ideaRoutes)
 
   return app
 }
