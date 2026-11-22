@@ -1,0 +1,35 @@
+# Bestowd dev API + Postgres on the home NAS (192.168.1.103). Dev only; safe to throw away.
+# From this folder:  docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bestowd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: bestowd
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bestowd -d bestowd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://bestowd:${POSTGRES_PASSWORD}@db:5432/bestowd
+      DIRECT_URL: postgresql://bestowd:${POSTGRES_PASSWORD}@db:5432/bestowd
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
