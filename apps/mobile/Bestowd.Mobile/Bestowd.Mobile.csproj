@@ -21,18 +21,16 @@
 
 		<!--
 		  Per-environment settings, overridable on the command line, e.g.
-		  dotnet build -p:BestowdApiUrl=https://api.bestowd.app -p:GoogleAndroidClientId=...
+		  dotnet build -p:BestowdApiUrl=https://api.bestowd.app -p:GoogleWebClientId=...
 		  They are written into BuildSettings.g.cs at build time.
 		-->
 		<BestowdApiUrl Condition="'$(BestowdApiUrl)' == ''">http://10.0.2.2:3000</BestowdApiUrl>
 		<BestowdWebUrl Condition="'$(BestowdWebUrl)' == ''">http://localhost:5173</BestowdWebUrl>
-		<GoogleAndroidClientId Condition="'$(GoogleAndroidClientId)' == ''"></GoogleAndroidClientId>
+		<!-- Android signs in with Credential Manager, which asks for the Web OAuth client ID (the one the API checks as GOOGLE_CLIENT_ID). -->
+		<GoogleWebClientId Condition="'$(GoogleWebClientId)' == ''"></GoogleWebClientId>
 		<GoogleIosClientId Condition="'$(GoogleIosClientId)' == ''"></GoogleIosClientId>
 		<!-- Host whose https://<host>/join/<token> links open the app (Android App Links / iOS Universal Links). -->
 		<BestowdLinkHost Condition="'$(BestowdLinkHost)' == ''">bestowd.app</BestowdLinkHost>
-		<!-- Google redirects mobile sign-in to the reversed client ID scheme. -->
-		<GoogleAndroidRedirectScheme Condition="'$(GoogleAndroidClientId)' != ''">com.googleusercontent.apps.$(GoogleAndroidClientId.Replace('.apps.googleusercontent.com', ''))</GoogleAndroidRedirectScheme>
-		<GoogleAndroidRedirectScheme Condition="'$(GoogleAndroidClientId)' == ''">app.bestowd.mobile.oauth</GoogleAndroidRedirectScheme>
 	</PropertyGroup>
 
 	<!-- Push is built in only when a Firebase config file is present (Platforms/Android/google-services.json). -->
@@ -57,6 +55,18 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 	</ItemGroup>
 
+	<!-- Sign in with Google on Android (Credential Manager). -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<PackageReference Include="Xamarin.AndroidX.Credentials" Version="1.6.0.1" />
+		<PackageReference Include="Xamarin.AndroidX.Credentials.PlayServicesAuth" Version="1.6.0.2" />
+		<PackageReference Include="Xamarin.Google.Android.Libraries.Identity.GoogleId" Version="1.1.0.16" />
+		<!-- Credential Manager pulls newer AndroidX cores than MAUI's; keep their -ktx companions in step or D8 sees duplicate classes. -->
+		<PackageReference Include="Xamarin.AndroidX.Fragment.Ktx" Version="1.9.0" />
+		<PackageReference Include="Xamarin.AndroidX.Collection.Ktx" Version="1.6.0.1" />
+		<PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData" Version="2.11.0.1" />
+		<PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData.Core.Ktx" Version="2.11.0.1" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Bestowd.Core\Bestowd.Core.csproj" />
 	</ItemGroup>
@@ -71,9 +81,8 @@ internal static class BuildSettings
 {
     public const string ApiUrl = &quot;$(BestowdApiUrl)&quot;%3B
     public const string WebUrl = &quot;$(BestowdWebUrl)&quot;%3B
-    public const string GoogleAndroidClientId = &quot;$(GoogleAndroidClientId)&quot;%3B
+    public const string GoogleWebClientId = &quot;$(GoogleWebClientId)&quot;%3B
     public const string GoogleIosClientId = &quot;$(GoogleIosClientId)&quot;%3B
-    public const string GoogleAndroidRedirectScheme = &quot;$(GoogleAndroidRedirectScheme)&quot;%3B
     public const string LinkHost = &quot;$(BestowdLinkHost)&quot;%3B
 }" />
 		<ItemGroup>

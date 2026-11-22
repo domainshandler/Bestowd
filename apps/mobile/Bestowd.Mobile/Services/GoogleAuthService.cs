@@ -2,19 +2,32 @@ using Bestowd.Core.Auth;
 
 namespace Bestowd.Mobile.Services;
 
-/// <summary>Google sign-in in the system browser (Custom Tabs / ASWebAuthenticationSession) with PKCE.</summary>
-public sealed class GoogleAuthService(HttpClient http)
+/// <summary>
+/// Google sign-in, returning a Google ID token for the Bestowd API.
+/// Android: Credential Manager ("Sign in with Google"); Google no longer allows browser redirects into Android apps.
+/// iOS: the system browser (ASWebAuthenticationSession) with PKCE and the reversed iOS client ID as redirect.
+/// </summary>
+public sealed partial class GoogleAuthService(HttpClient http)
 {
+    private readonly HttpClient _http = http;
+
+    /// <summary>Android asks for the Web client ID (the API's GOOGLE_CLIENT_ID); iOS uses its own iOS client ID.</summary>
     public static string ClientId =>
-        DeviceInfo.Platform == DevicePlatform.iOS ? BuildSettings.GoogleIosClientId : BuildSettings.GoogleAndroidClientId;
+        DeviceInfo.Platform == DevicePlatform.iOS ? BuildSettings.GoogleIosClientId : BuildSettings.GoogleWebClientId;
 
     public static bool IsConfigured => ClientId.Length > 0;
 
     /// <summary>The Google ID token for the Bestowd API, or null if the user cancelled.</summary>
-    public async Task<string?> SignInAsync()
+    public Task<string?> SignInAsync()
     {
         if (!IsConfigured) throw new GoogleSignInException("Google sign-in isn't set up in this build (missing client ID).");
-        var request = GoogleSignIn.CreateRequest(ClientId);
+        return PlatformSignInAsync(ClientId);
+    }
+
+#if !ANDROID
+    private async Task<string?> PlatformSignInAsync(string clientId)
+    {
+        var request = GoogleSignIn.CreateRequest(clientId);
         WebAuthenticatorResult result;
         try
         {
@@ -30,6 +43,7 @@ public sealed class GoogleAuthService(HttpClient http)
             return null;
         }
         var code = GoogleSignIn.ParseCallback(result.Properties, request);
-        return await GoogleSignIn.ExchangeCodeAsync(http, ClientId, code, request);
+        return await GoogleSignIn.ExchangeCodeAsync(_http, clientId, code, request);
     }
+#endif
 }

@@ -4,7 +4,7 @@ The iOS and Android app, on the same API as the web app. Plan: `docs/superpowers
 
 | Project | What it is |
 |---|---|
-| `Bestowd.Core` | `net10.0` library with everything testable: API client and models, Google sign-in (PKCE), session, group state, formatting, and a view model for every screen and form |
+| `Bestowd.Core` | `net10.0` library with everything testable: API client and models, Google sign-in (browser + PKCE, used on iOS), session, group state, formatting, and a view model for every screen and form |
 | `Bestowd.Core.Tests` | xUnit tests for Core; they run on any OS |
 | `Bestowd.Mobile` | The MAUI app: Shell tabs (Home, People, Gifts, Ideas), XAML pages bound to the Core view models, and platform glue |
 
@@ -33,12 +33,19 @@ Each setting is passed with `-p:Name=value` and written into `BuildSettings.g.cs
 | `BestowdApiUrl` | `http://10.0.2.2:3000` | The API. `10.0.2.2` is your machine as seen from the Android emulator. Debug builds allow plain `http`; release builds need `https`. |
 | `BestowdWebUrl` | `http://localhost:5173` | The web app |
 | `BestowdLinkHost` | `bestowd.app` | Host whose `https://<host>/join/<token>` invite links open the app |
-| `GoogleAndroidClientId` | (empty) | Android OAuth client ID. It sets the sign-in redirect scheme `com.googleusercontent.apps.<id>`. |
+| `GoogleWebClientId` | (empty) | The **Web** OAuth client ID, the same one as the API's `GOOGLE_CLIENT_ID`. Android sign-in uses it. |
 | `GoogleIosClientId` | (empty) | iOS OAuth client ID |
 
-Sign-in shows "Google sign-in isn't set up" until a client ID is set.
+Sign-in shows "Google sign-in isn't set up" until the client ID for the platform is set.
 
-The API must accept that client ID too. Add it to `GOOGLE_CLIENT_IDS` in `apps/api/.env`.
+### Google sign-in setup
+
+- **Android** uses Credential Manager ("Sign in with Google"), because Google no longer allows browser sign-in to redirect into Android apps.
+  - The ID token it returns is issued for the Web client ID, which the API already accepts.
+  - Also create an **Android** OAuth client with package `app.bestowd.mobile` and the SHA-1 of the signing key. Google uses it to recognise the app; its ID isn't put in the build.
+  - Get the SHA-1 with `keytool -list -v -keystore <keystore> -alias <alias>`. Debug builds use the .NET debug keystore (`~/.local/share/Xamarin/Mono for Android/debug.keystore`, alias `androiddebugkey`, password `android`).
+  - Before shipping, register the release key, or Google's app-signing key if you use Play App Signing.
+- **iOS** signs in through the system browser with PKCE, redirecting to the reversed iOS client ID. The API must accept that client ID: add it to `GOOGLE_CLIENT_IDS` in `apps/api/.env`.
 
 ## Push reminders
 

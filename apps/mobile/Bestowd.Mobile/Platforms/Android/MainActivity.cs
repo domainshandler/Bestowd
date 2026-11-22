@@ -31,10 +31,3 @@ public class MainActivity : MauiAppCompatActivity
     }
 }
 
-/// <summary>Receives Google's sign-in redirect (the reversed client ID scheme) for WebAuthenticator.</summary>
-[Activity(NoHistory = true, LaunchMode = LaunchMode.SingleTop, Exported = true)]
-[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataScheme = BuildSettings.GoogleAndroidRedirectScheme, DataPath = "/oauth2redirect")]
-public class GoogleCallbackActivity : Microsoft.Maui.Authentication.WebAuthenticatorCallbackActivity
-{
-}
