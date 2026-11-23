@@ -17,6 +17,8 @@ public static class Routes
     public const string PersonForm = "personform";
     public const string OccasionForm = "occasionform";
     public const string IdeaForm = "ideaform";
+    public const string GroupOccasion = "groupoccasion";
+    public const string GroupOccasionForm = "groupoccasionform";
 }
 
 /// <summary>Navigation, implemented by the app with Shell.</summary>

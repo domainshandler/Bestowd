@@ -10,7 +10,7 @@ public sealed class SnakeEnum<T> : JsonStringEnumConverter<T> where T : struct, 
 }
 
 [JsonConverter(typeof(SnakeEnum<MembershipRole>))] public enum MembershipRole { Owner, Member }
-[JsonConverter(typeof(SnakeEnum<FamilyType>))] public enum FamilyType { Family, Friends, School, Other }
+[JsonConverter(typeof(SnakeEnum<FamilyType>))] public enum FamilyType { Family, Friends, School, Neighbours, Other }
 [JsonConverter(typeof(SnakeEnum<FamilyStatus>))] public enum FamilyStatus { Active, Paused, Archived }
 [JsonConverter(typeof(SnakeEnum<OccasionType>))] public enum OccasionType { Birthday, Holiday, OneOff }
 [JsonConverter(typeof(SnakeEnum<OccasionStatus>))] public enum OccasionStatus { NotStarted, IdeaSaved, Bought, Given }
@@ -21,6 +21,7 @@ public sealed class SnakeEnum<T> : JsonStringEnumConverter<T> where T : struct, 
 [JsonConverter(typeof(SnakeEnum<IdeaStatus>))] public enum IdeaStatus { Saved, Bought, Dismissed }
 [JsonConverter(typeof(SnakeEnum<InviteKind>))] public enum InviteKind { Family, Group }
 [JsonConverter(typeof(SnakeEnum<DevicePlatform>))] public enum DevicePlatform { Android, Ios }
+[JsonConverter(typeof(SnakeEnum<OccasionScope>))] public enum OccasionScope { Subject, Group }
 
 public sealed class User
 {
@@ -194,6 +195,10 @@ public sealed class Occasion
     public string Currency { get; init; } = "CAD";
     public string? PersonId { get; init; }
     public string? FamilyId { get; init; }
+    /// <summary>Group: no person or family of its own; it covers families (see <see cref="Coverage"/>).</summary>
+    public OccasionScope Scope { get; init; }
+    /// <summary>A built-in holiday (group-wide only), e.g. "christmas".</summary>
+    public string? HolidayKey { get; init; }
     public OccasionType Type { get; init; }
     public string Name { get; init; } = "";
     public DateTime Date { get; init; }
@@ -201,6 +206,9 @@ public sealed class Occasion
     public DateTime? RecurrenceEndsAt { get; init; }
     public DateTime? NextOccurrence { get; init; }
     public decimal? Budget { get; init; }
+    /// <summary>Group-wide: budget per family type (FAMILY, SCHOOL, …), overriding <see cref="Budget"/>.</summary>
+    public Dictionary<string, decimal> FamilyTypeBudgets { get; init; } = [];
+    public bool IncludeNewFamilies { get; init; } = true;
     public OccasionStatus Status { get; init; }
     public bool NeedsCard { get; init; }
     public bool CardDone { get; init; }
@@ -216,6 +224,42 @@ public sealed class Occasion
     public decimal Spent { get; init; }
     public bool OverBudget { get; init; }
     public bool NeedsGift { get; init; }
+    /// <summary>Group-wide only: the covered (active) families with their budgets and progress.</summary>
+    public OccasionCoverage? Coverage { get; init; }
+
+    public bool IsGroupWide => Scope == OccasionScope.Group;
+}
+
+public sealed class FamilyShare
+{
+    public string FamilyId { get; init; } = "";
+    public string Name { get; init; } = "";
+    public FamilyType Type { get; init; }
+    /// <summary>This family's own budget, if set.</summary>
+    public decimal? BudgetOverride { get; init; }
+    /// <summary>The budget that applies: override, else family type budget, else the occasion's, else the group default.</summary>
+    public decimal? Budget { get; init; }
+    public decimal Spent { get; init; }
+    /// <summary>A gift for this family is bought or given.</summary>
+    public bool Covered { get; init; }
+    public bool Given { get; init; }
+}
+
+public sealed class OccasionCoverage
+{
+    public int FamilyCount { get; init; }
+    public int CoveredCount { get; init; }
+    public List<FamilyShare> Families { get; init; } = [];
+}
+
+/// <summary>A built-in holiday, its next date and the group's occasion for it (if added).</summary>
+public sealed class Holiday
+{
+    public string Key { get; init; } = "";
+    public string Name { get; init; } = "";
+    public string? Note { get; init; }
+    public DateTime? NextDate { get; init; }
+    public string? OccasionId { get; init; }
 }
 
 public sealed class CurrencyAmount
@@ -396,6 +440,33 @@ public sealed class CreateOccasionBody
     public string? PartyAt { get; init; }
     public string? Location { get; init; }
     public string? HostGiftRequest { get; init; }
+}
+
+/// <summary>A group-wide occasion: a built-in holiday (name, type and date from the catalog) or your own.</summary>
+public sealed class CreateGroupOccasionBody
+{
+    public bool GroupWide { get; init; } = true;
+    public string? HolidayKey { get; init; }
+    public OccasionType? Type { get; init; }
+    public string? Name { get; init; }
+    public string? Date { get; init; }
+    public bool? RecursAnnually { get; init; }
+    public decimal? Budget { get; init; }
+    public Dictionary<string, decimal>? FamilyTypeBudgets { get; init; }
+    public bool? IncludeNewFamilies { get; init; }
+    public List<string>? FamilyIds { get; init; }
+}
+
+public sealed class FamilyBudget
+{
+    public string FamilyId { get; init; } = "";
+    /// <summary>Null (omitted) = use the defaults.</summary>
+    public decimal? Budget { get; init; }
+}
+
+public sealed class SetFamiliesBody
+{
+    public List<FamilyBudget> Families { get; init; } = [];
 }
 
 public sealed class CreateGiftBody

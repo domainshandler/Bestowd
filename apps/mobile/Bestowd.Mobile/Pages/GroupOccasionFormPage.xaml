@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:GroupOccasionFormViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.GroupOccasionFormPage"
+             x:DataType="vm:GroupOccasionFormViewModel"
+             Title="{Binding ScreenTitle}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding ChoosesOccasion}">
+                <Label Text="Occasion" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}">
+                    <Picker ItemsSource="{Binding Holidays}" SelectedItem="{Binding Holiday}" ItemDisplayBinding="{Binding Label, x:DataType=vm:HolidayOption}" Title="Occasion" />
+                </Border>
+                <Label Text="{Binding HolidayNote}" Style="{StaticResource Small}" IsVisible="{Binding HolidayNote, Converter={StaticResource Has}}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="14" IsVisible="{Binding IsCustom}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Name" Style="{StaticResource FieldLabel}" />
+                    <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Name}" Placeholder="Teacher appreciation" MaxLength="120" /></Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Date" Style="{StaticResource FieldLabel}" />
+                    <Border Style="{StaticResource FieldBox}"><DatePicker Date="{Binding Date}" /></Border>
+                </VerticalStackLayout>
+                <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Every year" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding RecursAnnually}" SemanticProperties.Description="Every year" /></Grid>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Budget per family (empty uses your group's Holiday default)" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Budget}" Keyboard="Numeric" /></Border>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Different budget by kind of family (optional)" Style="{StaticResource FieldLabel}" />
+                <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding TypeBudgets}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TypeBudgetField">
+                            <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
+                                <Label Text="{Binding Label}" VerticalOptions="Center" />
+                                <Border Grid.Column="1" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding Text}" Keyboard="Numeric" Placeholder="Default" SemanticProperties.Description="{Binding Label, StringFormat='{0} budget'}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Families (and a budget just for them, if different)" Style="{StaticResource FieldLabel}" />
+                <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Families}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FamilyPick">
+                            <Grid ColumnDefinitions="Auto,*,110" ColumnSpacing="10" MinimumHeightRequest="48">
+                                <CheckBox IsChecked="{Binding IsOn}" VerticalOptions="Center" SemanticProperties.Description="{Binding Name, StringFormat='Include {0}'}" />
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                    <Label Text="{Binding Name}" />
+                                    <Label Text="{Binding Hint}" Style="{StaticResource Small}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="2" Style="{StaticResource FieldBox}" IsVisible="{Binding IsOn}">
+                                    <Entry Text="{Binding Budget}" Keyboard="Numeric" Placeholder="Default" SemanticProperties.Description="{Binding Name, StringFormat='Budget for {0}'}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+                <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
+                    <Label Text="Include families added later" VerticalOptions="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding IncludeNewFamilies}" SemanticProperties.Description="Include families added later" />
+                </Grid>
+            </VerticalStackLayout>
+
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Save" Command="{Binding SaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

@@ -80,6 +80,22 @@
                 </Grid>
             </Border>
 
+            <VerticalStackLayout Spacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Group occasions" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="+ Add" Style="{StaticResource Ghost}" Command="{Binding AddGroupOccasionCommand}" />
+                </Grid>
+                <Label Text="Holidays you celebrate with several families, like Christmas or Diwali. Add one to track a gift and budget for each family."
+                       Style="{StaticResource Small}" IsVisible="{Binding HasNoGroupOccasions}" />
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding GroupOccasions}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OccasionItem">
+                            <pages:OccasionRow Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AccountViewModel}}, Path=OpenOccasionCommand, x:DataType=vm:AccountViewModel}" />
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
             <Button Text="Sign out" Style="{StaticResource DangerButton}" Command="{Binding SignOutCommand}" HorizontalOptions="Start" />
         </VerticalStackLayout>
     </ScrollView>

@@ -23,6 +23,8 @@ public static class Format
     public static string DayDate(DateTime d) { var u = Utc(d); return $"{u.DayOfWeek.ToString()[..3]}, {Months[u.Month - 1]} {u.Day}"; }
 
     /// <summary>"Dec 2025".</summary>
+    /// <summary>"Fri, Dec 25, 2026".</summary>
+    public static string LongDate(DateTime d) { var u = Utc(d); return $"{u.DayOfWeek.ToString()[..3]}, {Months[u.Month - 1]} {u.Day}, {u.Year}"; }
     public static string MonthYear(DateTime d) { var u = Utc(d); return $"{Months[u.Month - 1]} {u.Year}"; }
 
     public static string MonthShort(DateTime d) => Months[Utc(d).Month - 1].ToUpperInvariant();
@@ -73,7 +75,7 @@ public static class Format
         month is null ? "" : Months[month.Value - 1] + (day is null ? "" : $" {day}");
 
     public static string Label(OccasionType t) => t switch { OccasionType.Birthday => "Birthday", OccasionType.Holiday => "Holiday", _ => "Event" };
-    public static string Label(FamilyType t) => t switch { FamilyType.Family => "Family", FamilyType.Friends => "Friends", FamilyType.School => "School", _ => "Other" };
+    public static string Label(FamilyType t) => t switch { FamilyType.Family => "Family", FamilyType.Friends => "Friends", FamilyType.School => "School", FamilyType.Neighbours => "Neighbours", _ => "Other" };
     public static string Label(OccasionStatus s) => s switch
     {
         OccasionStatus.NotStarted => "Needs gift",

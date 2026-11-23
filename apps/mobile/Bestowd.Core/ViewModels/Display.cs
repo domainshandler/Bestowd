@@ -39,7 +39,9 @@ public sealed record OccasionItem(
     public static OccasionItem From(Occasion o, bool showGroup = false)
     {
         var parts = new List<string>();
-        if (o.PersonId is not null && o.SubjectFamilyName is not null) parts.Add(o.SubjectFamilyName);
+        // A group-wide occasion for the whole group shows how many families are covered; on a family's pages it's that family's share.
+        if (o.Coverage is { } c && o.SubjectFamilyId is null) parts.Add($"{c.CoveredCount} of {o.SubjectName} have a gift");
+        else if (o.PersonId is not null && o.SubjectFamilyName is not null) parts.Add(o.SubjectFamilyName);
         else parts.Add(o.SubjectName);
         if (showGroup) parts.Add(o.GroupName);
         if (o.EffectiveBudget is not null)
@@ -55,9 +57,11 @@ public sealed record OccasionItem(
         _ => Tone.Brand,
     };
 
-    /// <summary>Where tapping goes: the person, else the family.</summary>
+    /// <summary>Where tapping goes: a group-wide occasion's own screen, else the person, else the family.</summary>
     public (string Route, string Id) Target =>
-        Occasion.PersonId is { } p ? (Routes.Person, p) : (Routes.Family, Occasion.FamilyId ?? Occasion.SubjectFamilyId ?? "");
+        Occasion.IsGroupWide ? (Routes.GroupOccasion, Occasion.Id)
+        : Occasion.PersonId is { } p ? (Routes.Person, p)
+        : (Routes.Family, Occasion.FamilyId ?? Occasion.SubjectFamilyId ?? "");
 }
 
 public sealed record GiftItem(Gift Gift, string Title, string Line, string? AmountText, bool ShowReveal, string? BadgeText, Tone BadgeTone)

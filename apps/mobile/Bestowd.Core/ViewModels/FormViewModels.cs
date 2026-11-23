@@ -259,6 +259,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         GiftId = Params.Get(p, Params.Id);
         _defaultPersonId = Params.Get(p, Params.PersonId);
         _defaultFamilyId = Params.Get(p, Params.FamilyId);
+        _pendingOccasionId = Params.Get(p, Params.OccasionId);
         IsReceived = Params.Get(p, Params.Direction) == "RECEIVED";
         OnPropertyChanged(nameof(ScreenTitle));
     }

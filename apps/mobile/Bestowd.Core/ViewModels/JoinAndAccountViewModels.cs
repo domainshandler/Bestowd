@@ -114,6 +114,9 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     [ObservableProperty] public partial string ReminderDays { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<BudgetField> Budgets { get; private set; } = [];
     [ObservableProperty] public partial string? SavedText { get; private set; }
+    [ObservableProperty] public partial IReadOnlyList<OccasionItem> GroupOccasions { get; private set; } = [];
+
+    public bool HasNoGroupOccasions => HasLoaded && GroupOccasions.Count == 0;
 
     public User? User => session.User;
     public GroupState Groups => groups;
@@ -123,6 +126,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     public Task LoadAsync() => RunAsync(async () =>
     {
         if (groups.GroupId is not { } groupId) return;
+        var occasions = api.ListOccasionsAsync(groupId, to: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(366)));
         var group = await api.GetGroupAsync(groupId);
         GroupName = group.Name;
         Currency = group.Currency;
@@ -131,9 +135,11 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
             .Select(t => new BudgetField(t, Formatting.Format.Label(t),
                 group.DefaultBudgets.TryGetValue(ApiJson.EnumName(t), out var b) ? b.ToString(System.Globalization.CultureInfo.CurrentCulture) : ""))
             .ToList();
+        GroupOccasions = (await occasions).Occasions.Where(o => o.IsGroupWide).Select(o => OccasionItem.From(o)).ToList();
         HasLoaded = true;
         OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(User));
+        OnPropertyChanged(nameof(HasNoGroupOccasions));
     });
 
     /// <summary>The settings PATCH, or null with <see cref="ViewModelBase.Error"/> set when a field is invalid.</summary>
@@ -186,6 +192,14 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         if (!await RunAsync(async () => link = await api.CreateInviteAsync(groupId, InviteKind.Group))) return;
         await prompts.ShareAsync("Join my group on Bestowd", $"Join my group on Bestowd so we can plan gifts together: {link!.Url}");
     }
+
+    [RelayCommand]
+    public Task AddGroupOccasionAsync() => groups.GroupId is { } g
+        ? nav.GoToAsync(Routes.GroupOccasionForm, new Dictionary<string, object> { [Params.GroupId] = g })
+        : Task.CompletedTask;
+
+    [RelayCommand]
+    public Task OpenOccasionAsync(OccasionItem item) => nav.GoToAsync(Routes.GroupOccasion, new Dictionary<string, object> { [Params.Id] = item.Occasion.Id });
 
     [RelayCommand]
     public async Task SignOutAsync()

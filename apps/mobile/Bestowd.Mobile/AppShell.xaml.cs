@@ -21,6 +21,8 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(Routes.PersonForm, typeof(PersonFormPage));
         Routing.RegisterRoute(Routes.OccasionForm, typeof(OccasionFormPage));
         Routing.RegisterRoute(Routes.IdeaForm, typeof(IdeaFormPage));
+        Routing.RegisterRoute(Routes.GroupOccasion, typeof(GroupOccasionPage));
+        Routing.RegisterRoute(Routes.GroupOccasionForm, typeof(GroupOccasionFormPage));
     }
 
     /// <summary>True once the user is signed in and the tabs are showing.</summary>

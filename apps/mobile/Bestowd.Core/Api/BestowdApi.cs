@@ -84,6 +84,21 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<Occasion> CreateOccasionAsync(string groupId, CreateOccasionBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/groups/{groupId}/occasions", Body(body, Json.CreateOccasionBody), Json.Occasion, ct);
 
+    public Task<Occasion> GetOccasionAsync(string id, CancellationToken ct = default) =>
+        GetAsync($"/occasions/{id}", Json.Occasion, ct);
+
+    /// <summary>A group-wide occasion: a built-in holiday or your own, covering families in the group.</summary>
+    public Task<Occasion> CreateGroupOccasionAsync(string groupId, CreateGroupOccasionBody body, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/groups/{groupId}/occasions", Body(body, Json.CreateGroupOccasionBody), Json.Occasion, ct);
+
+    /// <summary>The built-in holidays, each with its next date and the group's occasion for it (if added).</summary>
+    public Task<List<Holiday>> ListHolidaysAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/holidays", Json.ListHoliday, ct);
+
+    /// <summary>Sets the families a group-wide occasion covers, with optional budget overrides.</summary>
+    public Task<Occasion> SetOccasionFamiliesAsync(string id, IEnumerable<FamilyBudget> families, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, $"/occasions/{id}/families", Body(new SetFamiliesBody { Families = families.ToList() }, Json.SetFamiliesBody), Json.Occasion, ct);
+
     public Task<Occasion> UpdateOccasionAsync(string id, Patch patch, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Patch, $"/occasions/{id}", Body(patch), Json.Occasion, ct);
 

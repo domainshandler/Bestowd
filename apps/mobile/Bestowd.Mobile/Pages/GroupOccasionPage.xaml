@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:GroupOccasionViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.GroupOccasionPage"
+             x:DataType="vm:GroupOccasionViewModel"
+             Title="{Binding Occasion.Name}">
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,8,20,32" Spacing="18">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding Occasion.Name}" Style="{StaticResource Title}" />
+                    <Label Text="{Binding DateText}" Style="{StaticResource Small}" />
+                </VerticalStackLayout>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout><Label Text="{Binding ProgressText}" Style="{StaticResource Strong}" FontSize="20" /><Label Text="families have a gift" Style="{StaticResource Small}" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <VerticalStackLayout><Label Text="{Binding SpentText}" Style="{StaticResource Strong}" FontSize="20" /><Label Text="spent" Style="{StaticResource Small}" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <VerticalStackLayout><Label Text="{Binding BudgetText}" Style="{StaticResource Strong}" FontSize="20" /><Label Text="budgeted" Style="{StaticResource Small}" /></VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Families" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="Edit families &amp; budgets" Style="{StaticResource Ghost}" Command="{Binding EditCommand}" />
+                </Grid>
+                <Label Text="No families yet. Choose some with “Edit families &amp; budgets”." Style="{StaticResource Small}" IsVisible="{Binding HasNoFamilies}" />
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Families}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FamilyShareRow">
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout VerticalOptions="Center">
+                                        <VerticalStackLayout.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GroupOccasionViewModel}}, Path=OpenFamilyCommand, x:DataType=vm:GroupOccasionViewModel}" CommandParameter="{Binding .}" />
+                                        </VerticalStackLayout.GestureRecognizers>
+                                        <Label Text="{Binding Share.Name}" Style="{StaticResource Strong}" />
+                                        <Label Text="{Binding Line}" Style="{StaticResource Small}" />
+                                    </VerticalStackLayout>
+                                    <pages:Badge Grid.Column="1" Text="{Binding StatusText}" Tone="Brand" VerticalOptions="Center"
+                                                 IsVisible="{Binding NeedsGift, Converter={StaticResource Not}}" />
+                                    <Button Grid.Column="1" Text="Log gift" Style="{StaticResource Secondary}" VerticalOptions="Center" IsVisible="{Binding NeedsGift}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GroupOccasionViewModel}}, Path=LogGiftCommand, x:DataType=vm:GroupOccasionViewModel}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+                <Button Text="{Binding RemoveText}" Style="{StaticResource DangerButton}" Command="{Binding RemoveCommand}" HorizontalOptions="Start" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</pages:BasePage>
