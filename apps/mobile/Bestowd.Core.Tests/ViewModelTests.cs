@@ -194,7 +194,7 @@ public class ViewModelTests
 
         vm.Currency = "C$";
         Assert.Null(vm.BuildSettingsPatch());
-        Assert.Equal("Currency is three letters, like CAD.", vm.Error);
+        Assert.Equal("Choose a currency.", vm.Error);
 
         vm.Currency = "CAD";
         vm.ReminderDays = "14, soon";

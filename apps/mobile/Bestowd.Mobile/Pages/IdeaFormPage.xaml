@@ -36,19 +36,37 @@
                     <Border Grid.Column="1" Style="{StaticResource FieldBox}"><Entry Text="{Binding AgeMax}" Placeholder="To" Keyboard="Numeric" SemanticProperties.Description="Maximum age" /></Border>
                 </Grid>
             </VerticalStackLayout>
-            <Label Text="For" Style="{StaticResource FieldLabel}" />
-            <Border Style="{StaticResource Card}" Padding="14,4">
-                <VerticalStackLayout BindableLayout.ItemsSource="{Binding People}">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="For" Style="{StaticResource FieldLabel}" />
+                <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding People.Chosen}" IsVisible="{Binding People.HasChosen}">
                     <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="vm:PersonToggle">
-                            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
-                                <Label Text="{Binding Person.Name}" VerticalOptions="Center" />
-                                <Switch Grid.Column="1" IsToggled="{Binding IsOn}" SemanticProperties.Description="{Binding Person.Name}" />
+                        <DataTemplate x:DataType="vm:PersonPick">
+                            <Border Style="{StaticResource Card}" Padding="12,6" Margin="0,0,8,8" StrokeShape="RoundRectangle 999">
+                                <HorizontalStackLayout Spacing="6">
+                                    <Label Text="{Binding Person.Name}" VerticalOptions="Center" />
+                                    <Button Text="×" Style="{StaticResource Ghost}" Padding="6,0" MinimumWidthRequest="32" MinimumHeightRequest="32" CommandParameter="{Binding .}"
+                                            SemanticProperties.Description="{Binding Person.Name, StringFormat='Remove {0}'}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:IdeaFormViewModel}}, Path=People.RemoveCommand, x:DataType=vm:IdeaFormViewModel}" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding People.Search}" Placeholder="Search people to add" SemanticProperties.Description="Search people to add" /></Border>
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding People.Matches}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PersonPick">
+                            <Grid MinimumHeightRequest="44" Padding="4,0">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer CommandParameter="{Binding .}" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:IdeaFormViewModel}}, Path=People.AddCommand, x:DataType=vm:IdeaFormViewModel}" />
+                                </Grid.GestureRecognizers>
+                                <Label Text="{Binding Label, StringFormat='+ {0}'}" VerticalOptions="Center" TextColor="{StaticResource Brand}" />
                             </Grid>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
-            </Border>
+                <Label Text="No one matches. Add people under People first." Style="{StaticResource Small}" IsVisible="{Binding People.NoMatches}" />
+            </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Why it fits" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>

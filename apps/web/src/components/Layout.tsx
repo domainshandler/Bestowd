@@ -36,7 +36,7 @@ export default function Layout() {
             className={({ isActive }) => cx('flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-[15px]', isActive ? 'bg-brand-light text-brand font-semibold' : 'text-muted hover:bg-ground font-medium')}
           >
             <Avatar name={user?.name ?? '?'} photoUrl={user?.avatarUrl} size={28} />
-            Account
+            Settings
           </NavLink>
         </div>
       </nav>
@@ -47,7 +47,7 @@ export default function Layout() {
           <span className="font-display text-lg font-bold text-brand">Bestowd</span>
           <div className="flex items-center gap-2">
             <GroupSwitcher />
-            <NavLink to="/account" aria-label="Account" className="w-11 h-11 flex items-center justify-center rounded-full">
+            <NavLink to="/account" aria-label="Settings" className="w-11 h-11 flex items-center justify-center rounded-full">
               <Avatar name={user?.name ?? '?'} photoUrl={user?.avatarUrl} size={32} />
             </NavLink>
           </div>

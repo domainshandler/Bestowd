@@ -111,6 +111,11 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
 {
     [ObservableProperty] public partial string GroupName { get; set; } = "";
     [ObservableProperty] public partial string Currency { get; set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<Formatting.CurrencyOption> CurrencyOptions { get; private set; } = Formatting.Currencies.All;
+    /// <summary>The picked currency; sets <see cref="Currency"/>.</summary>
+    [ObservableProperty] public partial Formatting.CurrencyOption? CurrencyChoice { get; set; }
+
+    partial void OnCurrencyChoiceChanged(Formatting.CurrencyOption? value) { if (value is not null) Currency = value.Code; }
     [ObservableProperty] public partial string ReminderDays { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<BudgetField> Budgets { get; private set; } = [];
     [ObservableProperty] public partial string? SavedText { get; private set; }
@@ -133,6 +138,8 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         var group = await api.GetGroupAsync(groupId);
         GroupName = group.Name;
         Currency = group.Currency;
+        CurrencyOptions = Formatting.Currencies.WithCurrent(group.Currency);
+        CurrencyChoice = CurrencyOptions.FirstOrDefault(o => o.Code == group.Currency);
         ReminderDays = string.Join(", ", group.DefaultReminderDays);
         Budgets = new[] { OccasionType.Birthday, OccasionType.Holiday, OccasionType.OneOff }
             .Select(t => new BudgetField(t, Formatting.Format.Label(t),
@@ -150,7 +157,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     public Patch? BuildSettingsPatch()
     {
         var currency = Currency.Trim().ToUpperInvariant();
-        if (currency.Length != 3 || !currency.All(char.IsAsciiLetterUpper)) { Error = "Currency is three letters, like CAD."; return null; }
+        if (currency.Length != 3 || !currency.All(char.IsAsciiLetterUpper)) { Error = "Choose a currency."; return null; }
         var days = new List<int>();
         foreach (var part in Formatting.Format.SplitList(ReminderDays))
         {

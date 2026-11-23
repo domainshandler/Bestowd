@@ -76,18 +76,18 @@ public sealed class Avatar : Border
 }
 
 /// <summary>The signed-in user's initials; opens Account.</summary>
+/// <summary>The settings button at the top right of every tab: opens Settings (account, group settings, holidays).</summary>
 public sealed class AccountButton : Border
 {
     public AccountButton()
     {
-        var session = IPlatformApplication.Current!.Services.GetRequiredService<Session>();
         WidthRequest = HeightRequest = 44;
         StrokeShape = new RoundRectangle { CornerRadius = 22 };
         Stroke = Ui.C("Line");
         BackgroundColor = Colors.White;
         VerticalOptions = LayoutOptions.Start;
-        Content = new Label { Text = Format.Initials(session.User?.Name ?? "?"), FontFamily = "InterSemiBold", FontSize = 14, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
-        SemanticProperties.SetDescription(this, "Account");
+        Content = new Image { Source = "settings_gear.png", WidthRequest = 22, HeightRequest = 22, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        SemanticProperties.SetDescription(this, "Settings");
         GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(async () => await Shell.Current.GoToAsync(Routes.Account)) });
     }
 }

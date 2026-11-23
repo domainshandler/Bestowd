@@ -368,12 +368,6 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
 // ---------------- Idea ----------------
 
-public sealed partial class PersonToggle(PersonListItem person, bool isOn) : ObservableObject
-{
-    public PersonListItem Person { get; } = person;
-    [ObservableProperty] public partial bool IsOn { get; set; } = isOn;
-}
-
 public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
@@ -385,7 +379,8 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     [ObservableProperty] public partial string AgeMin { get; set; } = "";
     [ObservableProperty] public partial string AgeMax { get; set; } = "";
     [ObservableProperty] public partial string Notes { get; set; } = "";
-    [ObservableProperty] public partial IReadOnlyList<PersonToggle> People { get; private set; } = [];
+    /// <summary>Who the idea is for: search and add people rather than toggling everyone.</summary>
+    public PeoplePicker People { get; } = new();
 
     public void Apply(IDictionary<string, object> p)
     {
@@ -396,7 +391,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
-        People = (await api.ListPeopleAsync(_groupId)).Select(x => new PersonToggle(x, x.Id == _personId)).ToList());
+        People.SetPeople(await api.ListPeopleAsync(_groupId), _personId is null ? [] : [_personId]));
 
     private bool CanSave() => Title.Trim().Length > 0;
 
@@ -417,7 +412,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         {
             Title = Title.Trim(), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
             AgeMin = min, AgeMax = max, OccasionId = _occasionId,
-            PersonIds = People.Where(x => x.IsOn).Select(x => x.Person.Id).ToList(),
+            PersonIds = People.ChosenIds.ToList(),
         };
     }
 

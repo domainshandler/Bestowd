@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createIdea, listPeople } from '@bestowd/api-client'
 import { Button, Field, FormError, Modal, TextArea, TextInput } from '../ui.tsx'
+import PeopleSearch from './PeopleSearch.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export default function IdeaForm({ open, onClose, groupId, personId, occasionId }: {
@@ -17,7 +18,6 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
   const [notes, setNotes] = useState('')
   const [tagged, setTagged] = useState<string[]>(personId ? [personId] : [])
 
-  const toggle = (id: string) => setTagged((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]))
   const save = useSave(() => createIdea(groupId, {
     title: title.trim(),
     category: category.trim() || null,
@@ -47,17 +47,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
             <TextInput aria-label="Maximum age" type="number" min={0} max={120} placeholder="To" value={ageMax} onChange={(e) => setAgeMax(e.target.value)} />
           </div>
         </fieldset>
-        <fieldset>
-          <legend className="text-sm font-medium mb-1">For</legend>
-          <div className="flex flex-wrap gap-2">
-            {people.data?.map((p) => (
-              <label key={p.id} className={`min-h-[36px] px-3 rounded-full border text-sm flex items-center gap-2 cursor-pointer ${tagged.includes(p.id) ? 'bg-brand-light border-brand text-brand font-semibold' : 'bg-white border-line'}`}>
-                <input type="checkbox" className="sr-only" checked={tagged.includes(p.id)} onChange={() => toggle(p.id)} />
-                {p.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <PeopleSearch label="For" people={people.data ?? []} value={tagged} onChange={setTagged} />
         <Field label="Why it fits">{(id) => <TextArea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
         <FormError error={save.error} />
         <Button type="submit" disabled={!title.trim() || save.isPending}>{save.isPending ? 'Saving…' : 'Save idea'}</Button>

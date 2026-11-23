@@ -10,8 +10,8 @@ import GroupOccasionForm from '../components/forms/GroupOccasionForm.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
 import { ChooseHolidays } from '../components/HolidaySuggestions.tsx'
 import { useSave } from '../components/forms/useSave.ts'
-import { Avatar, Badge, Button, Card, EmptyState, Field, FormError, Icon, SectionHeader, TextInput } from '../components/ui.tsx'
-import { OCCASION_TYPE_LABEL } from '../lib/format.ts'
+import { Avatar, Badge, Button, Card, EmptyState, Field, FormError, Icon, SectionHeader, Select, TextInput } from '../components/ui.tsx'
+import { OCCASION_TYPE_LABEL, currencyOptions } from '../lib/format.ts'
 
 const TYPES = Object.keys(OCCASION_TYPE_LABEL) as OccasionType[]
 
@@ -77,7 +77,13 @@ function GroupSettings({ groupId }: { groupId: string }) {
   return (
     <form onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate(undefined) }} className="flex flex-col gap-4">
       <Field label="Group name">{(id) => <TextInput id={id} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
-      <Field label="Currency" hint="Three letters, e.g. CAD, USD, EUR">{(id) => <TextInput id={id} required pattern="[A-Za-z]{3}" maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value)} />}</Field>
+      <Field label="Currency">
+        {(id) => (
+          <Select id={id} required value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {currencyOptions(currency).map((c) => <option key={c.code} value={c.code}>{c.code} · {c.name}</option>)}
+          </Select>
+        )}
+      </Field>
       <fieldset className="flex flex-col gap-1">
         <legend className="text-sm font-medium mb-1">Default budget per occasion</legend>
         <div className="grid grid-cols-3 gap-2">
@@ -112,7 +118,7 @@ export default function AccountPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-lg">
-      <h1 className="text-3xl font-bold tracking-tight">Account</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
 
       <Card className="p-5 flex items-center gap-4">
         <Avatar name={user?.name ?? '?'} photoUrl={user?.avatarUrl} size={56} />
@@ -141,7 +147,7 @@ export default function AccountPage() {
 
       {groupId && (
         <section className="flex flex-col gap-2.5">
-          <SectionHeader title={multipleGroups ? `${group?.groupName} settings` : 'Settings'} />
+          <SectionHeader title={multipleGroups ? `${group?.groupName} settings` : 'Group settings'} />
           <HolidaysSetting groupId={groupId} />
           <Card className="p-4 flex flex-col gap-4">
             {group?.role === 'OWNER'
