@@ -94,6 +94,7 @@
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
+                <Button Text="Holidays we celebrate" Style="{StaticResource Secondary}" Command="{Binding ChooseHolidaysCommand}" HorizontalOptions="Start" />
             </VerticalStackLayout>
 
             <Button Text="Sign out" Style="{StaticResource DangerButton}" Command="{Binding SignOutCommand}" HorizontalOptions="Start" />

@@ -54,6 +54,7 @@ public static class MauiProgram
         s.AddTransient<OccasionFormViewModel>().AddTransient<OccasionFormPage>();
         s.AddTransient<GroupOccasionViewModel>().AddTransient<GroupOccasionPage>();
         s.AddTransient<GroupOccasionFormViewModel>().AddTransient<GroupOccasionFormPage>();
+        s.AddTransient<HolidayChoiceViewModel>().AddTransient<HolidayChoicePage>();
         s.AddTransient<LogGiftViewModel>().AddTransient<LogGiftPage>();
         s.AddTransient<IdeaFormViewModel>().AddTransient<IdeaFormPage>();
         s.AddTransient<SignInPage>().AddTransient<LaunchPage>();

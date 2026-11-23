@@ -151,7 +151,7 @@ public sealed partial class GroupOccasionFormViewModel(BestowdApi api, GroupStat
         else
         {
             var holidays = api.ListHolidaysAsync(_groupId);
-            SetData(await families, null, await holidays);
+            SetData(await families, null, (await holidays).Holidays);
         }
     });
 

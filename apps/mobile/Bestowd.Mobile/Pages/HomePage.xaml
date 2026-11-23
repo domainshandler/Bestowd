@@ -34,6 +34,37 @@
                         </VerticalStackLayout>
                     </Border>
 
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding AskHolidays}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="Which holidays do you celebrate?" Style="{StaticResource Strong}" />
+                                <Label Text="Pick them once and Bestowd tracks a gift and budget for each family." Style="{StaticResource Small}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Choose" Command="{Binding ChooseHolidaysCommand}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding SuggestedHolidays}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HolidaySuggestion">
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="8">
+                                        <VerticalStackLayout>
+                                            <Label Text="{Binding Name}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Line}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Button Text="Track it" Style="{StaticResource Secondary}" CommandParameter="{Binding .}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=TrackHolidayCommand, x:DataType=vm:HomeViewModel}" />
+                                            <Button Text="Not for us" Style="{StaticResource Ghost}" CommandParameter="{Binding .}"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=DismissHolidayCommand, x:DataType=vm:HomeViewModel}" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
                     <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                         <HorizontalStackLayout Spacing="8">
                             <Button Text="All" Command="{Binding SetFilterCommand}" CommandParameter="ALL" Style="{Binding Filter, Converter={StaticResource ChipStyle}, ConverterParameter=ALL}" />

@@ -91,9 +91,17 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<Occasion> CreateGroupOccasionAsync(string groupId, CreateGroupOccasionBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/groups/{groupId}/occasions", Body(body, Json.CreateGroupOccasionBody), Json.Occasion, ct);
 
-    /// <summary>The built-in holidays, each with its next date and the group's occasion for it (if added).</summary>
-    public Task<List<Holiday>> ListHolidaysAsync(string groupId, CancellationToken ct = default) =>
-        GetAsync($"/groups/{groupId}/holidays", Json.ListHoliday, ct);
+    /// <summary>The built-in holidays: next dates, the group's occasion for each (if added), and what it dismissed.</summary>
+    public Task<HolidayChoices> ListHolidaysAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/holidays", Json.HolidayChoices, ct);
+
+    /// <summary>Answers "Which holidays do you celebrate?": adds the picked ones and stops suggesting the rest.</summary>
+    public Task<HolidayChoices> ChooseHolidaysAsync(string groupId, IEnumerable<string> keys, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/groups/{groupId}/holidays/choose", Body(new ChooseHolidaysBody { Keys = keys.ToList() }, Json.ChooseHolidaysBody), Json.HolidayChoices, ct);
+
+    /// <summary>"Not for us": stop suggesting a holiday.</summary>
+    public Task<HolidayChoices> DismissHolidayAsync(string groupId, string key, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/groups/{groupId}/holidays/{Uri.EscapeDataString(key)}/dismiss", null, Json.HolidayChoices, ct);
 
     /// <summary>Sets the families a group-wide occasion covers, with optional budget overrides.</summary>
     public Task<Occasion> SetOccasionFamiliesAsync(string id, IEnumerable<FamilyBudget> families, CancellationToken ct = default) =>

@@ -199,6 +199,11 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         : Task.CompletedTask;
 
     [RelayCommand]
+    public Task ChooseHolidaysAsync() => groups.GroupId is { } g
+        ? nav.GoToAsync(Routes.HolidayChoice, new Dictionary<string, object> { [Params.GroupId] = g })
+        : Task.CompletedTask;
+
+    [RelayCommand]
     public Task OpenOccasionAsync(OccasionItem item) => nav.GoToAsync(Routes.GroupOccasion, new Dictionary<string, object> { [Params.Id] = item.Occasion.Id });
 
     [RelayCommand]

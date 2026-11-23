@@ -2,18 +2,22 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Bestowd.Core.Api;
 using Bestowd.Core.Formatting;
+using Bestowd.Core.Groups;
 using Bestowd.Core.Models;
 
 namespace Bestowd.Core.ViewModels;
 
 /// <summary>Home: the next 30 days across all of the user's groups.</summary>
-public sealed partial class HomeViewModel(BestowdApi api, INavigator nav) : ViewModelBase, ILoadable
+public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupState groups, DataChanged changes) : ViewModelBase, ILoadable
 {
     [ObservableProperty] public partial IReadOnlyList<OccasionItem> Occasions { get; private set; } = [];
     [ObservableProperty] public partial OccasionType? Filter { get; private set; }
     [ObservableProperty] public partial string Headline { get; private set; } = "";
     [ObservableProperty] public partial string? NeedGiftsText { get; private set; }
     [ObservableProperty] public partial string? PlannedText { get; private set; }
+    /// <summary>The current group hasn't said which holidays it celebrates yet.</summary>
+    [ObservableProperty] public partial bool AskHolidays { get; private set; }
+    [ObservableProperty] public partial IReadOnlyList<HolidaySuggestion> SuggestedHolidays { get; private set; } = [];
 
     public bool IsEmpty => HasLoaded && Occasions.Count == 0 && Error is null;
 
@@ -23,8 +27,10 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav) : View
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
     {
-        var home = await api.ListHomeOccasionsAsync(Filter);
-        Apply(home);
+        var home = api.ListHomeOccasionsAsync(Filter);
+        Task<HolidayChoices>? holidays = groups.GroupId is { } g ? api.ListHolidaysAsync(g) : null;
+        Apply(await home);
+        ApplyHolidays(holidays is null ? null : await holidays);
     });
 
     /// <summary>Fills the summary and list from a /me/occasions response.</summary>
@@ -40,6 +46,34 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav) : View
         HasLoaded = true;
         OnPropertyChanged(nameof(IsEmpty));
     }
+
+    /// <summary>Until the group answers, Home asks which holidays it celebrates; then it suggests upcoming ones not added.</summary>
+    public void ApplyHolidays(HolidayChoices? choices, DateTime? now = null)
+    {
+        AskHolidays = choices is { Chosen: false };
+        SuggestedHolidays = choices is { Chosen: true } ? Holidays.Suggested(choices.Holidays, now) : [];
+    }
+
+    [RelayCommand]
+    public Task ChooseHolidaysAsync() => groups.GroupId is { } g
+        ? nav.GoToAsync(Routes.HolidayChoice, new Dictionary<string, object> { [Params.GroupId] = g })
+        : Task.CompletedTask;
+
+    /// <summary>"Track it": adds the holiday for every family and opens it.</summary>
+    [RelayCommand]
+    public async Task TrackHolidayAsync(HolidaySuggestion suggestion)
+    {
+        if (groups.GroupId is not { } g) return;
+        Occasion? created = null;
+        if (!await RunAsync(async () => created = await api.CreateGroupOccasionAsync(g, new CreateGroupOccasionBody { HolidayKey = suggestion.Key }))) return;
+        changes.Notify();
+        await nav.GoToAsync(Routes.GroupOccasion, new Dictionary<string, object> { [Params.Id] = created!.Id });
+    }
+
+    /// <summary>"Not for us": stop suggesting the holiday.</summary>
+    [RelayCommand]
+    public Task DismissHolidayAsync(HolidaySuggestion suggestion) => groups.GroupId is not { } g ? Task.CompletedTask
+        : RunAsync(async () => ApplyHolidays(await api.DismissHolidayAsync(g, suggestion.Key)));
 
     /// <summary>"ALL", "BIRTHDAY", "HOLIDAY" or "ONE_OFF".</summary>
     [RelayCommand]

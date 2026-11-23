@@ -260,6 +260,21 @@ public sealed class Holiday
     public string? Note { get; init; }
     public DateTime? NextDate { get; init; }
     public string? OccasionId { get; init; }
+    /// <summary>The group said it doesn't celebrate this one, so it isn't suggested.</summary>
+    public bool Dismissed { get; init; }
+}
+
+/// <summary>GET /groups/:id/holidays.</summary>
+public sealed class HolidayChoices
+{
+    /// <summary>False until the group answers "Which holidays do you celebrate?".</summary>
+    public bool Chosen { get; init; }
+    public List<Holiday> Holidays { get; init; } = [];
+}
+
+public sealed class ChooseHolidaysBody
+{
+    public List<string> Keys { get; init; } = [];
 }
 
 public sealed class CurrencyAmount

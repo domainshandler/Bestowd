@@ -32,7 +32,7 @@ public class ViewModelTests
     [Fact]
     public void Home_summarises_count_needs_and_planned_spend_and_labels_groups_only_when_several()
     {
-        var vm = new HomeViewModel(Fake.Api().Api, new FakeNavigator());
+        var vm = new HomeViewModel(Fake.Api().Api, new FakeNavigator(), new GroupState(new MemorySettingsStore()), new DataChanged());
         vm.Apply(new HomeOccasions
         {
             Occasions = [Occ("Maya's birthday"), Occ("Christmas", OccasionStatus.IdeaSaved, budget: null)],
