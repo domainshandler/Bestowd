@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { createIdea } from '@bestowd/api-client'
 import { Button, Field, FormError, Modal, TextArea, TextInput } from '../ui.tsx'
 import RecipientPicker from './RecipientPicker.tsx'
+import PhotoField from './PhotoField.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export default function IdeaForm({ open, onClose, groupId, personId, occasionId }: {
@@ -15,6 +16,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
   const [ageMin, setAgeMin] = useState('')
   const [ageMax, setAgeMax] = useState('')
   const [notes, setNotes] = useState('')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [tagged, setTagged] = useState<string[]>(personId ? [personId] : [])
 
   const save = useSave(() => createIdea(groupId, {
@@ -23,6 +25,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
     category: category.trim() || null,
     price: numberOrNull(price),
     url: url.trim() || null,
+    imageUrl,
     ageMin: numberOrNull(ageMin),
     ageMax: numberOrNull(ageMax),
     notes: notes.trim() || null,
@@ -43,6 +46,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
           <Field label="Price">{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
           <Field label="Link">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>
         </div>
+        <PhotoField groupId={groupId} value={imageUrl} onChange={setImageUrl} />
         <fieldset>
           <legend className="text-sm font-medium mb-1">Good for ages</legend>
           <div className="grid grid-cols-2 gap-2">

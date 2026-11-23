@@ -605,6 +605,11 @@ public sealed class CreateGroupBody
     public string? Name { get; init; }
 }
 
+public sealed class PhotoUpload
+{
+    public string Url { get; init; } = "";
+}
+
 public sealed class StatusResult
 {
     public string Status { get; init; } = "";
@@ -689,6 +694,7 @@ public sealed class CreateGiftBody
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
     public string? Url { get; init; }
+    public string? PhotoUrl { get; init; }
     public string Date { get; init; } = "";
     public string? PersonId { get; init; }
     public string? FamilyId { get; init; }
@@ -709,6 +715,7 @@ public sealed class CreateIdeaBody
 {
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
+    public string? ImageUrl { get; init; }
     public string? Category { get; init; }
     public string? Url { get; init; }
     public decimal? Price { get; init; }

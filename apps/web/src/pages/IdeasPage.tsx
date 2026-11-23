@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { buyIdea, listIdeas, listOccasions, listPeople, updateIdea } from '@bestowd/api-client'
+import { buyIdea, listIdeas, listOccasions, listPeople, updateIdea, photoSrc } from '@bestowd/api-client'
 import type { Idea } from '@bestowd/types'
 import { useGroup } from '../groups/GroupContext.tsx'
 import IdeaForm from '../components/forms/IdeaForm.tsx'
@@ -25,6 +25,7 @@ function IdeaCard({ idea, featured, currency, onBuy, onDismiss, busy }: {
         </span>
       </div>
       {featured && <p className="font-display text-lg font-bold">{idea.title}</p>}
+      {idea.imageUrl && <img src={photoSrc(idea.imageUrl)} alt="" loading="lazy" className="w-full max-h-48 object-cover rounded-xl border border-line" />}
       {idea.brand && <p className="text-[13px] font-medium text-chip-ink">{idea.brand}</p>}
       {idea.notes && <p className="text-sm leading-snug text-muted">{idea.notes}</p>}
       {idea.repeat && (

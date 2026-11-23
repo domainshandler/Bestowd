@@ -65,6 +65,7 @@ public static class MauiProgram
         s.AddTransient<BringViewModel>().AddTransient<BringPage>();
         s.AddTransient<LeaveViewModel>().AddTransient<LeavePage>();
         s.AddTransient<QuickAdd>();
+        s.AddSingleton<IPhotoSource, Services.MauiPhotoSource>();
         s.AddTransient<LogGiftViewModel>().AddTransient<LogGiftPage>();
         s.AddTransient<IdeaFormViewModel>().AddTransient<IdeaFormPage>();
         s.AddTransient<SignInPage>().AddTransient<LaunchPage>();

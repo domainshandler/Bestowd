@@ -6,6 +6,7 @@ import { Button, Checkbox, Field, FormError, Modal, Segmented, Select, TextArea,
 import { REACTION_LABEL, formatDate, todayInput } from '../../lib/format.ts'
 import { recipientsToSubject, subjectToRecipients, type Subject } from './SubjectSelect.tsx'
 import RecipientPicker from './RecipientPicker.tsx'
+import PhotoField from './PhotoField.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export interface GiftDefaults {
@@ -35,6 +36,7 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
   const [thankYouSent, setThankYouSent] = useState(gift?.thankYouSent ?? false)
   const [reaction, setReaction] = useState<Reaction | ''>(gift?.reaction ?? '')
   const [notes, setNotes] = useState(gift?.notes ?? '')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(gift?.photoUrl ?? null)
 
   // Occasions for the chosen person or family (group-wide ones included), or every occasion in the group when nobody
   // is chosen yet; from a year back to a year ahead.
@@ -67,6 +69,7 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
       category: category.trim() || null,
       brand: brand.trim() || null,
       url: url.trim() || null,
+      photoUrl,
       reaction: reaction || null,
       notes: notes.trim() || null,
     }
@@ -133,6 +136,7 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
             </Select>
           )}
         </Field>
+        <PhotoField groupId={groupId} value={photoUrl} onChange={setPhotoUrl} />
         <Field label="Notes">{(id) => <TextArea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
         <FormError error={save.error} />
         <Button type="submit" disabled={!title.trim() || (!who.personId && !who.familyId) || save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</Button>

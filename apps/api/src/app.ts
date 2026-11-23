@@ -13,6 +13,7 @@ import { giftRoutes } from './routes/gifts.js'
 import { ideaRoutes } from './routes/ideas.js'
 import { inviteRoutes } from './routes/invites.js'
 import { moveRoutes } from './routes/moves.js'
+import { uploadRoutes } from './routes/uploads.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -49,6 +50,7 @@ export async function buildApp() {
   await app.register(ideaRoutes)
   await app.register(inviteRoutes)
   await app.register(moveRoutes)
+  await app.register(uploadRoutes)
 
   return app
 }

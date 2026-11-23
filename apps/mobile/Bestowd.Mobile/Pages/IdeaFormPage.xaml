@@ -44,6 +44,17 @@
                 <Label Text="For" Style="{StaticResource FieldLabel}" />
                 <pages:RecipientPickerView BindingContext="{Binding People}" />
             </VerticalStackLayout>
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding Photo.CanPick}">
+                <Label Text="Photo" Style="{StaticResource FieldLabel}" />
+                <Image Source="{Binding Photo.Source}" HeightRequest="160" Aspect="AspectFill" IsVisible="{Binding Photo.HasPhoto}" SemanticProperties.Description="Photo" />
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="{Binding Photo.TakeText}" Style="{StaticResource Secondary}" Command="{Binding Photo.TakeCommand}" />
+                    <Button Text="Choose" Style="{StaticResource Secondary}" Command="{Binding Photo.ChooseCommand}" />
+                    <Button Text="Remove" Style="{StaticResource Ghost}" Command="{Binding Photo.RemoveCommand}" IsVisible="{Binding Photo.HasPhoto}" />
+                </HorizontalStackLayout>
+                <ActivityIndicator IsRunning="{Binding Photo.IsBusy}" IsVisible="{Binding Photo.IsBusy}" />
+                <Label Text="{Binding Photo.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Photo.Error, Converter={StaticResource Has}}" />
+            </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Why it fits" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>

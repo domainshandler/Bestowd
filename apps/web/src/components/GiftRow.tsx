@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { updateGift } from '@bestowd/api-client'
+import { updateGift, photoSrc } from '@bestowd/api-client'
 import type { Gift } from '@bestowd/types'
 import { Badge, Icon } from './ui.tsx'
 import { useSave } from './forms/useSave.ts'
@@ -20,9 +20,13 @@ export default function GiftRow({ gift, currency, showYear = true }: { gift: Gif
 
   return (
     <div className="flex items-center gap-3 p-3.5">
-      <span className={`w-10 h-10 rounded-xl flex items-center justify-center flex-none ${received ? 'bg-amber-soft text-amber-ink' : 'bg-brand-light text-brand'}`}>
-        <Icon name={received ? 'received' : 'given'} label={received ? 'Received' : 'Given'} />
-      </span>
+      {g.photoUrl
+        ? <img src={photoSrc(g.photoUrl)} alt={received ? 'Received' : 'Given'} loading="lazy" className="w-10 h-10 rounded-xl object-cover flex-none border border-line" />
+        : (
+          <span className={`w-10 h-10 rounded-xl flex items-center justify-center flex-none ${received ? 'bg-amber-soft text-amber-ink' : 'bg-brand-light text-brand'}`}>
+            <Icon name={received ? 'received' : 'given'} label={received ? 'Received' : 'Given'} />
+          </span>
+        )}
       <button type="button" onClick={() => setEditing(true)} className="flex-1 min-w-0 flex flex-col gap-0.5 text-left">
         <span className="text-[15px] font-semibold truncate">{g.title}</span>
         <span className="text-[13px] text-muted truncate">{line}</span>

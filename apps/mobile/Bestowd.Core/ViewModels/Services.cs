@@ -44,6 +44,13 @@ public interface IPrompts
     Task<string?> AskTextAsync(string title, string message, string placeholder);
 }
 
+/// <summary>The camera and photo library, implemented by the app. Photos come back shrunk, as JPEG bytes; null when cancelled.</summary>
+public interface IPhotoSource
+{
+    Task<byte[]?> TakeAsync();
+    Task<byte[]?> ChooseAsync();
+}
+
 /// <summary>Raised after any save, so screens that are already open refresh when shown again.</summary>
 public sealed class DataChanged
 {

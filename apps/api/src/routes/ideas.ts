@@ -32,7 +32,8 @@ const ideaProperties = {
   brand: nullableString(80),
   category: nullableString(60),
   url: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
-  imageUrl: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
+  // A web image, or a photo uploaded to Bestowd.
+  imageUrl: { type: ['string', 'null'], maxLength: 2000, pattern: '^(https?://|/files/)' },
   price: moneySchema,
   notes: nullableString(5000),
   ageMin: age,

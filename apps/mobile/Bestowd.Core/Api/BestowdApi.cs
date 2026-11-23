@@ -37,6 +37,22 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task UnregisterDeviceAsync(string token, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, $"/me/devices/{Uri.EscapeDataString(token)}", null, ct);
 
+    // ---- Photos ----
+
+    /// <summary>Uploads a photo (already shrunk to a JPEG) for the group; returns the link to save on an idea or gift.</summary>
+    public async Task<string> UploadPhotoAsync(string groupId, byte[] jpeg, CancellationToken ct = default)
+    {
+        var content = new ByteArrayContent(jpeg);
+        content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        return (await SendAsync(HttpMethod.Post, $"/groups/{groupId}/photos", content, Json.PhotoUpload, ct)).Url;
+    }
+
+    /// <summary>An image link the app can load: photos uploaded to Bestowd are served by the API.</summary>
+    public string? PhotoUri(string? url) =>
+        string.IsNullOrEmpty(url) ? null
+        : url.StartsWith("/files/", StringComparison.Ordinal) && http.BaseAddress is { } b ? new Uri(b, url).ToString()
+        : url;
+
     // ---- Groups ----
 
     public Task<Group> GetGroupAsync(string groupId, CancellationToken ct = default) => GetAsync($"/groups/{groupId}", Json.Group, ct);

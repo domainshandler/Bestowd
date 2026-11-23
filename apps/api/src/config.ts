@@ -14,6 +14,8 @@ const schema = z.object({
   WEB_APP_URL: z.string().url(),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
   PORT: z.coerce.number().default(3000),
+  /** Where uploaded photos are stored. A Docker volume on the NAS. */
+  UPLOAD_DIR: z.string().default('./uploads'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 })
 

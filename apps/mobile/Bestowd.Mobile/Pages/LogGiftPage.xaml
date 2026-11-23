@@ -54,6 +54,17 @@
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Keep value hidden" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding ValueHidden}" SemanticProperties.Description="Keep value hidden" /></Grid>
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Has a gift receipt" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding HasGiftReceipt}" SemanticProperties.Description="Has a gift receipt" /></Grid>
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Thank-you sent" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding ThankYouSent}" SemanticProperties.Description="Thank-you sent" /></Grid>
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding Photo.CanPick}">
+                <Label Text="Photo" Style="{StaticResource FieldLabel}" />
+                <Image Source="{Binding Photo.Source}" HeightRequest="160" Aspect="AspectFill" IsVisible="{Binding Photo.HasPhoto}" SemanticProperties.Description="Photo" />
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="{Binding Photo.TakeText}" Style="{StaticResource Secondary}" Command="{Binding Photo.TakeCommand}" />
+                    <Button Text="Choose" Style="{StaticResource Secondary}" Command="{Binding Photo.ChooseCommand}" />
+                    <Button Text="Remove" Style="{StaticResource Ghost}" Command="{Binding Photo.RemoveCommand}" IsVisible="{Binding Photo.HasPhoto}" />
+                </HorizontalStackLayout>
+                <ActivityIndicator IsRunning="{Binding Photo.IsBusy}" IsVisible="{Binding Photo.IsBusy}" />
+                <Label Text="{Binding Photo.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Photo.Error, Converter={StaticResource Has}}" />
+            </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Notes" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>

@@ -7,6 +7,9 @@ export class ApiError extends Error {
   }
 }
 
+/** A path on the API as a full URL. */
+export const apiUrl = (path: string) => `${API_BASE}${path}`
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null
   const res = await fetch(`${API_BASE}${path}`, {

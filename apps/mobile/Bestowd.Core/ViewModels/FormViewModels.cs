@@ -232,9 +232,12 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
 // ---------------- Gift ----------------
 
 /// <summary>Log a given or received gift, or edit one.</summary>
-public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
+public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null, IPhotoSource? photos = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private RecipientPicker? _who;
+    private PhotoSlot? _photo;
+
+    public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
 
     /// <summary>Who the gift is to or from: a type-to-search picker over people and families, with "+ Add".</summary>
     public RecipientPicker Who
@@ -329,6 +332,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         Category = g.Category ?? "";
         Brand = g.Brand ?? "";
         Url = g.Url ?? "";
+        Photo.Url = g.PhotoUrl;
         BoughtNotGiven = g.Status == GiftStatus.Bought;
         ValueHidden = g.ValueHidden;
         HasGiftReceipt = g.HasGiftReceipt;
@@ -368,7 +372,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             PersonId = Subject.PersonId, FamilyId = Subject.FamilyId,
             OccasionId = Occasion?.Id, Amount = amount, Category = Text(Category), Notes = Text(Notes),
-            Brand = Text(Brand), Url = Text(Url),
+            Brand = Text(Brand), Url = Text(Url), PhotoUrl = Photo.Url,
             Status = IsReceived ? null : BoughtNotGiven ? GiftStatus.Bought : GiftStatus.Given,
             ValueHidden = IsReceived ? ValueHidden : null,
             HasGiftReceipt = IsReceived ? HasGiftReceipt : null,
@@ -393,7 +397,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         var patch = new Patch().Set("title", body.Title).SetDate("date", DateOnly.ParseExact(body.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture))
             .Set("personId", body.PersonId).Set("familyId", body.FamilyId).Set("occasionId", body.OccasionId)
             .Set("amount", body.Amount).Set("category", body.Category).Set("notes", body.Notes)
-            .Set("brand", body.Brand).Set("url", body.Url);
+            .Set("brand", body.Brand).Set("url", body.Url).Set("photoUrl", body.PhotoUrl);
         if (IsReceived) patch.Set("valueHidden", ValueHidden).Set("hasGiftReceipt", HasGiftReceipt).Set("thankYouSent", ThankYouSent);
         else patch.SetEnum("status", body.Status!.Value);
         await SaveAndCloseAsync(() => api.UpdateGiftAsync(GiftId, patch));
@@ -402,8 +406,11 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
 // ---------------- Idea ----------------
 
-public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
+public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null, IPhotoSource? photos = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
+    private PhotoSlot? _photo;
+    public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
+
     private string _groupId = "";
     private string? _personId, _occasionId;
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
@@ -459,6 +466,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         return new CreateIdeaBody
         {
             Title = Title.Trim(), Brand = Text(Brand), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
+            ImageUrl = Photo.Url,
             AgeMin = min, AgeMax = max, OccasionId = _occasionId,
             PersonIds = People.ChosenPersonIds.ToList(),
         };
