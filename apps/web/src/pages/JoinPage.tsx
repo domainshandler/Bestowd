@@ -17,6 +17,9 @@ const FIELDS: { field: ShareableField; label: string }[] = [
 ]
 const DEFAULT_FIELDS: ShareableField[] = ['birthday', 'likes', 'avoid']
 
+/** On a phone, offer to open the invite in the Bestowd app (it handles bestowd://join/<token>). */
+const ON_PHONE = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent)
+
 export default function JoinPage() {
   const { token: inviteToken = '' } = useParams()
   const { token } = useAuth()
@@ -72,6 +75,12 @@ export default function JoinPage() {
           ? `${p.inviterName} will see the details you choose below, read-only. Nothing else in your account is shared.`
           : `You'll see and add to everything in ${p.groupName}: families, gifts and ideas. Your own group stays yours.`}
       </p>
+
+      {ON_PHONE && (
+        <a href={`bestowd://join/${inviteToken}`} className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center">
+          Open in the Bestowd app
+        </a>
+      )}
 
       {!token ? (
         <Link to="/login" state={{ from: `/join/${inviteToken}` }} className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center">

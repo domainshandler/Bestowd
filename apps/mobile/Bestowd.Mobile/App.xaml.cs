@@ -27,10 +27,17 @@ public partial class App : Application
     /// <summary>Opens https://…/join/&lt;token&gt; links (Android App Links, iOS Universal Links).</summary>
     public static async Task HandleLinkAsync(Uri uri)
     {
-        var segments = uri.AbsolutePath.Trim('/').Split('/');
-        if (segments.Length != 2 || segments[0] != "join" || string.IsNullOrEmpty(segments[1])) return;
-        PendingInviteToken = segments[1];
+        if (InviteToken(uri) is not { } token) return;
+        PendingInviteToken = token;
         if (Shell.Current is AppShell shell && shell.IsReady) await shell.OpenPendingInviteAsync();
+    }
+
+    /// <summary>The invite token from https://&lt;host&gt;/join/&lt;token&gt; or bestowd://join/&lt;token&gt;; null for any other link.</summary>
+    public static string? InviteToken(Uri uri)
+    {
+        var segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (uri.Scheme == "bestowd") return uri.Host == "join" && segments.Length == 1 ? segments[0] : null;
+        return segments.Length == 2 && segments[0] == "join" ? segments[1] : null;
     }
 
     protected override async void OnAppLinkRequestReceived(Uri uri)

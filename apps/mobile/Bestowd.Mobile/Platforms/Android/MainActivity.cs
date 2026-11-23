@@ -10,6 +10,9 @@ namespace Bestowd.Mobile;
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
     DataScheme = "https", DataHost = BuildSettings.LinkHost, DataPathPrefix = "/join/", AutoVerify = true)]
+// bestowd://join/<token>: the web join page's "Open in the Bestowd app" button. Works without a verified domain.
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "bestowd", DataHost = "join")]
 public class MainActivity : MauiAppCompatActivity
 {
     protected override void OnCreate(Bundle? savedInstanceState)

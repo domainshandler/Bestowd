@@ -7,5 +7,4 @@
 .git
 .worktrees
 apps/mobile
-apps/web
 docs
