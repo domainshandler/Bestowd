@@ -5,6 +5,7 @@ import type { OccasionType } from '@bestowd/types'
 import { useAuth } from '../auth/useAuth.ts'
 import { useGroup } from '../groups/GroupContext.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
+import HolidaySuggestions from '../components/HolidaySuggestions.tsx'
 import GiftForm from '../components/forms/GiftForm.tsx'
 import { Button, Chips, EmptyState, Icon, LoadError, Loading } from '../components/ui.tsx'
 import { formatMoney } from '../lib/format.ts'
@@ -49,6 +50,8 @@ export default function HomePage() {
           </p>
         )}
       </section>
+
+      {groupId && <HolidaySuggestions groupId={groupId} />}
 
       <Chips label="Occasion type" value={filter} onChange={setFilter} options={[
         { value: 'ALL', label: 'All' },

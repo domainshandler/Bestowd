@@ -28,11 +28,11 @@ export default function GroupOccasionForm({ open, onClose, groupId }: { open: bo
   // Every family is ticked until the user changes the selection.
   useEffect(() => { if (families.data && picked === null) setPicked(new Set(families.data.map((f) => f.id))) }, [families.data, picked])
 
-  const available = holidays.data?.filter((h) => h.occasionId === null && h.nextDate !== null) ?? []
+  const available = holidays.data?.holidays.filter((h) => h.occasionId === null && h.nextDate !== null) ?? []
   // Start on the first holiday the group hasn't added yet (else your own occasion).
   const [touched, setTouched] = useState(false)
   useEffect(() => { if (!touched && available[0]) setHolidayKey(available[0].key) }, [touched, available[0]?.key])
-  const chosen = holidays.data?.find((h) => h.key === holidayKey)
+  const chosen = holidays.data?.holidays.find((h) => h.key === holidayKey)
   const custom = holidayKey === CUSTOM
 
   const save = useSave(() => {

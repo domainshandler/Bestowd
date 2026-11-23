@@ -63,10 +63,10 @@ describe('GroupOccasionPage', () => {
 describe('GroupOccasionForm', () => {
   it('adds a built-in holiday for the ticked families', async () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Mine')]))
-    vi.mocked(listHolidays).mockResolvedValue([
-      { key: 'christmas', name: 'Christmas', note: null, nextDate: '2026-12-25T00:00:00.000Z', occasionId: 'already' },
-      { key: 'diwali', name: 'Diwali', note: 'Lakshmi Puja day', nextDate: '2027-10-29T00:00:00.000Z', occasionId: null },
-    ])
+    vi.mocked(listHolidays).mockResolvedValue({ chosen: true, holidays: [
+      { key: 'christmas', name: 'Christmas', note: null, nextDate: '2026-12-25T00:00:00.000Z', occasionId: 'already', dismissed: false },
+      { key: 'diwali', name: 'Diwali', note: 'Lakshmi Puja day', nextDate: '2027-10-29T00:00:00.000Z', occasionId: null, dismissed: false },
+    ] })
     vi.mocked(listFamilies).mockResolvedValue([family('f1', 'Chen family'), family('f2', 'Ms Park', 'SCHOOL')])
     vi.mocked(createGroupOccasion).mockResolvedValue(christmas)
     renderApp(<GroupOccasionForm open onClose={() => {}} groupId="g1" />)
@@ -85,7 +85,7 @@ describe('GroupOccasionForm', () => {
 
   it('adds your own occasion', async () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Mine')]))
-    vi.mocked(listHolidays).mockResolvedValue([])
+    vi.mocked(listHolidays).mockResolvedValue({ chosen: true, holidays: [] })
     vi.mocked(listFamilies).mockResolvedValue([family('f1', 'Chen family')])
     vi.mocked(createGroupOccasion).mockResolvedValue(christmas)
     renderApp(<GroupOccasionForm open onClose={() => {}} groupId="g1" />)

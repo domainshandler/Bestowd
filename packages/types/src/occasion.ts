@@ -73,13 +73,22 @@ export interface OccasionCoverage {
   families: FamilyShare[]
 }
 
-/** GET /groups/:groupId/holidays: the built-in holidays and whether the group has added each. */
+/** A built-in holiday and whether the group has added or dismissed it. */
 export interface Holiday {
   key: string
   name: string
   note: string | null
   nextDate: string | null
   occasionId: string | null
+  /** The group said it doesn't celebrate this one, so it isn't suggested. */
+  dismissed: boolean
+}
+
+/** GET /groups/:groupId/holidays */
+export interface HolidayChoices {
+  /** False until the group answers "Which holidays do you celebrate?". */
+  chosen: boolean
+  holidays: Holiday[]
 }
 
 export interface OccasionQuery {

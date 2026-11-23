@@ -1,13 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getGroup, listOccasions, updateGroup } from '@bestowd/api-client'
+import { getGroup, listHolidays, listOccasions, updateGroup } from '@bestowd/api-client'
 import type { OccasionType } from '@bestowd/types'
 import { useAuth } from '../auth/useAuth.ts'
 import { GROUP_KEY, useGroup } from '../groups/GroupContext.tsx'
 import InviteLinkModal from '../components/forms/InviteLinkModal.tsx'
 import GroupOccasionForm from '../components/forms/GroupOccasionForm.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
+import { ChooseHolidays } from '../components/HolidaySuggestions.tsx'
 import { useSave } from '../components/forms/useSave.ts'
 import { Avatar, Badge, Button, Card, EmptyState, Field, FormError, Icon, SectionHeader, TextInput } from '../components/ui.tsx'
 import { OCCASION_TYPE_LABEL } from '../lib/format.ts'
@@ -17,6 +18,8 @@ const TYPES = Object.keys(OCCASION_TYPE_LABEL) as OccasionType[]
 /** Holidays and other occasions for the whole group, e.g. Christmas covering every family. */
 function GroupOccasions({ groupId }: { groupId: string }) {
   const [adding, setAdding] = useState(false)
+  const [choosing, setChoosing] = useState(false)
+  const holidays = useQuery({ queryKey: ['holidays', groupId], queryFn: () => listHolidays(groupId) })
   const yearAhead = new Date(Date.now() + 366 * 86_400_000).toISOString().slice(0, 10)
   const occasions = useQuery({ queryKey: ['occasions', groupId, 'group-wide'], queryFn: () => listOccasions(groupId, { to: yearAhead }) })
   const groupWide = occasions.data?.occasions.filter((o) => o.scope === 'GROUP') ?? []
@@ -27,6 +30,8 @@ function GroupOccasions({ groupId }: { groupId: string }) {
         <EmptyState>Holidays you celebrate with several families, like Christmas or Diwali. Add one to track a gift and budget for each family.</EmptyState>
       )}
       {groupWide.map((o) => <OccasionRow key={o.id} occasion={o} />)}
+      <Button variant="secondary" className="self-start" disabled={!holidays.data} onClick={() => setChoosing(true)}>Holidays we celebrate</Button>
+      {choosing && holidays.data && <ChooseHolidays groupId={groupId} holidays={holidays.data.holidays} onClose={() => setChoosing(false)} />}
       {adding && <GroupOccasionForm open onClose={() => setAdding(false)} groupId={groupId} />}
     </section>
   )

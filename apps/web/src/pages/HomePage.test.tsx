@@ -4,7 +4,10 @@ import { getMe, listHomeOccasions } from '@bestowd/api-client'
 import HomePage from './HomePage.tsx'
 import { me, membership, occasion, renderApp } from '../test-utils.tsx'
 
-vi.mock('@bestowd/api-client', () => ({ getMe: vi.fn(), listHomeOccasions: vi.fn(), listPeople: vi.fn(), listFamilies: vi.fn(), listOccasions: vi.fn() }))
+vi.mock('@bestowd/api-client', () => ({
+  getMe: vi.fn(), listHomeOccasions: vi.fn(), listPeople: vi.fn(), listFamilies: vi.fn(), listOccasions: vi.fn(),
+  listHolidays: vi.fn(async () => ({ chosen: true, holidays: [] })), chooseHolidays: vi.fn(), dismissHoliday: vi.fn(), createGroupOccasion: vi.fn(),
+}))
 
 describe('HomePage', () => {
   it('shows the summary and occasions, without group labels for a single group', async () => {
