@@ -13,9 +13,11 @@ import { GROUP_WIDE } from './occasions.js'
 const json = (v: Prisma.JsonValue) => (v ?? {}) as Prisma.InputJsonValue
 
 /** Copies families `familyIds` of group `sourceId` into group `destId`, for `user` (who is a member of both). */
-export async function copyFamilies(tx: Tx, sourceId: string, destId: string, familyIds: string[], user: { id: string; name: string }): Promise<{ families: number; gifts: number }> {
+export async function copyFamilies(
+  tx: Tx, sourceId: string, destId: string, familyIds: string[], user: { id: string; name: string }, withIdeas = false,
+): Promise<{ families: number; gifts: number; ideas: number }> {
   const families = await tx.family.findMany({ where: { groupId: sourceId, id: { in: familyIds } } })
-  if (families.length === 0) return { families: 0, gifts: 0 }
+  if (families.length === 0) return { families: 0, gifts: 0, ideas: 0 }
   await addAccountHolder(tx, destId, user)
   const destHousehold = await tx.family.findUniqueOrThrow({ where: { householdOfGroupId: destId } })
   const destFamilies = await tx.family.findMany({ where: { groupId: destId, householdOfGroupId: null } })
@@ -102,6 +104,23 @@ export async function copyFamilies(tx: Tx, sourceId: string, destId: string, fam
     await tx.occasionFamily.createMany({ data: covering.flatMap((o) => created.map((f) => ({ occasionId: o.id, familyId: f }))), skipDuplicates: true })
   }
 
+  // Gift ideas for the copied people, tagged with their copies.
+  const ideaMap = new Map<string, string>()
+  if (withIdeas) {
+    const ideas = await tx.idea.findMany({ where: { groupId: sourceId, tags: { some: { personId: { in: personIds } } } }, include: { tags: true } })
+    for (const i of ideas) {
+      const tags = [...new Set(i.tags.map((t) => personMap.get(t.personId)).filter((x): x is string => x !== undefined))]
+      const copy = await tx.idea.create({
+        data: {
+          groupId: destId, title: i.title, category: i.category, url: i.url, imageUrl: i.imageUrl, price: i.price, notes: i.notes,
+          ageMin: i.ageMin, ageMax: i.ageMax, status: i.status, occasionId: i.occasionId ? occasionMap.get(i.occasionId) ?? null : null,
+          createdById: i.createdById, tags: { create: tags.map((personId) => ({ personId })) },
+        },
+      })
+      ideaMap.set(i.id, copy.id)
+    }
+  }
+
   for (const g of gifts) {
     const copy = await tx.giftEntry.create({
       data: {
@@ -110,11 +129,12 @@ export async function copyFamilies(tx: Tx, sourceId: string, destId: string, fam
         personId: g.personId ? personMap.get(g.personId)! : null, familyId: g.familyId ? familyMap.get(g.familyId)! : null,
         amount: g.amount, status: g.status, valueHidden: g.valueHidden, hasGiftReceipt: g.hasGiftReceipt, returnBy: g.returnBy,
         thankYouSent: g.thankYouSent, thankYouDueAt: g.thankYouDueAt, reaction: g.reaction, photoUrl: g.photoUrl, notes: g.notes,
+        ideaId: g.ideaId ? ideaMap.get(g.ideaId) ?? null : null,
         createdById: g.createdById,
       },
     })
     const credits = g.credits.map((c) => personMap.get(c.personId)).filter((x): x is string => x !== undefined)
     if (credits.length) await tx.giftCredit.createMany({ data: [...new Set(credits)].map((personId) => ({ giftEntryId: copy.id, personId })), skipDuplicates: true })
   }
-  return { families: families.length, gifts: gifts.length }
+  return { families: families.length, gifts: gifts.length, ideas: ideaMap.size }
 }

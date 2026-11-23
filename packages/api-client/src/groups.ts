@@ -1,6 +1,6 @@
 import { apiFetch } from './client.js'
 import { json } from './query.js'
-import type { Group, LeaveGroupBody, LeaveOptions, LeaveResult, UpdateGroupBody } from '@bestowd/types'
+import type { Group, GroupNotice, LeaveGroupBody, LeaveOptions, LeaveResult, UpdateGroupBody } from '@bestowd/types'
 
 export function getGroup(groupId: string): Promise<Group> {
   return apiFetch(`/groups/${groupId}`)
@@ -22,4 +22,13 @@ export function getLeaveOptions(groupId: string): Promise<LeaveOptions> {
 
 export function leaveGroup(groupId: string, body: LeaveGroupBody = {}): Promise<LeaveResult> {
   return apiFetch(`/groups/${groupId}/leave`, { method: 'POST', body: json(body) })
+}
+
+/** Recent notices for the group that you haven't closed. */
+export function listNotices(groupId: string): Promise<GroupNotice[]> {
+  return apiFetch(`/groups/${groupId}/notices`)
+}
+
+export function dismissNotice(id: string): Promise<void> {
+  return apiFetch(`/notices/${id}/dismiss`, { method: 'POST', body: json({}) })
 }

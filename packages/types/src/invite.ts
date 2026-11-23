@@ -92,16 +92,23 @@ export interface LeaveGroupBody {
   /** An owner alone in the group confirms that leaving deletes it. */
   deleteGroup?: boolean
   /** Families to take a copy of, with their people and gift history. Into toGroupId, or another group of yours (a new one if none). */
-  copy?: { familyIds: string[]; toGroupId?: string; toNewGroup?: boolean }
+  copy?: { familyIds: string[]; ideas?: boolean; toGroupId?: string; toNewGroup?: boolean }
+  /** Clear your birthday, likes, sizes and notes from the household you leave. Your name stays on past gifts. */
+  forgetMe?: boolean
 }
+
+/** Something the group's members should know, e.g. someone left. */
+export interface GroupNotice { id: string; text: string; createdAt: string }
 
 /** Before leaving: families you could take a copy of, and your other groups to put them in. */
 export interface LeaveOptions {
   families: MovableFamily[]
+  /** Gift ideas tagged with someone in the group. */
+  ideas: number
   destinations: { groupId: string; groupName: string }[]
 }
 
 export interface LeaveResult {
   primaryGroupId: string
-  copied: { families: number; gifts: number }
+  copied: { families: number; gifts: number; ideas: number }
 }

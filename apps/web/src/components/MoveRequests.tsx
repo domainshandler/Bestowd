@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { createGroup, getGroup, getGroupMovable, getLeaveOptions, leaveGroup, listMoveRequests, requestMove } from '@bestowd/api-client'
+import { createGroup, dismissNotice, getGroup, getGroupMovable, getLeaveOptions, leaveGroup, listMoveRequests, listNotices, requestMove } from '@bestowd/api-client'
 import type { MovableItems, MoveRequestSummary, MoveSelection } from '@bestowd/types'
 import { Button, Card, Checkbox, Field, FormError, Modal, Select, TextInput } from './ui.tsx'
 import { useSave } from './forms/useSave.ts'
@@ -127,6 +127,8 @@ export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName:
   const [confirm, setConfirm] = useState('')
   const [picked, setPicked] = useState<string[] | null>(null)
   const [destination, setDestination] = useState<string | null>(null)
+  const [withIdeas, setWithIdeas] = useState(true)
+  const [forgetMe, setForgetMe] = useState(false)
   const isOwner = membership?.role === 'OWNER'
   const alone = isOwner && details.data !== undefined && others.length === 0
   const families = options.data?.families ?? []
@@ -135,9 +137,10 @@ export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName:
   // Default: a group you own, else any other group, else a new one.
   const defaultDestination = (destinations.find((d) => memberships.find((m) => m.groupId === d.groupId)?.role === 'OWNER') ?? destinations[0])?.groupId ?? NEW_GROUP
   const to = destination ?? defaultDestination
-  const copy = familyIds.length === 0 ? undefined : to === NEW_GROUP ? { familyIds, toNewGroup: true } : { familyIds, toGroupId: to }
+  const ideas = (options.data?.ideas ?? 0) > 0 && withIdeas
+  const copy = familyIds.length === 0 ? undefined : to === NEW_GROUP ? { familyIds, ideas, toNewGroup: true } : { familyIds, ideas, toGroupId: to }
   const leave = useSave(
-    () => leaveGroup(groupId, { ...(isOwner ? (alone ? { deleteGroup: true } : { newOwnerId: newOwnerId || others[0]?.userId }) : {}), ...(copy ? { copy } : {}) }),
+    () => leaveGroup(groupId, { ...(isOwner ? (alone ? { deleteGroup: true } : { newOwnerId: newOwnerId || others[0]?.userId }) : {}), ...(copy ? { copy } : {}), ...(!alone && forgetMe ? { forgetMe: true } : {}) }),
     (r) => { setGroupId(r.primaryGroupId); navigate('/') },
   )
   const ready = details.data !== undefined && options.data !== undefined && (!alone || confirm.trim().toLowerCase() === 'delete')
@@ -168,6 +171,11 @@ export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName:
                 </p>
               </fieldset>
             )}
+            {copy && (options.data?.ideas ?? 0) > 0 && (
+              <Card className="px-4 py-1">
+                <Checkbox label="Gift ideas for them too" hint="Ideas tagged with anyone you're copying" checked={withIdeas} onChange={setWithIdeas} />
+              </Card>
+            )}
             {copy && (
               <Field label="Put the copies in">
                 {(id) => (
@@ -179,6 +187,12 @@ export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName:
               </Field>
             )}
 
+            {!alone && (
+              <Card className="px-4 py-1">
+                <Checkbox label="Remove my details" checked={forgetMe} onChange={setForgetMe}
+                  hint={`Clears your birthday, likes, sizes and notes from ${groupName}. Your name stays on past gifts.`} />
+              </Card>
+            )}
             {isOwner && others.length > 0 && (
               <Field label="Who looks after the group now?">
                 {(id) => (
@@ -222,5 +236,22 @@ export function StartGroup() {
         </Modal>
       )}
     </>
+  )
+}
+
+/** Home: things the group should know, such as someone leaving. */
+export function GroupNotices({ groupId }: { groupId: string }) {
+  const notices = useQuery({ queryKey: ['notices', groupId], queryFn: () => listNotices(groupId) })
+  const dismiss = useSave((id: string) => dismissNotice(id))
+  if (!notices.data?.length) return null
+  return (
+    <section aria-label="Group news" className="flex flex-col gap-2.5">
+      {notices.data.map((n) => (
+        <Card key={n.id} className="p-4 flex items-center gap-3">
+          <span className="flex-1 text-sm text-chip-ink">{n.text}</span>
+          <Button variant="ghost" aria-label="Dismiss" disabled={dismiss.isPending} onClick={() => dismiss.mutate(n.id)}>OK</Button>
+        </Card>
+      ))}
+    </section>
   )
 }

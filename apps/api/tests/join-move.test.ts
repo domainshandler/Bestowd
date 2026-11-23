@@ -281,6 +281,13 @@ describe('taking copies when you leave', () => {
     ids.truck = (await gift('Truck', owner, { personId: ids.hugo, occasionId: ids.bday })).id
     ids.airFryer = (await gift('Air Fryer', leaver, { familyId: owner.householdId })).id
     await gift('Pie', owner, { familyId: ids.unpicked })
+    // An idea for Hugo and one for the Neighbours (not copied). The leaver has a birthday and likes in the group.
+    await db.idea.create({ data: { groupId: g, title: 'Dino book', createdById: owner.user.id, tags: { create: [{ personId: ids.hugo }] } } })
+    await db.idea.create({ data: { groupId: g, title: 'Cookies', createdById: owner.user.id } })
+    const meThere = await db.person.findFirstOrThrow({ where: { groupId: g, userId: leaver.user.id } })
+    await db.person.update({ where: { id: meThere.id }, data: { birthMonth: 7, birthDay: 9, likes: ['Coffee'] } })
+    await db.occasion.create({ data: { groupId: g, personId: meThere.id, type: 'BIRTHDAY', name: "Sheldon's birthday", date: new Date('1990-07-09') } })
+    ids.meThere = meThere.id
     // The leaver's own group already has a Sharon Miranda.
     ids.mySharon = (await db.family.create({ data: { groupId: leaver.groupId, name: 'sharon miranda' } })).id
   })
@@ -291,12 +298,13 @@ describe('taking copies when you leave', () => {
       ["Renny's household", true, 2, 2], ['Hugo toddler room', false, 1, 1], ['Neighbours', false, 0, 1], ['Sharon Miranda', false, 0, 0],
     ])
     expect(res.body.destinations).toEqual([{ groupId: leaver.groupId, groupName: "Sheldon's group" }])
+    expect(res.body.ideas).toBe(1)
   })
 
   it('copies the chosen families with their people and gift history into your own group', async () => {
-    const res = await as(leaver).post(`/groups/${owner.groupId}/leave`, { copy: { familyIds: [owner.householdId, ids.daycare, ids.sharon] } })
+    const res = await as(leaver).post(`/groups/${owner.groupId}/leave`, { forgetMe: true, copy: { familyIds: [owner.householdId, ids.daycare, ids.sharon], ideas: true } })
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ primaryGroupId: leaver.groupId, copied: { families: 3, gifts: 3 } })
+    expect(res.body).toEqual({ primaryGroupId: leaver.groupId, copied: { families: 3, gifts: 3, ideas: 1 } })
     const mine = leaver.groupId
 
     // The household's people join yours: Hugo and Renny, without a second you.
@@ -316,6 +324,21 @@ describe('taking copies when you leave', () => {
     const xmas = await db.occasion.findFirstOrThrow({ where: { groupId: mine, holidayKey: 'christmas' }, include: { coverage: true } })
     expect(xmas.coverage.map((c) => c.familyId)).toContain(families[0]!.id)
 
+    // The idea for Hugo came along, tagged with his copy.
+    const idea = await db.idea.findFirstOrThrow({ where: { groupId: mine }, include: { tags: { include: { person: true } } } })
+    expect([idea.title, idea.tags.map((t) => t.person.name)]).toEqual(['Dino book', ['Hugo']])
+
+    // You asked to be forgotten: your name stays on past gifts, your details and birthday go.
+    const left = await db.person.findUniqueOrThrow({ where: { id: ids.meThere } })
+    expect(left).toMatchObject({ name: 'Sheldon Copy', userId: null, birthMonth: null, likes: [] })
+    expect(await db.occasion.count({ where: { personId: ids.meThere } })).toBe(0)
+
+    // The people who stay are told.
+    const notices = (await as(owner).get(`/groups/${owner.groupId}/notices`)).body
+    expect(notices.map((n: any) => n.text)).toEqual(['Sheldon left the group and took a copy of 3 families.'])
+    expect((await as(owner).post(`/notices/${notices[0].id}/dismiss`)).status).toBe(204)
+    expect((await as(owner).get(`/groups/${owner.groupId}/notices`)).body).toEqual([])
+
     // The group keeps its originals, and you're no longer in it.
     expect(await db.giftEntry.count({ where: { groupId: owner.groupId } })).toBe(4)
     expect((await db.family.findUniqueOrThrow({ where: { id: ids.daycare } })).groupId).toBe(owner.groupId)
@@ -328,7 +351,7 @@ describe('taking copies when you leave', () => {
     await db.giftEntry.create({ data: { groupId: solo.groupId, direction: 'GIVEN', title: 'Novel', date: new Date('2026-01-01'), familyId: fam, createdById: solo.user.id } })
     const res = await as(solo).post(`/groups/${solo.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [fam] } })
     expect(res.status).toBe(200)
-    expect(res.body.copied).toEqual({ families: 1, gifts: 1 })
+    expect(res.body.copied).toEqual({ families: 1, gifts: 1, ideas: 0 })
     expect(await db.group.findUnique({ where: { id: solo.groupId } })).toBeNull()
     expect(await db.giftEntry.count({ where: { groupId: res.body.primaryGroupId, title: 'Novel' } })).toBe(1)
     expect((await as(solo).get('/me')).body.memberships).toHaveLength(1)
@@ -349,5 +372,13 @@ describe('taking copies when you leave', () => {
     const a = await user('Ann Copy')
     expect((await as(a).post(`/groups/${a.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [], toGroupId: a.groupId } })).status).toBe(400)
     expect((await as(a).post(`/groups/${a.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [], toGroupId: owner.groupId } })).status).toBe(404)
+  })
+})
+
+describe('the notice when someone leaves', () => {
+  it('names a new owner', async () => {
+    const { leaveNotice } = await import('../src/routes/groups.js')
+    expect(leaveNotice('Renny', 0, 'Sheldon')).toBe('Renny left the group. Sheldon is now the owner.')
+    expect(leaveNotice('Mo', 1, null)).toBe('Mo left the group and took a copy of 1 family.')
   })
 })

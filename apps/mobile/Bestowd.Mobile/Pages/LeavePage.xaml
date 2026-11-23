@@ -34,6 +34,15 @@
                     </VerticalStackLayout>
                 </Border>
                 <Label Text="{Binding CopyNote}" Style="{StaticResource Small}" />
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasIdeas}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Gift ideas for them too" />
+                            <Label Text="Ideas tagged with anyone you're copying" Style="{StaticResource Small}" />
+                        </VerticalStackLayout>
+                        <CheckBox Grid.Column="1" IsChecked="{Binding WithIdeas}" VerticalOptions="Center" SemanticProperties.Description="Gift ideas for them too" />
+                    </Grid>
+                </Border>
                 <VerticalStackLayout Spacing="4">
                     <Label Text="Put the copies in" Style="{StaticResource FieldLabel}" />
                     <Border Style="{StaticResource FieldBox}">
@@ -41,6 +50,16 @@
                     </Border>
                 </VerticalStackLayout>
             </VerticalStackLayout>
+
+            <Border Style="{StaticResource Card}" IsVisible="{Binding Alone, Converter={StaticResource Not}}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout VerticalOptions="Center">
+                        <Label Text="Remove my details" />
+                        <Label Text="{Binding ForgetHint}" Style="{StaticResource Small}" />
+                    </VerticalStackLayout>
+                    <CheckBox Grid.Column="1" IsChecked="{Binding ForgetMe}" VerticalOptions="Center" SemanticProperties.Description="Remove my details" />
+                </Grid>
+            </Border>
 
             <VerticalStackLayout Spacing="4" IsVisible="{Binding ChoosesOwner}">
                 <Label Text="Who looks after the group now?" Style="{StaticResource FieldLabel}" />

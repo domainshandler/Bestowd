@@ -20,6 +20,8 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupS
     [ObservableProperty] public partial IReadOnlyList<HolidaySuggestion> SuggestedHolidays { get; private set; } = [];
     /// <summary>Requests to bring things into the current group: the owner reviews them.</summary>
     [ObservableProperty] public partial IReadOnlyList<MoveRequestRow> PendingMoves { get; private set; } = [];
+    /// <summary>Things the group should know, such as someone leaving.</summary>
+    [ObservableProperty] public partial IReadOnlyList<GroupNotice> Notices { get; private set; } = [];
 
     public bool IsEmpty => HasLoaded && Occasions.Count == 0 && Error is null;
 
@@ -32,10 +34,12 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupS
         var home = api.ListHomeOccasionsAsync(Filter);
         Task<HolidayChoices>? holidays = groups.GroupId is { } g ? api.ListHolidaysAsync(g) : null;
         Task<List<MoveRequestSummary>>? moves = groups.GroupId is { } g2 ? api.ListMoveRequestsAsync(g2) : null;
+        Task<List<GroupNotice>>? notices = groups.GroupId is { } g3 ? api.ListNoticesAsync(g3) : null;
         Apply(await home);
         ApplyHolidays(holidays is null ? null : await holidays);
         var isOwner = groups.Current?.Role == MembershipRole.Owner;
         PendingMoves = moves is null ? [] : (await moves).Select(r => MoveRequestRow.From(r, isOwner)).ToList();
+        Notices = notices is null ? [] : await notices;
     });
 
     /// <summary>Fills the summary and list from a /me/occasions response.</summary>
@@ -58,6 +62,13 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupS
         AskHolidays = choices is { Chosen: false };
         SuggestedHolidays = choices is { Chosen: true } ? Holidays.Suggested(choices.Holidays, now) : [];
     }
+
+    [RelayCommand]
+    public Task DismissNoticeAsync(GroupNotice notice) => RunAsync(async () =>
+    {
+        await api.DismissNoticeAsync(notice.Id);
+        Notices = Notices.Where(n => n.Id != notice.Id).ToList();
+    });
 
     [RelayCommand]
     public Task OpenMoveAsync(MoveRequestRow row) => nav.GoToAsync(Routes.MoveRequest, new Dictionary<string, object> { [Params.Id] = row.Id });

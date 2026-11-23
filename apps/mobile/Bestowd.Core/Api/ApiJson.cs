@@ -42,6 +42,7 @@ namespace Bestowd.Core.Api;
 [JsonSerializable(typeof(LeaveGroupBody))]
 [JsonSerializable(typeof(LeaveGroupResult))]
 [JsonSerializable(typeof(LeaveOptions))]
+[JsonSerializable(typeof(List<GroupNotice>))]
 [JsonSerializable(typeof(CreateGroupBody))]
 [JsonSerializable(typeof(StatusResult))]
 [JsonSerializable(typeof(ErrorBody))]

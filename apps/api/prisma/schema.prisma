@@ -135,6 +135,7 @@ model Group {
   invites         InviteLink[]
   movesIn         MoveRequest[]     @relation("MoveInto")
   movesOut        MoveRequest[]     @relation("MoveFrom")
+  notices         GroupNotice[]
 }
 
 model GroupMembership {
@@ -410,4 +411,18 @@ model MoveRequest {
   decidedBy   User?  @relation("MoveDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
 
   @@index([groupId, status])
+}
+
+/// Something the group's members should know about, such as someone leaving. Shown on Home for 30 days.
+model GroupNotice {
+  id          String   @id @default(cuid())
+  groupId     String
+  text        String
+  /// Users who closed it.
+  dismissedBy String[] @default([])
+  createdAt   DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
 }

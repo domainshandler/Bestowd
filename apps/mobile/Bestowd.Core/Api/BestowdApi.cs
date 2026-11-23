@@ -185,6 +185,12 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<Group> CreateGroupAsync(string? name, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "/groups", Body(new CreateGroupBody { Name = name }, Json.CreateGroupBody), Json.Group, ct);
 
+    public Task<List<GroupNotice>> ListNoticesAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/notices", Json.ListGroupNotice, ct);
+
+    public Task DismissNoticeAsync(string id, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/notices/{id}/dismiss", Body(new CreateGroupBody(), Json.CreateGroupBody), ct);
+
     public Task<LeaveOptions> GetLeaveOptionsAsync(string groupId, CancellationToken ct = default) =>
         GetAsync($"/groups/{groupId}/leave-options", Json.LeaveOptions, ct);
 

@@ -255,7 +255,7 @@ public class ViewModelTests
         return (vm, handler, nav);
     }
 
-    private const string LeaveOptionsJson = """{"families":[{"id":"hh","name":"Renny's household","isOwnHousehold":true,"people":2,"gifts":2},{"id":"f1","name":"Hugo toddler room","isOwnHousehold":false,"people":2,"gifts":1},{"id":"f2","name":"Neighbours","isOwnHousehold":false,"people":0,"gifts":0}],"destinations":[{"groupId":"g2","groupName":"Mine"}]}""";
+    private const string LeaveOptionsJson = """{"ideas":1,"families":[{"id":"hh","name":"Renny's household","isOwnHousehold":true,"people":2,"gifts":2},{"id":"f1","name":"Hugo toddler room","isOwnHousehold":false,"people":2,"gifts":1},{"id":"f2","name":"Neighbours","isOwnHousehold":false,"people":0,"gifts":0}],"destinations":[{"groupId":"g2","groupName":"Mine"}]}""";
 
     [Fact]
     public async Task Leave_copies_the_ticked_families_into_your_own_group()
@@ -269,6 +269,8 @@ public class ViewModelTests
         Assert.Equal(["Renny's household (the household's people)", "Hugo toddler room", "Neighbours"], vm.Families.Select(f => f.Label));
         Assert.Equal("g2", vm.Destination?.GroupId);
         vm.Families.Single(f => f.Id == "f2").IsOn = false;
+        Assert.True(vm.HasIdeas);
+        vm.ForgetMe = true;
 
         await vm.LeaveAsync();
         using var doc = JsonDocument.Parse(handler.Requests.Single(r => r.PathAndQuery == "/groups/g1/leave").Body!);
@@ -276,6 +278,8 @@ public class ViewModelTests
         Assert.Equal(["hh", "f1"], copy.GetProperty("familyIds").EnumerateArray().Select(e => e.GetString()!));
         Assert.Equal("g2", copy.GetProperty("toGroupId").GetString());
         Assert.False(doc.RootElement.TryGetProperty("newOwnerId", out _));
+        Assert.True(copy.GetProperty("ideas").GetBoolean());
+        Assert.True(doc.RootElement.GetProperty("forgetMe").GetBoolean());
         Assert.Equal(Routes.Home, nav.Visited.Last().Route);
 
         // Or into a new group of your own.

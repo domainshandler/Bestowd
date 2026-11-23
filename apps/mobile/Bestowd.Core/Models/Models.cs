@@ -546,6 +546,7 @@ public sealed class ApproveMoveBody
 public sealed class LeaveCopy
 {
     public List<string> FamilyIds { get; init; } = [];
+    public bool? Ideas { get; init; }
     public string? ToGroupId { get; init; }
     public bool? ToNewGroup { get; init; }
 }
@@ -556,12 +557,23 @@ public sealed class LeaveGroupBody
     public bool? DeleteGroup { get; init; }
     /// <summary>Families to take a copy of, with their people and gift history.</summary>
     public LeaveCopy? Copy { get; init; }
+    /// <summary>Clear your birthday, likes, sizes and notes from the household you leave.</summary>
+    public bool? ForgetMe { get; init; }
 }
 
 public sealed class CopiedCounts
 {
     public int Families { get; init; }
     public int Gifts { get; init; }
+    public int Ideas { get; init; }
+}
+
+/// <summary>Something the group's members should know, e.g. someone left.</summary>
+public sealed class GroupNotice
+{
+    public string Id { get; init; } = "";
+    public string Text { get; init; } = "";
+    public DateTime CreatedAt { get; init; }
 }
 
 public sealed class LeaveGroupResult
@@ -580,6 +592,7 @@ public sealed class LeaveDestination
 public sealed class LeaveOptions
 {
     public List<MovableFamily> Families { get; init; } = [];
+    public int Ideas { get; init; }
     public List<LeaveDestination> Destinations { get; init; } = [];
 }
 

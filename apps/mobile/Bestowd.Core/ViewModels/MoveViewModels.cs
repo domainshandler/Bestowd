@@ -257,6 +257,10 @@ public sealed partial class LeaveViewModel(BestowdApi api, Session session, Grou
     [ObservableProperty] public partial GroupMember? NextOwner { get; set; }
     [ObservableProperty] public partial bool Alone { get; private set; }
     [ObservableProperty] public partial string ConfirmText { get; set; } = "";
+    [ObservableProperty] public partial bool HasIdeas { get; private set; }
+    [ObservableProperty] public partial bool WithIdeas { get; set; } = true;
+    [ObservableProperty] public partial bool ForgetMe { get; set; }
+    public string ForgetHint => $"Clears your birthday, likes, sizes and notes from {GroupName}. Your name stays on past gifts.";
 
     public bool IsOwner => groups.Memberships.FirstOrDefault(m => m.GroupId == _groupId)?.Role == MembershipRole.Owner;
     public bool ChoosesOwner => NextOwners.Count > 0;
@@ -288,25 +292,28 @@ public sealed partial class LeaveViewModel(BestowdApi api, Session session, Grou
         Families = options.Families
             .Select(f => new BringItem(BringKind.Family, f.Id, f.IsOwnHousehold ? $"{f.Name} (the household's people)" : f.Name, MoveText.Contents(f.People, f.Gifts)))
             .ToList();
+        HasIdeas = options.Ideas > 0;
         Destinations = [.. options.Destinations.Select(d => new LeaveTarget(d.GroupId, d.GroupName)), new LeaveTarget(null, "A new group of my own")];
         var owned = options.Destinations.FirstOrDefault(d => groups.Memberships.FirstOrDefault(m => m.GroupId == d.GroupId)?.Role == MembershipRole.Owner);
         Destination = Destinations.FirstOrDefault(d => d.GroupId == (owned ?? options.Destinations.FirstOrDefault())?.GroupId) ?? Destinations[^1];
         HasLoaded = true;
-        foreach (var name in new[] { nameof(IsOwner), nameof(ChoosesOwner), nameof(HasFamilies), nameof(Title), nameof(Intro), nameof(CopyNote), nameof(ButtonText) })
+        foreach (var name in new[] { nameof(IsOwner), nameof(ChoosesOwner), nameof(HasFamilies), nameof(Title), nameof(Intro), nameof(CopyNote), nameof(ButtonText), nameof(ForgetHint) })
             OnPropertyChanged(name);
     }
 
     public LeaveGroupBody BuildBody()
     {
         var ids = Families.Where(f => f.IsOn).Select(f => f.Id).ToList();
+        bool? ideas = HasIdeas && WithIdeas ? true : null;
         var copy = ids.Count == 0 ? null
-            : Destination?.GroupId is { } to ? new LeaveCopy { FamilyIds = ids, ToGroupId = to }
-            : new LeaveCopy { FamilyIds = ids, ToNewGroup = true };
+            : Destination?.GroupId is { } to ? new LeaveCopy { FamilyIds = ids, Ideas = ideas, ToGroupId = to }
+            : new LeaveCopy { FamilyIds = ids, Ideas = ideas, ToNewGroup = true };
         return new LeaveGroupBody
         {
             DeleteGroup = Alone ? true : null,
             NewOwnerId = ChoosesOwner ? NextOwner?.UserId : null,
             Copy = copy,
+            ForgetMe = !Alone && ForgetMe ? true : null,
         };
     }
 
