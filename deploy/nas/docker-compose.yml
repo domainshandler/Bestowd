@@ -31,10 +31,11 @@ services:
       DATABASE_URL: postgresql://bestowd:${POSTGRES_PASSWORD}@db:5432/bestowd
       DIRECT_URL: postgresql://bestowd:${POSTGRES_PASSWORD}@db:5432/bestowd
       UPLOAD_DIR: /data/uploads
-    # Docker's built-in DNS on this NAS doesn't resolve outside names; store links and AI providers need it.
+    # Docker's built-in DNS on this NAS can't resolve outside names, and the router's DNS isn't reachable
+    # from Docker networks; store links and AI providers need public resolvers.
     dns:
-      - 192.168.1.1
       - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - uploads:/data/uploads
     ports:
