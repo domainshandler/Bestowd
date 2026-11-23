@@ -80,6 +80,13 @@ enum InviteKind {
   GROUP
 }
 
+enum MoveStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
 model User {
   id             String   @id @default(cuid())
   googleId       String?  @unique
@@ -98,6 +105,8 @@ model User {
   createdIdeas    Idea[]            @relation("IdeaCreatedBy")
   createdInvites  InviteLink[]      @relation("InviteCreatedBy")
   acceptedInvites InviteLink[]      @relation("InviteAcceptedBy")
+  moveRequests    MoveRequest[]     @relation("MoveRequestedBy")
+  moveDecisions   MoveRequest[]     @relation("MoveDecidedBy")
   devices         Device[]
   people          Person[]
 }
@@ -124,6 +133,8 @@ model Group {
   gifts           GiftEntry[]
   ideas           Idea[]
   invites         InviteLink[]
+  movesIn         MoveRequest[]     @relation("MoveInto")
+  movesOut        MoveRequest[]     @relation("MoveFrom")
 }
 
 model GroupMembership {
@@ -373,4 +384,30 @@ model Device {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// A member asking to bring things from their own group into this one. The group's owner approves it.
+model MoveRequest {
+  id            String     @id @default(cuid())
+  groupId       String
+  /// Null once the source group is gone (removed after everything moved).
+  fromGroupId   String?
+  fromGroupName String
+  requestedById String
+  /// Families to bring, with their people, gifts and occasions. May include the source household.
+  familyIds     String[]
+  /// Group-wide occasions (holidays) to bring.
+  occasionIds   String[]
+  ideas         Boolean    @default(false)
+  status        MoveStatus @default(PENDING)
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime   @default(now())
+
+  group       Group  @relation("MoveInto", fields: [groupId], references: [id], onDelete: Cascade)
+  fromGroup   Group? @relation("MoveFrom", fields: [fromGroupId], references: [id], onDelete: SetNull)
+  requestedBy User   @relation("MoveRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  decidedBy   User?  @relation("MoveDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([groupId, status])
 }

@@ -122,7 +122,7 @@ describe('group invites', () => {
 
     const joined = await accept(c, res.body.token) // no body
     expect(joined.status).toBe(200)
-    expect(joined.body).toEqual({ groupId: a.groupId, alreadyMember: false, movedGroupId: null })
+    expect(joined.body).toEqual({ groupId: a.groupId, alreadyMember: false, moveRequestId: null })
 
     const me = await api().get('/me').set('Authorization', c.authHeader)
     expect(me.body.primaryGroupId).toBe(a.groupId)
