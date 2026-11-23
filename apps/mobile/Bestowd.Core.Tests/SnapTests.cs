@@ -77,12 +77,12 @@ public class SnapTests
             .On("POST /groups/g1/capture/photo", """{"draft":{"title":"Forerunner 165","brand":"Garmin","price":329.99,"currency":"CAD","store":null,"url":null,"imageUrl":null}}""");
         var vm = new IdeaFormViewModel(api, new FakeNavigator(), new DataChanged());
         vm.Apply(new Dictionary<string, object> { [Params.GroupId] = "g1", [Params.PhotoUrl] = "/files/g1/tag.jpg?sig=x" });
-        Assert.True(vm.FromPhoto);
+        Assert.True(vm.Product.FromPhoto);
 
         await vm.LoadAsync();
         await vm.LoadAsync();
         Assert.Equal(("Forerunner 165", "Garmin"), (vm.Title, vm.Brand));
-        Assert.Equal("/files/g1/tag.jpg?sig=x", vm.Photo.Url);
+        Assert.Equal("/files/g1/tag.jpg?sig=x", vm.Product.Photo.Url);
         Assert.Single(handler.Requests, r => r.PathAndQuery == "/groups/g1/capture/photo");
     }
 
@@ -128,7 +128,7 @@ public class SnapTests
         var form = new LogGiftViewModel(api, groups, session, new FakeNavigator(), new DataChanged());
         form.Apply(p);
         await form.LoadAsync();
-        Assert.Equal(("Reading lamp", "IKEA", "/files/g1/lamp.jpg?sig=z"), (form.Title, form.Brand, form.Photo.Url));
+        Assert.Equal(("Reading lamp", "IKEA", "/files/g1/lamp.jpg?sig=z"), (form.Title, form.Brand, form.Product.Photo.Url));
         Assert.True(form.BoughtNotGiven);
         Assert.Null(form.Subject);
         form.Subject = form.Subjects.First(s => s.PersonId == "p1");

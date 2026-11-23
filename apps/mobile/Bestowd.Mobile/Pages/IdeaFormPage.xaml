@@ -13,29 +13,29 @@
     </ContentPage.ToolbarItems>
     <ScrollView>
         <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
-            <VerticalStackLayout Spacing="6" IsVisible="{Binding FromPhoto}">
-                <Image Source="{Binding Photo.Source}" HeightRequest="220" Aspect="AspectFit" SemanticProperties.Description="Your photo" />
-                <HorizontalStackLayout Spacing="8" IsVisible="{Binding Capture.IsBusy}">
-                    <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" HeightRequest="20" />
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding Product.FromPhoto}">
+                <Image Source="{Binding Product.Photo.Source}" HeightRequest="220" Aspect="AspectFit" SemanticProperties.Description="Your photo" />
+                <HorizontalStackLayout Spacing="8" IsVisible="{Binding Product.Capture.IsBusy}">
+                    <ActivityIndicator IsRunning="{Binding Product.Capture.IsBusy}" HeightRequest="20" />
                     <Label Text="Reading the photo…" Style="{StaticResource Small}" VerticalOptions="Center" />
                 </HorizontalStackLayout>
-                <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
-                <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
+                <Label Text="{Binding Product.Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Product.Capture.Note, Converter={StaticResource Has}}" />
+                <Label Text="{Binding Product.Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Product.Capture.Error, Converter={StaticResource Has}}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Idea" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Watercolour paint kit" MaxLength="200" /></Border>
-                <pages:SuggestionsView BindingContext="{Binding TitleSuggest}" />
+                <pages:SuggestionsView BindingContext="{Binding Product.TitleSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Brand" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Brand}" Placeholder="Crayola" MaxLength="80" /></Border>
-                <pages:SuggestionsView BindingContext="{Binding BrandSuggest}" />
+                <pages:SuggestionsView BindingContext="{Binding Product.BrandSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Category" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" Placeholder="Art" MaxLength="60" /></Border>
-                <pages:SuggestionsView BindingContext="{Binding CategorySuggest}" />
+                <pages:SuggestionsView BindingContext="{Binding Product.CategorySuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Price" Style="{StaticResource FieldLabel}" />
@@ -44,13 +44,13 @@
             <VerticalStackLayout Spacing="4">
                 <Label Text="Store" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Store}" Placeholder="Where to buy it" MaxLength="80" /></Border>
-                <pages:SuggestionsView BindingContext="{Binding StoreSuggest}" />
+                <pages:SuggestionsView BindingContext="{Binding Product.StoreSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Link" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Url}" Keyboard="Url" Placeholder="https://" /></Border>
             </VerticalStackLayout>
-            <Button Text="Fill in from link" Style="{StaticResource Secondary}" Command="{Binding Capture.FromLinkCommand}" HorizontalOptions="Start" />
+            <Button Text="Fill in from link" Style="{StaticResource Secondary}" Command="{Binding Product.Capture.FromLinkCommand}" HorizontalOptions="Start" />
             <VerticalStackLayout Spacing="4">
                 <Label Text="Good for ages" Style="{StaticResource FieldLabel}" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
@@ -62,25 +62,25 @@
                 <Label Text="For" Style="{StaticResource FieldLabel}" />
                 <pages:RecipientPickerView BindingContext="{Binding People}" />
             </VerticalStackLayout>
-            <VerticalStackLayout Spacing="8" IsVisible="{Binding Photo.CanPick}">
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding Product.Photo.CanPick}">
                 <Label Text="Photo" Style="{StaticResource FieldLabel}" />
-                <Image Source="{Binding Photo.Source}" HeightRequest="160" Aspect="AspectFill" IsVisible="{Binding Photo.HasPhoto}" SemanticProperties.Description="Photo" />
+                <Image Source="{Binding Product.Photo.Source}" HeightRequest="160" Aspect="AspectFill" IsVisible="{Binding Product.Photo.HasPhoto}" SemanticProperties.Description="Photo" />
                 <HorizontalStackLayout Spacing="8">
-                    <Button Text="{Binding Photo.TakeText}" Style="{StaticResource Secondary}" Command="{Binding Photo.TakeCommand}" />
-                    <Button Text="Choose" Style="{StaticResource Secondary}" Command="{Binding Photo.ChooseCommand}" />
-                    <Button Text="Remove" Style="{StaticResource Ghost}" Command="{Binding Photo.RemoveCommand}" IsVisible="{Binding Photo.HasPhoto}" />
+                    <Button Text="{Binding Product.Photo.TakeText}" Style="{StaticResource Secondary}" Command="{Binding Product.Photo.TakeCommand}" />
+                    <Button Text="Choose" Style="{StaticResource Secondary}" Command="{Binding Product.Photo.ChooseCommand}" />
+                    <Button Text="Remove" Style="{StaticResource Ghost}" Command="{Binding Product.Photo.RemoveCommand}" IsVisible="{Binding Product.Photo.HasPhoto}" />
                 </HorizontalStackLayout>
-                <ActivityIndicator IsRunning="{Binding Photo.IsBusy}" IsVisible="{Binding Photo.IsBusy}" />
-                <Label Text="{Binding Photo.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Photo.Error, Converter={StaticResource Has}}" />
+                <ActivityIndicator IsRunning="{Binding Product.Photo.IsBusy}" IsVisible="{Binding Product.Photo.IsBusy}" />
+                <Label Text="{Binding Product.Photo.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Product.Photo.Error, Converter={StaticResource Has}}" />
             </VerticalStackLayout>
-            <VerticalStackLayout Spacing="6" IsVisible="{Binding Photo.HasPhoto}">
-                <Button Text="Fill in from photo" Style="{StaticResource Secondary}" Command="{Binding Capture.FromPhotoCommand}" HorizontalOptions="Start" IsVisible="{Binding Capture.CanReadPhotos}" />
-                <Label Text="To read details from photos, add an AI key under Settings (the group's owner can)." Style="{StaticResource Small}" IsVisible="{Binding Capture.CanReadPhotos, Converter={StaticResource Not}}" />
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding Product.Photo.HasPhoto}">
+                <Button Text="Fill in from photo" Style="{StaticResource Secondary}" Command="{Binding Product.Capture.FromPhotoCommand}" HorizontalOptions="Start" IsVisible="{Binding Product.Capture.CanReadPhotos}" />
+                <Label Text="To read details from photos, add an AI key under Settings (the group's owner can)." Style="{StaticResource Small}" IsVisible="{Binding Product.Capture.CanReadPhotos, Converter={StaticResource Not}}" />
             </VerticalStackLayout>
-            <VerticalStackLayout Spacing="6" IsVisible="{Binding FromPhoto, Converter={StaticResource Not}}">
-                <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" IsVisible="{Binding Capture.IsBusy}" />
-                <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
-                <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding Product.FromPhoto, Converter={StaticResource Not}}">
+                <ActivityIndicator IsRunning="{Binding Product.Capture.IsBusy}" IsVisible="{Binding Product.Capture.IsBusy}" />
+                <Label Text="{Binding Product.Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Product.Capture.Note, Converter={StaticResource Has}}" />
+                <Label Text="{Binding Product.Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Product.Capture.Error, Converter={StaticResource Has}}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Why it fits" Style="{StaticResource FieldLabel}" />
