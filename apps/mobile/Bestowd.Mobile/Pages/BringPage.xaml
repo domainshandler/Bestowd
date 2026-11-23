@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:BringViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.BringPage"
+             x:DataType="vm:BringViewModel"
+             Title="Bring my things">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <Label Text="What should come along?" Style="{StaticResource Title}" FontSize="24" />
+            <Label Text="{Binding Intro}" Style="{StaticResource Small}" />
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Items}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BringItem">
+                            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="52">
+                                <VerticalStackLayout VerticalOptions="Center">
+                                    <Label Text="{Binding Label}" />
+                                    <Label Text="{Binding Hint}" Style="{StaticResource Small}" />
+                                </VerticalStackLayout>
+                                <CheckBox Grid.Column="1" IsChecked="{Binding IsOn}" VerticalOptions="Center" SemanticProperties.Description="{Binding Label}" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="Ask to bring them" Command="{Binding SendCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

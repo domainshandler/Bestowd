@@ -155,8 +155,39 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
         GetAsync($"/invites/{Uri.EscapeDataString(token)}", Json.InvitePreview, ct);
 
     /// <summary>Group invites: what you could bring from your own group, or null.</summary>
-    public async Task<MovableData?> GetMovableAsync(string token, CancellationToken ct = default) =>
+    public async Task<MovableItems?> GetMovableAsync(string token, CancellationToken ct = default) =>
         (await GetAsync($"/invites/{Uri.EscapeDataString(token)}/movable", Json.MovableResponse, ct)).Movable;
+
+    /// <summary>What you could still bring into a group you're in, and whether a request is already waiting.</summary>
+    public Task<MovableResponse> GetGroupMovableAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/movable", Json.MovableResponse, ct);
+
+    public Task<MoveRequestSummary> RequestMoveAsync(string groupId, MoveSelection body, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/groups/{groupId}/move-requests", Body(body, Json.MoveSelection), Json.MoveRequestSummary, ct);
+
+    /// <summary>Pending requests into the group: all of them for the owner, your own for anyone else.</summary>
+    public Task<List<MoveRequestSummary>> ListMoveRequestsAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/move-requests", Json.ListMoveRequestSummary, ct);
+
+    public Task<MoveRequestDetail> GetMoveRequestAsync(string id, CancellationToken ct = default) =>
+        GetAsync($"/move-requests/{id}", Json.MoveRequestDetail, ct);
+
+    public Task<StatusResult> ApproveMoveAsync(string id, ApproveMoveBody body, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/move-requests/{id}/approve", Body(body, Json.ApproveMoveBody), Json.StatusResult, ct);
+
+    public Task<StatusResult> DeclineMoveAsync(string id, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/move-requests/{id}/decline", Body(new CreateGroupBody(), Json.CreateGroupBody), Json.StatusResult, ct);
+
+    public Task<StatusResult> CancelMoveAsync(string id, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/move-requests/{id}/cancel", Body(new CreateGroupBody(), Json.CreateGroupBody), Json.StatusResult, ct);
+
+    /// <summary>Start a new group of your own. It becomes the one the app opens to.</summary>
+    public Task<Group> CreateGroupAsync(string? name, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "/groups", Body(new CreateGroupBody { Name = name }, Json.CreateGroupBody), Json.Group, ct);
+
+    /// <summary>Leave a group. Returns the group to open next (a fresh one if it was your last).</summary>
+    public Task<LeaveGroupResult> LeaveGroupAsync(string groupId, LeaveGroupBody body, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/groups/{groupId}/leave", Body(body, Json.LeaveGroupBody), Json.LeaveGroupResult, ct);
 
     public Task<AcceptInviteResult> AcceptInviteAsync(string token, AcceptInviteBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/invites/{Uri.EscapeDataString(token)}/accept", Body(body, Json.AcceptInviteBody), Json.AcceptInviteResult, ct);

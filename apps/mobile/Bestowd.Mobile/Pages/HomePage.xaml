@@ -44,6 +44,23 @@
                         </Grid>
                     </Border>
 
+<VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding PendingMoves}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MoveRequestRow">
+                                <Border Style="{StaticResource Card}">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Title}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Line}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1" Text="{Binding Action}" Style="{StaticResource Secondary}" VerticalOptions="Center" CommandParameter="{Binding .}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenMoveCommand, x:DataType=vm:HomeViewModel}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
                     <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding SuggestedHolidays}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:HolidaySuggestion">

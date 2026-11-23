@@ -20,6 +20,8 @@ public static class Routes
     public const string GroupOccasion = "groupoccasion";
     public const string GroupOccasionForm = "groupoccasionform";
     public const string HolidayChoice = "holidaychoice";
+    public const string MoveRequest = "moverequest";
+    public const string Bring = "bring";
 }
 
 /// <summary>Navigation, implemented by the app with Shell.</summary>
@@ -35,6 +37,10 @@ public interface IPrompts
     Task<bool> ConfirmAsync(string title, string message, string accept, string cancel = "Cancel");
     Task AlertAsync(string title, string message);
     Task ShareAsync(string title, string text);
+    /// <summary>Pick one of the options, or null when cancelled.</summary>
+    Task<string?> ChooseAsync(string title, IReadOnlyList<string> options);
+    /// <summary>Ask for a line of text, or null when cancelled.</summary>
+    Task<string?> AskTextAsync(string title, string message, string placeholder);
 }
 
 /// <summary>Raised after any save, so screens that are already open refresh when shown again.</summary>

@@ -170,13 +170,12 @@ public class ViewModelTests
     }
 
     [Fact]
-    public async Task Join_offers_to_bring_your_own_things_and_sends_the_choice()
+    public async Task Join_lists_what_you_could_bring_and_sends_what_stays_ticked()
     {
         var (api, handler, _) = Fake.Api();
         handler.On("GET /me", Json.Me());
         handler.On("GET /invites/grp", """{"kind":"GROUP","inviterName":"Renny","groupName":"Renny's family","familyName":null,"expiresAt":"2026-12-01T00:00:00Z"}""");
-        handler.On("GET /invites/grp/movable", """{"movable":{"groupId":"g1","groupName":"Sheldon's group","families":1,"people":2,"gifts":2,"ideas":0,"occasions":1}}""");
-        handler.On("POST /invites/grp/accept", """{"groupId":"g9","alreadyMember":false,"movedGroupId":"g1"}""");
+        handler.On("GET /invites/grp/movable", """{"movable":{"groupId":"g1","groupName":"Sheldon's group","ideas":2,"occasions":[{"id":"o1","name":"Christmas"}], "families":[{"id":"hh","name":"Sheldon's household","isOwnHousehold":true,"people":1,"gifts":2},{"id":"f1","name":"Book club","isOwnHousehold":false,"people":0,"gifts":1}]}}""");
         var groups = new GroupState(new MemorySettingsStore());
         var session = new Session(api, new Api.MemoryTokenStore("tok"), groups, new NoPush(), new MemorySettingsStore());
         await session.LoadAsync();
@@ -184,12 +183,97 @@ public class ViewModelTests
         vm.Apply(new Dictionary<string, object> { [Params.Token] = "grp" });
 
         await vm.LoadAsync();
-        Assert.Equal("Bring my things into Renny's family", vm.BringTitle);
-        Assert.Equal("1 family, 2 people, 2 gifts and 1 occasion from Sheldon's group. Your household joins theirs, and Sheldon's group is removed.", vm.BringHint);
-        Assert.True(vm.BringData);
-        Assert.True(vm.BodyForAccept().BringData);
-        vm.BringData = false;
-        Assert.False(vm.BodyForAccept().BringData);
+        Assert.True(vm.CanBring);
+        Assert.Equal(["Sheldon's household (your household)", "Book club", "Christmas", "Gift ideas"], vm.BringItems.Select(i => i.Label));
+        Assert.Equal("1 person and 2 gifts", vm.BringItems[0].Hint);
+        vm.BringItems.Single(i => i.Label == "Book club").IsOn = false;
+        vm.BringItems.Single(i => i.Kind == BringKind.Ideas).IsOn = false;
+        var bring = vm.BodyForAccept().Bring!;
+        Assert.Equal(["hh"], bring.FamilyIds);
+        Assert.Equal(["o1"], bring.OccasionIds);
+        Assert.False(bring.Ideas);
+
+        foreach (var i in vm.BringItems) i.IsOn = false;
+        Assert.Null(vm.BodyForAccept().Bring);
+    }
+
+    [Fact]
+    public void Review_builds_the_owner_decisions()
+    {
+        var (api, _, _) = Fake.Api();
+        var vm = new MoveRequestViewModel(api, new FakeNavigator(), new DataChanged());
+        var detail = System.Text.Json.JsonSerializer.Deserialize("""
+        {"id":"m1","groupId":"g1","fromGroupName":"Sheldon's group","requestedBy":{"userId":"u2","name":"Sheldon"},"status":"PENDING",
+         "createdAt":"2026-11-23T00:00:00Z","counts":{"families":1,"people":3,"gifts":2,"occasions":1,"ideas":1},"canDecide":true,
+         "review":{"currency":{"from":"USD","to":"CAD"},"ideas":1,
+           "families":[{"id":"hh","name":"Sheldon's household","isOwnHousehold":true,"people":1,"gifts":1,"match":null},
+                       {"id":"f1","name":"The Mirandas","isOwnHousehold":false,"people":2,"gifts":1,"match":{"id":"x1","name":"Miranda family"}}],
+           "people":[{"id":"p1","name":"grandma","familyId":"f1","match":{"id":"x2","name":"Grandma"}}],
+           "occasions":[{"id":"o1","name":"Christmas","match":{"id":"x3","name":"Christmas"},"budgetDiffers":true,"theirBudget":80,"ourBudget":50}]}}
+        """, Api.ApiJson.Default.MoveRequestDetail)!;
+        vm.SetData(detail, "CAD");
+
+        Assert.Equal("Sheldon wants to bring things in", vm.Title);
+        Assert.Contains("3 items look like something you already have", vm.Intro);
+        Assert.Contains("uses USD and this group uses CAD", vm.CurrencyWarning);
+        Assert.Equal("Same as your Miranda family: combine them", vm.Families[1].MatchText);
+        Assert.True(vm.Families[1].ShowPeople);
+        Assert.StartsWith("Use their budget (", vm.Occasions[0].BudgetText);
+
+        vm.Families[1].People[0].Combine = false;
+        vm.Occasions[0].UseTheirs = true;
+        vm.BringIdeas = false;
+        var body = vm.BuildApproval();
+        Assert.Equal(["hh", "f1"], body.FamilyIds);
+        Assert.Empty(body.KeepBothFamilies);
+        Assert.Equal(["p1"], body.KeepBothPeople);
+        Assert.Equal(["o1"], body.UseTheirBudget);
+        Assert.False(body.Ideas);
+
+        // Keeping the family separate means its people aren't matched either.
+        vm.Families[1].Combine = false;
+        Assert.False(vm.Families[1].ShowPeople);
+        body = vm.BuildApproval();
+        Assert.Equal(["f1"], body.KeepBothFamilies);
+        Assert.Empty(body.KeepBothPeople);
+    }
+
+    [Fact]
+    public async Task Account_owner_leaving_hands_the_group_to_the_chosen_member()
+    {
+        var (api, handler, _) = Fake.Api();
+        handler.On("GET /me", Json.Me());
+        handler.On("GET /groups/g1", """{"id":"g1","name":"Renny's group","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[], "members":[{"userId":"u1","name":"Renny","role":"OWNER"},{"userId":"u2","name":"Sheldon","role":"MEMBER"},{"userId":"u3","name":"Ana","role":"MEMBER"}]}"""); handler.On("POST /groups/g1/leave", """{"primaryGroupId":"g1"}""");
+        var groups = new GroupState(new MemorySettingsStore());
+        var session = new Session(api, new Api.MemoryTokenStore("tok"), groups, new NoPush(), new MemorySettingsStore());
+        await session.LoadAsync();
+        var prompts = new FakePrompts { Choice = "Ana" };
+        var nav = new FakeNavigator();
+        var vm = new AccountViewModel(api, session, groups, nav, prompts);
+
+        await vm.LeaveAsync();
+        using var doc = JsonDocument.Parse(handler.Requests.Single(r => r.PathAndQuery == "/groups/g1/leave").Body!);
+        Assert.Equal("u3", doc.RootElement.GetProperty("newOwnerId").GetString());
+        Assert.Contains(prompts.Asked, t => t.StartsWith("Who looks after"));
+        Assert.Equal(Routes.Home, nav.Visited.Last().Route);
+    }
+
+    [Fact]
+    public async Task Account_starting_a_group_opens_it()
+    {
+        var (api, handler, _) = Fake.Api();
+        handler.On("GET /me", Json.Me());
+        handler.On("POST /groups", """{"id":"g7","name":"Our family","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[],"members":[]}""");
+        var groups = new GroupState(new MemorySettingsStore());
+        var session = new Session(api, new Api.MemoryTokenStore("tok"), groups, new NoPush(), new MemorySettingsStore());
+        await session.LoadAsync();
+        var nav = new FakeNavigator();
+        var vm = new AccountViewModel(api, session, groups, nav, new FakePrompts { Text = "  Our family " });
+
+        await vm.StartGroupAsync();
+        using var doc = JsonDocument.Parse(handler.Requests.Single(r => r.PathAndQuery == "/groups").Body!);
+        Assert.Equal("Our family", doc.RootElement.GetProperty("name").GetString());
+        Assert.Equal(Routes.Home, nav.Visited.Last().Route);
     }
 
     [Fact]

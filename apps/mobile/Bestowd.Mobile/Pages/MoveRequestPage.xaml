@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:MoveRequestViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.MoveRequestPage"
+             x:DataType="vm:MoveRequestViewModel"
+             Title="Review">
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <Label Text="{Binding Title}" Style="{StaticResource Title}" FontSize="24" />
+            <Label Text="{Binding Summary}" Style="{StaticResource Small}" FontSize="14" />
+
+            <Border Style="{StaticResource Card}" IsVisible="{Binding IsDecided}">
+                <Label Text="{Binding StatusText}" Style="{StaticResource Strong}" />
+            </Border>
+
+            <VerticalStackLayout Spacing="12" IsVisible="{Binding IsWaiting}">
+                <Border Style="{StaticResource Card}">
+                    <Label Text="Waiting for the group's owner to review it. Nothing moves until they approve." Style="{StaticResource Small}" FontSize="14" />
+                </Border>
+                <Button Text="Withdraw request" Style="{StaticResource DangerButton}" Command="{Binding WithdrawCommand}" HorizontalOptions="Start" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="14" IsVisible="{Binding CanDecide}">
+                <Label Text="{Binding Intro}" Style="{StaticResource Small}" FontSize="14" />
+                <Border Style="{StaticResource Card}" BackgroundColor="{StaticResource AmberSoft}" IsVisible="{Binding CurrencyWarning, Converter={StaticResource Has}}">
+                    <Label Text="{Binding CurrencyWarning}" FontSize="14" />
+                </Border>
+
+                <Label Text="Families" Style="{StaticResource SectionTitle}" IsVisible="{Binding HasFamilies}" />
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Families}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FamilyReviewRow">
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Label}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Hint}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding IsOn}" VerticalOptions="Center" SemanticProperties.Description="{Binding Label}" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCombine}">
+                                        <Label Text="{Binding MatchText}" Style="{StaticResource Small}" VerticalOptions="Center" />
+                                        <Switch Grid.Column="1" IsToggled="{Binding Combine}" SemanticProperties.Description="{Binding MatchText}" />
+                                    </Grid>
+                                    <VerticalStackLayout Spacing="6" IsVisible="{Binding ShowPeople}" BindableLayout.ItemsSource="{Binding People}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:PersonReviewRow">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <VerticalStackLayout VerticalOptions="Center">
+                                                        <Label Text="{Binding Text}" Style="{StaticResource Small}" />
+                                                        <Label Text="Same person: combine them" Style="{StaticResource Small}" FontSize="12" />
+                                                    </VerticalStackLayout>
+                                                    <Switch Grid.Column="1" IsToggled="{Binding Combine}" SemanticProperties.Description="{Binding Text}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="Holidays" Style="{StaticResource SectionTitle}" IsVisible="{Binding HasOccasions}" />
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Occasions}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:OccasionReviewRow">
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Name}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Hint}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding IsOn}" VerticalOptions="Center" SemanticProperties.Description="{Binding Name}" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowBudget}">
+                                        <Label Text="{Binding BudgetText}" Style="{StaticResource Small}" VerticalOptions="Center" />
+                                        <Switch Grid.Column="1" IsToggled="{Binding UseTheirs}" SemanticProperties.Description="{Binding BudgetText}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasIdeas}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Gift ideas" Style="{StaticResource Strong}" />
+                            <Label Text="{Binding IdeasHint}" Style="{StaticResource Small}" />
+                        </VerticalStackLayout>
+                        <CheckBox Grid.Column="1" IsChecked="{Binding BringIdeas}" VerticalOptions="Center" SemanticProperties.Description="Gift ideas" />
+                    </Grid>
+                </Border>
+
+                <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+                <Button Text="Approve" Command="{Binding ApproveCommand}" />
+                <Button Text="Decline" Style="{StaticResource DangerButton}" Command="{Binding DeclineCommand}" />
+                <Label Text="{Binding DeclineNote}" Style="{StaticResource Small}" />
+            </VerticalStackLayout>
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

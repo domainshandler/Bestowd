@@ -43,6 +43,28 @@
 
             <VerticalStackLayout Spacing="12">
                 <Label Text="Group settings" Style="{StaticResource SectionTitle}" />
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding PendingMoves}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MoveRequestRow">
+                                <Border Style="{StaticResource Card}">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Title}" Style="{StaticResource Strong}" />
+                                            <Label Text="{Binding Line}" Style="{StaticResource Small}" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1" Text="{Binding Action}" Style="{StaticResource Secondary}" VerticalOptions="Center" CommandParameter="{Binding .}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:AccountViewModel}}, Path=OpenMoveCommand, x:DataType=vm:AccountViewModel}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                <Border Style="{StaticResource Card}" IsVisible="{Binding CanBring}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Bring families, gifts and ideas from your own group into this one." Style="{StaticResource Small}" FontSize="14" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="Bring" Style="{StaticResource Secondary}" Command="{Binding BringCommand}" />
+                    </Grid>
+                </Border>
                 <Border Style="{StaticResource Card}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <VerticalStackLayout VerticalOptions="Center">
@@ -104,6 +126,15 @@
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Groups" Style="{StaticResource SectionTitle}" />
+                <Label Text="You can be in several groups and switch between them. Leaving keeps what you added in the group." Style="{StaticResource Small}" />
+                <HorizontalStackLayout Spacing="8">
+                    <Button Text="Start a new group" Style="{StaticResource Secondary}" Command="{Binding StartGroupCommand}" />
+                    <Button Text="{Binding LeaveText}" Style="{StaticResource Ghost}" TextColor="{StaticResource Danger}" Command="{Binding LeaveCommand}" />
+                </HorizontalStackLayout>
             </VerticalStackLayout>
 
             <Button Text="Sign out" Style="{StaticResource DangerButton}" Command="{Binding SignOutCommand}" HorizontalOptions="Start" />

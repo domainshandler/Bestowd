@@ -54,6 +54,12 @@ public sealed class FakePrompts : IPrompts
     public Task<bool> ConfirmAsync(string title, string message, string accept, string cancel = "Cancel") => Task.FromResult(Answer);
     public Task AlertAsync(string title, string message) => Task.CompletedTask;
     public Task ShareAsync(string title, string text) { Shared.Add(text); return Task.CompletedTask; }
+    /// <summary>Answers ChooseAsync (null = cancelled).</summary>
+    public string? Choice { get; set; }
+    public string? Text { get; set; }
+    public List<string> Asked { get; } = [];
+    public Task<string?> ChooseAsync(string title, IReadOnlyList<string> options) { Asked.Add(title); return Task.FromResult(Choice); }
+    public Task<string?> AskTextAsync(string title, string message, string placeholder) { Asked.Add(title); return Task.FromResult(Text); }
 }
 
 public static class Json

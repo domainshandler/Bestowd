@@ -23,9 +23,10 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
     [ObservableProperty] public partial IReadOnlyList<FamilyListItem> Families { get; private set; } = [];
     [ObservableProperty] public partial FamilyListItem? SourceFamily { get; set; }
     [ObservableProperty] public partial bool Connected { get; private set; }
-    /// <summary>Group invites: what you'd bring from your own group, when there's anything.</summary>
-    [ObservableProperty] public partial MovableData? Movable { get; private set; }
-    [ObservableProperty] public partial bool BringData { get; set; } = true;
+    /// <summary>Group invites: what you could bring from your own group, all ticked. Empty when there's nothing.</summary>
+    [ObservableProperty] public partial IReadOnlyList<BringItem> BringItems { get; private set; } = [];
+    [ObservableProperty] public partial string BringNote { get; private set; } = "";
+    public bool CanBring => BringItems.Count > 0;
 
     public IReadOnlyList<ShareOption> Fields { get; } =
     [
@@ -43,8 +44,7 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
     public string Explanation => Preview is null ? "" : IsFamily
         ? $"{Preview.InviterName} will see the details you choose below, read-only. Nothing else in your account is shared."
         : $"You'll see and add to everything in {Preview.GroupName}: families, gifts and ideas, and you'll be in its household.";
-    public string BringTitle => Preview is null ? "" : $"Bring my things into {Preview.GroupName}";
-    public string BringHint => Movable is null ? "" : $"{Movable.Summary} from {Movable.GroupName}. Your household joins theirs, and {Movable.GroupName} is removed.";
+
 
     public void Apply(IDictionary<string, object> parameters) => Token = Params.Get(parameters, Params.Token) ?? "";
 
@@ -79,16 +79,19 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
         }
         else if (!IsFamily && session.IsSignedIn)
         {
-            try { Movable = await api.GetMovableAsync(Token); }
-            catch (Exception e) when (e is ApiException or HttpRequestException) { Movable = null; }
+            MovableItems? movable = null;
+            try { movable = await api.GetMovableAsync(Token); }
+            catch (Exception e) when (e is ApiException or HttpRequestException) { }
+            BringItems = movable is null ? [] : BringChecklist.From(movable);
+            BringNote = movable is null ? "" : $"From {movable.GroupName}. {Preview!.GroupName}'s owner reviews what you bring before it's added, and can combine anything that looks like what they already have. Once everything has moved, {movable.GroupName} is removed.";
         }
         HasLoaded = true;
-        foreach (var name in new[] { nameof(IsFamily), nameof(NeedsSignIn), nameof(Title), nameof(Explanation), nameof(BringTitle), nameof(BringHint) }) OnPropertyChanged(name);
+        foreach (var name in new[] { nameof(IsFamily), nameof(NeedsSignIn), nameof(Title), nameof(Explanation), nameof(CanBring) }) OnPropertyChanged(name);
     }
 
     public AcceptInviteBody BodyForAccept() => IsFamily
         ? new AcceptInviteBody { SourceFamilyId = SourceFamily?.Id, SharedFields = Fields.Where(f => f.IsOn).Select(f => f.Field).ToList() }
-        : new AcceptInviteBody { BringData = Movable is not null && BringData };
+        : new AcceptInviteBody { Bring = BringChecklist.ToSelection(BringItems) is { IsEmpty: false } s ? s : null };
 
     [RelayCommand]
     public async Task AcceptAsync()
@@ -119,6 +122,12 @@ public sealed partial class BudgetField(OccasionType type, string label, string 
 /// <summary>Account: profile, groups, the current group's settings (owner only), inviting someone, signing out.</summary>
 public sealed partial class AccountViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, IPrompts prompts) : ViewModelBase, ILoadable
 {
+    /// <summary>Requests to bring things into this group: all for the owner, your own for anyone else.</summary>
+    [ObservableProperty] public partial IReadOnlyList<MoveRequestRow> PendingMoves { get; private set; } = [];
+    /// <summary>You have things in your own group you could still bring here.</summary>
+    [ObservableProperty] public partial bool CanBring { get; private set; }
+    public string LeaveText => IsOwner ? "Leave or delete group" : "Leave group";
+
     [ObservableProperty] public partial string GroupName { get; set; } = "";
     [ObservableProperty] public partial string Currency { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<Formatting.CurrencyOption> CurrencyOptions { get; private set; } = Formatting.Currencies.All;
@@ -145,6 +154,8 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         if (groups.GroupId is not { } groupId) return;
         var occasions = api.ListOccasionsAsync(groupId, to: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(366)));
         var holidays = api.ListHolidaysAsync(groupId);
+        var moves = api.ListMoveRequestsAsync(groupId);
+        var movable = api.GetGroupMovableAsync(groupId);
         var group = await api.GetGroupAsync(groupId);
         GroupName = group.Name;
         Currency = group.Currency;
@@ -157,8 +168,12 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
             .ToList();
         GroupOccasions = (await occasions).Occasions.Where(o => o.IsGroupWide).Select(o => OccasionItem.From(o)).ToList();
         HolidaysText = HolidaysSummary(await holidays);
+        PendingMoves = (await moves).Select(r => MoveRequestRow.From(r, IsOwner)).ToList();
+        var m = await movable;
+        CanBring = m.Movable is not null && !m.Pending;
         HasLoaded = true;
         OnPropertyChanged(nameof(IsOwner));
+        OnPropertyChanged(nameof(LeaveText));
         OnPropertyChanged(nameof(User));
         OnPropertyChanged(nameof(HasNoGroupOccasions));
     });
@@ -232,6 +247,65 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
 
     [RelayCommand]
     public Task OpenOccasionAsync(OccasionItem item) => nav.GoToAsync(Routes.GroupOccasion, new Dictionary<string, object> { [Params.Id] = item.Occasion.Id });
+
+    [RelayCommand]
+    public Task OpenMoveAsync(MoveRequestRow row) => nav.GoToAsync(Routes.MoveRequest, new Dictionary<string, object> { [Params.Id] = row.Id });
+
+    [RelayCommand]
+    public Task BringAsync() => groups.GroupId is { } g
+        ? nav.GoToAsync(Routes.Bring, new Dictionary<string, object> { [Params.GroupId] = g })
+        : Task.CompletedTask;
+
+    /// <summary>
+    /// Leave the current group. What you added stays with it. An owner hands it to another member first;
+    /// an owner on their own deletes it. Leaving your last group starts a fresh one.
+    /// </summary>
+    [RelayCommand]
+    public async Task LeaveAsync()
+    {
+        if (groups.GroupId is not { } groupId || groups.Current is not { } current) return;
+        Group? group = null;
+        if (!await RunAsync(async () => group = await api.GetGroupAsync(groupId))) return;
+        var name = current.GroupName;
+        var others = group!.Members.Where(m => m.UserId != session.User?.Id).ToList();
+        LeaveGroupBody body;
+        if (IsOwner && others.Count == 0)
+        {
+            if (!await prompts.ConfirmAsync($"Delete {name}?", $"You're the only one in {name}, so leaving deletes it with every family, gift and idea in it. This can't be undone.", "Delete group")) return;
+            body = new LeaveGroupBody { DeleteGroup = true };
+        }
+        else
+        {
+            string? newOwnerId = null;
+            if (IsOwner)
+            {
+                var pick = others.Count == 1 ? others[0].Name : await prompts.ChooseAsync($"Who looks after {name} now?", others.Select(m => m.Name).ToList());
+                if (pick is null) return;
+                newOwnerId = others.First(m => m.Name == pick).UserId;
+            }
+            var handover = newOwnerId is null ? "" : $" {others.First(m => m.UserId == newOwnerId).Name} becomes its owner.";
+            if (!await prompts.ConfirmAsync($"Leave {name}?", $"What you've added stays in {name}, and you stay listed in its household so gift history keeps your name.{handover} You can be invited back.", "Leave")) return;
+            body = new LeaveGroupBody { NewOwnerId = newOwnerId };
+        }
+        LeaveGroupResult? result = null;
+        if (!await RunAsync(async () => result = await api.LeaveGroupAsync(groupId, body))) return;
+        await session.LoadAsync();
+        groups.Select(result!.PrimaryGroupId);
+        await nav.GoToAsync(Routes.Home);
+    }
+
+    /// <summary>Start a new, empty group of your own and open it.</summary>
+    [RelayCommand]
+    public async Task StartGroupAsync()
+    {
+        var name = await prompts.AskTextAsync("Start a new group", "A fresh group with just your household. Your other groups stay as they are.", "e.g. Our family");
+        if (name is null) return;
+        Group? created = null;
+        if (!await RunAsync(async () => created = await api.CreateGroupAsync(string.IsNullOrWhiteSpace(name) ? null : name.Trim()))) return;
+        await session.LoadAsync();
+        groups.Select(created!.Id);
+        await nav.GoToAsync(Routes.Home);
+    }
 
     [RelayCommand]
     public async Task SignOutAsync()

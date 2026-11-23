@@ -46,4 +46,14 @@ public sealed class MauiPrompts : IPrompts
     /// <summary>The native share sheet, so links go out by WhatsApp, text or anything else installed.</summary>
     public Task ShareAsync(string title, string text) =>
         Share.Default.RequestAsync(new ShareTextRequest { Title = title, Text = text });
+
+    public Task<string?> ChooseAsync(string title, IReadOnlyList<string> options) =>
+        MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            var picked = await Page.DisplayActionSheetAsync(title, "Cancel", null, options.ToArray());
+            return picked is null || picked == "Cancel" ? null : picked;
+        });
+
+    public Task<string?> AskTextAsync(string title, string message, string placeholder) =>
+        MainThread.InvokeOnMainThreadAsync(() => Page.DisplayPromptAsync(title, message, "OK", "Cancel", placeholder, maxLength: 100));
 }
