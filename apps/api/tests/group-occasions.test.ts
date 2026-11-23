@@ -221,12 +221,17 @@ describe('choosing holidays', () => {
     expect(christmas.nextOccurrence).toEqual(nextHolidayDate(findHoliday('christmas')!.rule, new Date()))
   })
 
-  it('answering again keeps holidays already added and adds new picks', async () => {
+  it('changing the answer adds new picks and removes unticked ones, keeping their gifts', async () => {
+    const mothers = await db.occasion.findFirstOrThrow({ where: { groupId: c.groupId, holidayKey: 'mothers-day' } })
+    const gift = await auth(api().post(`/groups/${c.groupId}/gifts`), c).send({ direction: 'GIVEN', title: 'Flowers', date: '2026-05-10', familyId: c.householdId, occasionId: mothers.id })
+    expect(gift.status).toBe(201)
+
     const res = await auth(api().post(`/groups/${c.groupId}/holidays/choose`), c).send({ keys: ['christmas', 'easter'] })
     expect(byKey(res.body, 'easter').occasionId).toEqual(expect.any(String))
-    // Mother's Day was already added, so it stays (and isn't dismissed).
-    expect(byKey(res.body, 'mothers-day')).toMatchObject({ dismissed: false, occasionId: expect.any(String) })
+    expect(byKey(res.body, 'mothers-day')).toMatchObject({ dismissed: true, occasionId: null })
     expect(await db.occasion.count({ where: { groupId: c.groupId, holidayKey: 'christmas' } })).toBe(1)
+    // The gift stays in the history, no longer tied to the removed occasion.
+    expect(await db.giftEntry.findUniqueOrThrow({ where: { id: gift.body.id } })).toMatchObject({ title: 'Flowers', occasionId: null })
   })
 
   it('dismisses one suggestion, and adding it later undoes the dismissal', async () => {

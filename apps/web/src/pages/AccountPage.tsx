@@ -15,11 +15,27 @@ import { OCCASION_TYPE_LABEL } from '../lib/format.ts'
 
 const TYPES = Object.keys(OCCASION_TYPE_LABEL) as OccasionType[]
 
+/** "Holidays we celebrate": which built-in holidays the group tracks, with Change to reopen the checklist. */
+function HolidaysSetting({ groupId }: { groupId: string }) {
+  const [choosing, setChoosing] = useState(false)
+  const holidays = useQuery({ queryKey: ['holidays', groupId], queryFn: () => listHolidays(groupId) })
+  const names = holidays.data?.holidays.filter((h) => h.occasionId !== null).map((h) => h.name) ?? []
+  const summary = names.length ? names.join(', ') : holidays.data?.chosen ? 'None' : 'Not chosen yet'
+  return (
+    <Card className="p-4 flex items-center gap-3">
+      <span className="flex-1 flex flex-col">
+        <span className="text-[15px] font-semibold">Holidays we celebrate</span>
+        <span className="text-[13px] text-muted">{holidays.data ? summary : '…'}</span>
+      </span>
+      <Button variant="secondary" disabled={!holidays.data} onClick={() => setChoosing(true)}>Change</Button>
+      {choosing && holidays.data && <ChooseHolidays groupId={groupId} holidays={holidays.data.holidays} onClose={() => setChoosing(false)} />}
+    </Card>
+  )
+}
+
 /** Holidays and other occasions for the whole group, e.g. Christmas covering every family. */
 function GroupOccasions({ groupId }: { groupId: string }) {
   const [adding, setAdding] = useState(false)
-  const [choosing, setChoosing] = useState(false)
-  const holidays = useQuery({ queryKey: ['holidays', groupId], queryFn: () => listHolidays(groupId) })
   const yearAhead = new Date(Date.now() + 366 * 86_400_000).toISOString().slice(0, 10)
   const occasions = useQuery({ queryKey: ['occasions', groupId, 'group-wide'], queryFn: () => listOccasions(groupId, { to: yearAhead }) })
   const groupWide = occasions.data?.occasions.filter((o) => o.scope === 'GROUP') ?? []
@@ -30,8 +46,6 @@ function GroupOccasions({ groupId }: { groupId: string }) {
         <EmptyState>Holidays you celebrate with several families, like Christmas or Diwali. Add one to track a gift and budget for each family.</EmptyState>
       )}
       {groupWide.map((o) => <OccasionRow key={o.id} occasion={o} />)}
-      <Button variant="secondary" className="self-start" disabled={!holidays.data} onClick={() => setChoosing(true)}>Holidays we celebrate</Button>
-      {choosing && holidays.data && <ChooseHolidays groupId={groupId} holidays={holidays.data.holidays} onClose={() => setChoosing(false)} />}
       {adding && <GroupOccasionForm open onClose={() => setAdding(false)} groupId={groupId} />}
     </section>
   )
@@ -128,6 +142,7 @@ export default function AccountPage() {
       {groupId && (
         <section className="flex flex-col gap-2.5">
           <SectionHeader title={multipleGroups ? `${group?.groupName} settings` : 'Settings'} />
+          <HolidaysSetting groupId={groupId} />
           <Card className="p-4 flex flex-col gap-4">
             {group?.role === 'OWNER'
               ? <GroupSettings groupId={groupId} />

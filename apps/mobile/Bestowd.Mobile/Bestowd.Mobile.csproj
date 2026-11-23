@@ -14,7 +14,10 @@
 		<ApplicationTitle>Bestowd</ApplicationTitle>
 		<ApplicationId>app.bestowd.mobile</ApplicationId>
 		<ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<!-- Every build gets a higher version code (minutes since year 1), so a newer APK always installs as an update and
+		     Account shows which build is running. Override with -p:ApplicationVersion=... for store releases. -->
+		<ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([System.Math]::Floor($([MSBuild]::Divide($([System.DateTime]::UtcNow.Ticks), 600000000))))</ApplicationVersion>
+		<BestowdBuildTime>$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd HH:mm"))</BestowdBuildTime>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
@@ -90,6 +93,9 @@ internal static class BuildSettings
     public const string GoogleWebClientId = &quot;$(GoogleWebClientId)&quot;%3B
     public const string GoogleIosClientId = &quot;$(GoogleIosClientId)&quot;%3B
     public const string LinkHost = &quot;$(BestowdLinkHost)&quot;%3B
+    public const string AppVersion = &quot;$(ApplicationDisplayVersion) ($(ApplicationVersion))&quot;%3B
+    public const string AppBuild = &quot;$(ApplicationVersion)&quot;%3B
+    public const string BuildTime = &quot;$(BestowdBuildTime) UTC&quot;%3B
 }" />
 		<ItemGroup>
 			<Compile Include="$(_BuildSettingsFile)" />

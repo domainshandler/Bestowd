@@ -115,6 +115,8 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     [ObservableProperty] public partial IReadOnlyList<BudgetField> Budgets { get; private set; } = [];
     [ObservableProperty] public partial string? SavedText { get; private set; }
     [ObservableProperty] public partial IReadOnlyList<OccasionItem> GroupOccasions { get; private set; } = [];
+    /// <summary>The built-in holidays the group celebrates, e.g. "Christmas, Easter", or a prompt when none.</summary>
+    [ObservableProperty] public partial string HolidaysText { get; private set; } = "";
 
     public bool HasNoGroupOccasions => HasLoaded && GroupOccasions.Count == 0;
 
@@ -127,6 +129,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     {
         if (groups.GroupId is not { } groupId) return;
         var occasions = api.ListOccasionsAsync(groupId, to: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(366)));
+        var holidays = api.ListHolidaysAsync(groupId);
         var group = await api.GetGroupAsync(groupId);
         GroupName = group.Name;
         Currency = group.Currency;
@@ -136,6 +139,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
                 group.DefaultBudgets.TryGetValue(ApiJson.EnumName(t), out var b) ? b.ToString(System.Globalization.CultureInfo.CurrentCulture) : ""))
             .ToList();
         GroupOccasions = (await occasions).Occasions.Where(o => o.IsGroupWide).Select(o => OccasionItem.From(o)).ToList();
+        HolidaysText = HolidaysSummary(await holidays);
         HasLoaded = true;
         OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(User));
@@ -197,6 +201,12 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     public Task AddGroupOccasionAsync() => groups.GroupId is { } g
         ? nav.GoToAsync(Routes.GroupOccasionForm, new Dictionary<string, object> { [Params.GroupId] = g })
         : Task.CompletedTask;
+
+    public static string HolidaysSummary(HolidayChoices choices)
+    {
+        var names = choices.Holidays.Where(h => h.OccasionId is not null).Select(h => h.Name).ToList();
+        return names.Count > 0 ? string.Join(", ", names) : choices.Chosen ? "None" : "Not chosen yet";
+    }
 
     [RelayCommand]
     public Task ChooseHolidaysAsync() => groups.GroupId is { } g

@@ -24,7 +24,13 @@ public static class MauiProgram
             });
 
         var s = builder.Services;
-        s.AddSingleton(_ => new HttpClient { BaseAddress = new Uri(BuildSettings.ApiUrl), Timeout = TimeSpan.FromSeconds(20) });
+        s.AddSingleton(_ =>
+        {
+            var http = new HttpClient { BaseAddress = new Uri(BuildSettings.ApiUrl), Timeout = TimeSpan.FromSeconds(20) };
+            // Tells the API (and its logs) which app build is calling.
+            http.DefaultRequestHeaders.Add("X-Bestowd-Client", $"{DeviceInfo.Platform.ToString().ToLowerInvariant()}/{BuildSettings.AppBuild}");
+            return http;
+        });
         s.AddSingleton<ITokenStore, SecureTokenStore>();
         s.AddSingleton<ISettingsStore, PreferencesSettingsStore>();
         s.AddSingleton(sp => new BestowdApi(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<ITokenStore>()));

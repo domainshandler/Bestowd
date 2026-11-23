@@ -13,7 +13,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
             <Label Text="Which holidays do you celebrate?" Style="{StaticResource Title}" FontSize="24" />
-            <Label Text="Each one you pick covers all your families. You can change families and budgets later, or add your own occasions under Account." Style="{StaticResource Small}" />
+            <Label Text="Each one you pick covers all your families. Unticking one removes it; gifts already logged stay in your history. You can change families and budgets later, or add your own occasions under Account." Style="{StaticResource Small}" />
             <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Holidays}">
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="vm:HolidayCheck">

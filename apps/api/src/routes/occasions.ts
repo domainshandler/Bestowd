@@ -165,8 +165,9 @@ export async function occasionRoutes(app: FastifyInstance) {
     return holidayChoices(groupId)
   })
 
-  // Answers "Which holidays do you celebrate?": adds the picked ones (covering every family) and stops
-  // suggesting the rest. Holidays already added are left as they are.
+  // Sets "Which holidays do you celebrate?": adds the picked ones (covering every family), removes built-in
+  // holidays that were added but are no longer picked (gifts logged for them stay in the history), and stops
+  // suggesting everything not picked.
   app.post<{ Params: { groupId: string }; Body: { keys: string[] } }>('/groups/:groupId/holidays/choose', {
     schema: { body: { type: 'object', additionalProperties: false, required: ['keys'], properties: { keys: { type: 'array', maxItems: 100, items: { type: 'string', maxLength: 64 } } } } },
   }, async (request) => {
@@ -176,9 +177,11 @@ export async function occasionRoutes(app: FastifyInstance) {
     for (const key of keys) if (!findHoliday(key)) throw badRequest(`Unknown holiday: ${key}`)
     const added = new Set((await db.occasion.findMany({ where: { groupId, holidayKey: { not: null } }, select: { holidayKey: true } })).map((o) => o.holidayKey!))
     for (const key of keys) if (!added.has(key)) await createHolidayOccasion(groupId, key)
+    const removed = [...added].filter((k) => !keys.has(k))
+    if (removed.length) await db.occasion.deleteMany({ where: { groupId, holidayKey: { in: removed } } })
     await db.group.update({
       where: { id: groupId },
-      data: { holidaysChosenAt: new Date(), dismissedHolidays: HOLIDAYS.map((h) => h.key).filter((k) => !keys.has(k) && !added.has(k)) },
+      data: { holidaysChosenAt: new Date(), dismissedHolidays: HOLIDAYS.map((h) => h.key).filter((k) => !keys.has(k)) },
     })
     return holidayChoices(groupId)
   })

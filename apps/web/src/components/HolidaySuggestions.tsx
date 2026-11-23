@@ -74,7 +74,7 @@ export function ChooseHolidays({ groupId, holidays, onClose }: { groupId: string
   return (
     <Modal open onClose={onClose} title="Which holidays do you celebrate?">
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(undefined) }}>
-        <p className="text-sm text-muted">Each one you pick covers all your families. You can change families and budgets later, or add your own occasions under Account.</p>
+        <p className="text-sm text-muted">Each one you pick covers all your families. Unticking one removes it; gifts already logged stay in your history. You can change families and budgets later, or add your own occasions under Account.</p>
         <fieldset className="bg-white border border-line rounded-2xl px-4 py-2">
           <legend className="sr-only">Holidays</legend>
           {offered.map((h) => (

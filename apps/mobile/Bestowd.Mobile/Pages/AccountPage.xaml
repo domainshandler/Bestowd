@@ -42,6 +42,15 @@
 
             <VerticalStackLayout Spacing="12">
                 <Label Text="Settings" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout VerticalOptions="Center">
+                            <Label Text="Holidays we celebrate" Style="{StaticResource Strong}" />
+                            <Label Text="{Binding HolidaysText}" Style="{StaticResource Small}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="Change" Style="{StaticResource Secondary}" Command="{Binding ChooseHolidaysCommand}" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
                 <Label Text="Only the group's owner can change its settings." Style="{StaticResource Small}" IsVisible="{Binding IsOwner, Converter={StaticResource Not}}" />
                 <VerticalStackLayout Spacing="12" IsVisible="{Binding IsOwner}">
                     <VerticalStackLayout Spacing="4">
@@ -94,10 +103,10 @@
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
-                <Button Text="Holidays we celebrate" Style="{StaticResource Secondary}" Command="{Binding ChooseHolidaysCommand}" HorizontalOptions="Start" />
             </VerticalStackLayout>
 
             <Button Text="Sign out" Style="{StaticResource DangerButton}" Command="{Binding SignOutCommand}" HorizontalOptions="Start" />
+            <Label x:Name="VersionLabel" Style="{StaticResource Small}" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </ScrollView>
 </pages:BasePage>
