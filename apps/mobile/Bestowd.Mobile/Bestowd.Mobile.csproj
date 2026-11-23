@@ -33,6 +33,12 @@
 		<BestowdLinkHost Condition="'$(BestowdLinkHost)' == ''">bestowd.app</BestowdLinkHost>
 	</PropertyGroup>
 
+	<!-- Put the app's code inside debug APKs too. Without this, fast deployment leaves it out and a
+	     sideloaded debug APK crashes on launch (it expects an IDE to push the code separately). -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+	</PropertyGroup>
+
 	<!-- Push is built in only when a Firebase config file is present (Platforms/Android/google-services.json). -->
 	<PropertyGroup Condition="Exists('Platforms\Android\google-services.json') And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
 		<DefineConstants>$(DefineConstants);FIREBASE</DefineConstants>
