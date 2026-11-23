@@ -272,8 +272,12 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
     private string _groupId = "";
     private string? _defaultPersonId, _defaultFamilyId;
+    private string? _ideaId;
+    private bool _ideaFilled, _photoRead;
 
     [ObservableProperty] public partial string? GiftId { get; private set; }
+    /// <summary>Opened from a snapped photo: the photo shows first and is read straight away when the group has AI.</summary>
+    [ObservableProperty] public partial bool FromPhoto { get; private set; }
     [ObservableProperty] public partial bool IsReceived { get; set; }
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<SubjectOption> Subjects { get; private set; } = [];
@@ -320,13 +324,15 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         _defaultFamilyId = Params.Get(p, Params.FamilyId);
         _pendingOccasionId = Params.Get(p, Params.OccasionId);
         IsReceived = Params.Get(p, Params.Direction) == "RECEIVED";
+        _ideaId = Params.Get(p, Params.IdeaId);
+        if (Params.Get(p, Params.PhotoUrl) is { } photo) { Photo.Url = photo; FromPhoto = true; }
         OnPropertyChanged(nameof(ScreenTitle));
     }
 
     [RelayCommand]
     public async Task LoadAsync()
     {
-        _ = Capture.LoadAsync();
+        var ai = Capture.LoadAsync();
         var loaded = await RunAsync(async () =>
         {
             var people = api.ListPeopleAsync(_groupId);
@@ -336,10 +342,39 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             {
                 Fill(await api.GetGiftAsync(GiftId));
             }
-            else Subject = Subjects.FirstOrDefault(s => (_defaultPersonId is not null && s.PersonId == _defaultPersonId) || (_defaultPersonId is null && _defaultFamilyId is not null && s.FamilyId == _defaultFamilyId));
+            else if (_ideaId is not null && !_ideaFilled)
+            {
+                FillFromIdea(await api.GetIdeaAsync(_ideaId));
+                _ideaFilled = true;
+            }
+            else if (_ideaId is null) Subject = Subjects.FirstOrDefault(s => (_defaultPersonId is not null && s.PersonId == _defaultPersonId) || (_defaultPersonId is null && _defaultFamilyId is not null && s.FamilyId == _defaultFamilyId));
         });
         // Setting Subject above can't load occasions while this load is still busy, so load them now.
         if (loaded) await LoadOccasionsAsync();
+        await ai;
+        if (FromPhoto && !_photoRead && Capture.CanReadPhotos)
+        {
+            _photoRead = true;
+            await Capture.FromPhotoAsync();
+        }
+    }
+
+    /// <summary>"Mark as bought" on an idea nobody is tagged in: start from the idea, as bought but not given yet.</summary>
+    private void FillFromIdea(Idea idea)
+    {
+        _loading = true;
+        Title = idea.Title;
+        Brand = idea.Brand ?? "";
+        Store = idea.Store ?? "";
+        Category = idea.Category ?? "";
+        Amount = idea.Price?.ToString(CultureInfo.CurrentCulture) ?? "";
+        Url = idea.Url ?? "";
+        Notes = idea.Notes ?? "";
+        _loading = false;
+        Photo.Url = idea.ImageUrl;
+        BoughtNotGiven = true;
+        _pendingOccasionId = idea.OccasionId;
+        if (idea.People.Count == 1) Subject = Subjects.FirstOrDefault(s => s.PersonId == idea.People[0].Id);
     }
 
     private void Fill(Gift g)
@@ -400,6 +435,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             ValueHidden = IsReceived ? ValueHidden : null,
             HasGiftReceipt = IsReceived ? HasGiftReceipt : null,
             ThankYouSent = IsReceived ? ThankYouSent : null,
+            IdeaId = IsReceived ? null : _ideaId,
         };
     }
 
@@ -442,13 +478,23 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     public Suggester BrandSuggest => _brandS ??= new Suggester(api, () => _groupId, "brand", v => Brand = v);
     public Suggester StoreSuggest => _storeS ??= new Suggester(api, () => _groupId, "store", v => Store = v);
     public Suggester CategorySuggest => _categoryS ??= new Suggester(api, () => _groupId, "category", v => Category = v);
-    partial void OnTitleChanged(string value) { _ = TitleSuggest.UpdateAsync(value); }
-    partial void OnBrandChanged(string value) { _ = BrandSuggest.UpdateAsync(value); }
-    partial void OnStoreChanged(string value) { _ = StoreSuggest.UpdateAsync(value); }
-    partial void OnCategoryChanged(string value) { _ = CategorySuggest.UpdateAsync(value); }
+    // Suggest only while the user is typing, not when a saved idea is loaded.
+    private bool _loading;
+    partial void OnTitleChanged(string value) { if (!_loading) _ = TitleSuggest.UpdateAsync(value); }
+    partial void OnBrandChanged(string value) { if (!_loading) _ = BrandSuggest.UpdateAsync(value); }
+    partial void OnStoreChanged(string value) { if (!_loading) _ = StoreSuggest.UpdateAsync(value); }
+    partial void OnCategoryChanged(string value) { if (!_loading) _ = CategorySuggest.UpdateAsync(value); }
 
     private string _groupId = "";
     private string? _personId, _occasionId;
+    private Idea? _idea;
+    private bool _photoRead;
+
+    /// <summary>Set when editing a saved idea.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ScreenTitle))] public partial string? IdeaId { get; private set; }
+    /// <summary>Opened from a snapped photo: the photo shows first and is read straight away when the group has AI.</summary>
+    [ObservableProperty] public partial bool FromPhoto { get; private set; }
+    public string ScreenTitle => IdeaId is null ? "Add an idea" : "Edit idea";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Brand { get; set; } = "";
     [ObservableProperty] public partial string Store { get; set; } = "";
@@ -477,15 +523,45 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         _groupId = Params.Get(p, Params.GroupId) ?? "";
         _personId = Params.Get(p, Params.PersonId);
         _occasionId = Params.Get(p, Params.OccasionId);
+        IdeaId = Params.Get(p, Params.Id);
+        if (Params.Get(p, Params.PhotoUrl) is { } photo) { Photo.Url = photo; FromPhoto = true; }
     }
 
     [RelayCommand]
-    public Task LoadAsync() => RunAsync(async () =>
+    public async Task LoadAsync()
     {
-        _ = Capture.LoadAsync();
-        var options = SubjectOption.Build(await api.ListPeopleAsync(_groupId), []);
-        People.SetOptions(options, options.Where(o => o.PersonId == _personId));
-    });
+        var ai = Capture.LoadAsync();
+        await RunAsync(async () =>
+        {
+            var people = api.ListPeopleAsync(_groupId);
+            if (IdeaId is not null && _idea is null) Fill(_idea = await api.GetIdeaAsync(IdeaId));
+            var options = SubjectOption.Build(await people, []);
+            var tagged = _idea?.People.Select(p => p.Id).ToHashSet() ?? (_personId is null ? [] : [_personId]);
+            People.SetOptions(options, options.Where(o => o.PersonId is { } id && tagged.Contains(id)));
+        });
+        await ai;
+        if (FromPhoto && !_photoRead && Capture.CanReadPhotos)
+        {
+            _photoRead = true;
+            await Capture.FromPhotoAsync();
+        }
+    }
+
+    private void Fill(Idea i)
+    {
+        _loading = true;
+        Title = i.Title;
+        Brand = i.Brand ?? "";
+        Store = i.Store ?? "";
+        Category = i.Category ?? "";
+        Price = i.Price?.ToString(CultureInfo.CurrentCulture) ?? "";
+        Url = i.Url ?? "";
+        AgeMin = i.AgeMin?.ToString(CultureInfo.CurrentCulture) ?? "";
+        AgeMax = i.AgeMax?.ToString(CultureInfo.CurrentCulture) ?? "";
+        Notes = i.Notes ?? "";
+        _loading = false;
+        Photo.Url = i.ImageUrl;
+    }
 
     private bool CanSave() => Title.Trim().Length > 0;
 
@@ -511,5 +587,13 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
-    public Task SaveAsync() => BuildBody() is { } body ? SaveAndCloseAsync(() => api.CreateIdeaAsync(_groupId, body)) : Task.CompletedTask;
+    public Task SaveAsync()
+    {
+        if (BuildBody() is not { } body) return Task.CompletedTask;
+        if (IdeaId is null) return SaveAndCloseAsync(() => api.CreateIdeaAsync(_groupId, body));
+        var patch = new Patch().Set("title", body.Title).Set("brand", body.Brand).Set("store", body.Store).Set("category", body.Category)
+            .Set("price", body.Price).Set("url", body.Url).Set("imageUrl", body.ImageUrl).Set("notes", body.Notes)
+            .Set("ageMin", body.AgeMin).Set("ageMax", body.AgeMax).Set("personIds", body.PersonIds ?? []);
+        return SaveAndCloseAsync(() => api.UpdateIdeaAsync(IdeaId, patch));
+    }
 }

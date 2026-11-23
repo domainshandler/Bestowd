@@ -7,7 +7,7 @@ using Bestowd.Core.Models;
 
 namespace Bestowd.Core.ViewModels;
 
-public sealed record IdeaCard(Idea Idea, bool IsTopPick, string? PriceText, string? RepeatText, string Meta, bool CanBuy);
+public sealed record IdeaCard(Idea Idea, bool IsTopPick, string? PriceText, string? RepeatText, string Meta);
 
 public sealed record PersonChoice(string? Id, string Label);
 
@@ -96,8 +96,7 @@ public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, IN
             {
                 i.People.Count > 0 ? "For " + string.Join(", ", i.People.Select(p => p.Name)) : null,
                 i.AgeMin is not null || i.AgeMax is not null ? $"Ages {i.AgeMin ?? 0}–{(i.AgeMax is { } max ? max.ToString(System.Globalization.CultureInfo.CurrentCulture) : "∞")}" : null,
-            }.Where(s => s is not null)),
-            CanBuy: personId is not null || i.People.Count == 1 || i.OccasionId is not null)).ToList();
+            }.Where(s => s is not null)))).ToList();
 
         var repeats = list.Ideas.Where(i => i.Repeat is not null).ToList();
         RepeatNotice = repeats.Count == 0 ? null
@@ -121,11 +120,25 @@ public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, IN
         return new BuyIdeaBody { PersonId = personId, OccasionId = Selected?.Id is not null ? Occasion?.Id : null };
     }
 
+    /// <summary>Whether "Mark as bought" knows who it's for: the chosen person, the idea's only person, or its occasion.</summary>
+    public bool KnowsRecipient(Idea idea) => Selected?.Id is not null || idea.People.Count == 1 || idea.OccasionId is not null;
+
+    /// <summary>Buys straight away when the recipient is known; otherwise opens Log a gift, starting from the idea.</summary>
     [RelayCommand]
     public async Task BuyAsync(IdeaCard card)
     {
+        if (!KnowsRecipient(card.Idea))
+        {
+            if (groups.GroupId is { } g)
+                await nav.GoToAsync(Routes.LogGift, new Dictionary<string, object> { [Params.GroupId] = g, [Params.IdeaId] = card.Idea.Id });
+            return;
+        }
         if (await RunAsync(() => api.BuyIdeaAsync(card.Idea.Id, BuyBodyFor(card.Idea)))) { changes.Notify(); await LoadAsync(); }
     }
+
+    [RelayCommand]
+    public Task EditAsync(IdeaCard card) => groups.GroupId is not { } g ? Task.CompletedTask
+        : nav.GoToAsync(Routes.IdeaForm, new Dictionary<string, object> { [Params.GroupId] = g, [Params.Id] = card.Idea.Id });
 
     [RelayCommand]
     public async Task DismissAsync(IdeaCard card)

@@ -149,6 +149,11 @@ export async function ideaRoutes(app: FastifyInstance) {
     return { person: { id: person.id, name: person.name, age: personAge }, ideas }
   })
 
+  app.get<{ Params: { id: string } }>('/ideas/:id', async (request) => {
+    const idea = await loadOr404(userIdOf(request), await db.idea.findUnique({ where: { id: request.params.id }, include: ideaInclude }))
+    return toIdeaDto(idea)
+  })
+
   app.patch<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', {
     schema: {
       body: {

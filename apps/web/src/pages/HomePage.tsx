@@ -8,6 +8,7 @@ import OccasionRow from '../components/OccasionRow.tsx'
 import HolidaySuggestions from '../components/HolidaySuggestions.tsx'
 import { GroupNotices, PendingMoves } from '../components/MoveRequests.tsx'
 import GiftForm from '../components/forms/GiftForm.tsx'
+import SnapCapture from '../components/SnapCapture.tsx'
 import { Button, Chips, EmptyState, Icon, LoadError, Loading } from '../components/ui.tsx'
 import { formatMoney } from '../lib/format.ts'
 
@@ -52,6 +53,7 @@ export default function HomePage() {
         )}
       </section>
 
+      {groupId && <SnapCapture groupId={groupId} />}
       {groupId && <GroupNotices groupId={groupId} />}
       {groupId && <PendingMoves groupId={groupId} />}
       {groupId && <HolidaySuggestions groupId={groupId} />}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { captureLink, capturePhoto, getAiSettings } from '@bestowd/api-client'
 import type { ProductDraft } from '@bestowd/types'
@@ -48,12 +48,23 @@ export function FillFromLink({ groupId, url, onDraft }: { groupId: string; url: 
   )
 }
 
-/** "Fill in from photo" once a photo is attached: the group's AI reads the item or price tag. */
-export function FillFromPhoto({ groupId, photoUrl, onDraft }: { groupId: string; photoUrl: string | null; onDraft: (d: ProductDraft) => void }) {
+/**
+ * "Fill in from photo" once a photo is attached: the group's AI reads the item or price tag.
+ * With auto (a form opened from a snapped photo), it reads the photo straight away, once.
+ */
+export function FillFromPhoto({ groupId, photoUrl, onDraft, auto = false }: { groupId: string; photoUrl: string | null; onDraft: (d: ProductDraft) => void; auto?: boolean }) {
   const { group } = useGroup()
   const ai = useQuery({ queryKey: ['ai', groupId], queryFn: () => getAiSettings(groupId) })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  const autoRan = useRef(false)
+  const readable = Boolean(photoUrl?.startsWith('/files/') && ai.data?.configured)
+  useEffect(() => {
+    if (!auto || autoRan.current || !readable) return
+    autoRan.current = true
+    void run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, readable])
   if (!photoUrl?.startsWith('/files/') || !ai.data) return null
   if (!ai.data.configured) {
     return (

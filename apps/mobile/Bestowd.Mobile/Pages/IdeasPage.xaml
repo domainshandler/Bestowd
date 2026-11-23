@@ -50,10 +50,12 @@
                                     <Label Text="{Binding Idea.Notes}" Style="{StaticResource Small}" FontSize="14" IsVisible="{Binding Idea.Notes, Converter={StaticResource Has}}" />
                                     <Label Text="{Binding RepeatText}" FontSize="13" TextColor="{StaticResource AmberInk}" IsVisible="{Binding RepeatText, Converter={StaticResource Has}}" />
                                     <Label Text="{Binding Meta}" Style="{StaticResource Small}" FontSize="12" IsVisible="{Binding Meta, Converter={StaticResource Has}}" />
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <Button Text="Mark as bought" IsVisible="{Binding CanBuy}"
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                        <Button Text="Mark as bought"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:IdeasViewModel}}, Path=BuyCommand, x:DataType=vm:IdeasViewModel}" CommandParameter="{Binding .}" />
-                                        <Button Grid.Column="1" Text="Dismiss" Style="{StaticResource Secondary}"
+                                        <Button Grid.Column="1" Text="Edit" Style="{StaticResource Secondary}" SemanticProperties.Description="{Binding Idea.Title, StringFormat='Edit {0}'}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:IdeasViewModel}}, Path=EditCommand, x:DataType=vm:IdeasViewModel}" CommandParameter="{Binding .}" />
+                                        <Button Grid.Column="2" Text="Dismiss" Style="{StaticResource Secondary}"
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:IdeasViewModel}}, Path=DismissCommand, x:DataType=vm:IdeasViewModel}" CommandParameter="{Binding .}" />
                                     </Grid>
                                 </VerticalStackLayout>

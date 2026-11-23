@@ -35,6 +35,26 @@
                         </VerticalStackLayout>
                     </Border>
 
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding CanSnap}" Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border BackgroundColor="{StaticResource Brand}" StrokeThickness="0" StrokeShape="RoundRectangle 999" WidthRequest="44" HeightRequest="44">
+                                    <Label Text="📷" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                    <Label Text="Snap a gift" Style="{StaticResource Strong}" />
+                                    <Label Text="Photograph it or its price tag. Save it as an idea or a gift after." Style="{StaticResource Small}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Button Text="Take photo" Command="{Binding SnapCommand}" />
+                                <Button Grid.Column="1" Text="Choose" Style="{StaticResource Secondary}" Command="{Binding SnapFromLibraryCommand}" />
+                            </Grid>
+                            <ActivityIndicator IsRunning="{Binding IsSnapping}" IsVisible="{Binding IsSnapping}" />
+                            <Label Text="{Binding SnapError}" Style="{StaticResource ErrorText}" IsVisible="{Binding SnapError, Converter={StaticResource Has}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
                     <Border Style="{StaticResource Card}" IsVisible="{Binding AskHolidays}">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <VerticalStackLayout VerticalOptions="Center">

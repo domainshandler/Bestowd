@@ -5,13 +5,14 @@ import { buyIdea, listIdeas, listOccasions, listPeople, updateIdea, photoSrc } f
 import type { Idea } from '@bestowd/types'
 import { useGroup } from '../groups/GroupContext.tsx'
 import IdeaForm from '../components/forms/IdeaForm.tsx'
+import GiftForm from '../components/forms/GiftForm.tsx'
 import { useSave } from '../components/forms/useSave.ts'
 import { Avatar, Badge, Button, Card, EmptyState, FormError, Icon, LoadError, Loading } from '../components/ui.tsx'
 import RecipientPicker, { type Recipient } from '../components/forms/RecipientPicker.tsx'
 import { formatDate, formatMoney } from '../lib/format.ts'
 
-function IdeaCard({ idea, featured, currency, onBuy, onDismiss, busy }: {
-  idea: Idea; featured: boolean; currency: string; onBuy?: () => void; onDismiss: () => void; busy: boolean
+function IdeaCard({ idea, featured, currency, onBuy, onEdit, onDismiss, busy }: {
+  idea: Idea; featured: boolean; currency: string; onBuy: () => void; onEdit: () => void; onDismiss: () => void; busy: boolean
 }) {
   return (
     <Card className={`p-4 flex flex-col ${featured ? 'gap-2.5 rounded-[18px]' : 'gap-2'}`}>
@@ -37,7 +38,8 @@ function IdeaCard({ idea, featured, currency, onBuy, onDismiss, busy }: {
         {idea.url && <a href={idea.url} target="_blank" rel="noreferrer noopener">View product</a>}
       </div>
       <div className="flex gap-2">
-        {onBuy && <Button className="flex-1" onClick={onBuy} disabled={busy}>Mark as bought</Button>}
+        <Button className="flex-1" onClick={onBuy} disabled={busy}>Mark as bought</Button>
+        <Button variant="secondary" onClick={onEdit} disabled={busy} aria-label={`Edit ${idea.title}`}>Edit</Button>
         <Button variant="secondary" onClick={onDismiss} disabled={busy} aria-label={`Dismiss ${idea.title}`}>Dismiss</Button>
       </div>
     </Card>
@@ -50,6 +52,9 @@ export default function IdeasPage() {
   const personId = params.get('personId') ?? ''
   const familyId = params.get('familyId') ?? ''
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<Idea | null>(null)
+  // Bought, but we don't know who for: log it as a gift, starting from the idea.
+  const [logging, setLogging] = useState<Idea | null>(null)
   const enabled = Boolean(groupId)
 
   const people = useQuery({ queryKey: ['people', groupId], queryFn: () => listPeople(groupId!), enabled })
@@ -132,12 +137,21 @@ export default function IdeasPage() {
             featured={Boolean(personId) && i.id === featuredId}
             currency={currency}
             busy={buy.isPending || dismiss.isPending}
-            onBuy={personId || i.people.length === 1 || i.occasionId ? () => buy.mutate(i) : undefined}
+            onBuy={() => (personId || i.people.length === 1 || i.occasionId ? buy.mutate(i) : setLogging(i))}
+            onEdit={() => setEditing(i)}
             onDismiss={() => dismiss.mutate(i)}
           />
         ))}
       </div>
 
+      {editing && groupId && <IdeaForm open onClose={() => setEditing(null)} groupId={groupId} idea={editing} />}
+      {logging && groupId && (
+        <GiftForm open onClose={() => setLogging(null)} groupId={groupId} defaults={{
+          direction: 'GIVEN', status: 'BOUGHT', title: logging.title, brand: logging.brand, store: logging.store, category: logging.category,
+          amount: logging.price, url: logging.url, photoUrl: logging.imageUrl, notes: logging.notes, ideaId: logging.id,
+          personId: logging.people[0]?.id ?? null,
+        }} />
+      )}
       {adding && groupId && (
         <IdeaForm open onClose={() => setAdding(false)} groupId={groupId} personId={personId || null} occasionId={personId ? occasion?.id ?? null : null} />
       )}

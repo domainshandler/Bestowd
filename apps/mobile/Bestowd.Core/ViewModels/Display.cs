@@ -22,6 +22,10 @@ public static class Params
     public const string Direction = "direction";
     public const string Token = "token";
     public const string SubjectName = "subjectName";
+    /// <summary>A photo already uploaded (snapped on Home): the form shows it first and reads it.</summary>
+    public const string PhotoUrl = "photoUrl";
+    /// <summary>Log a gift from this idea: the form starts from it, and saving marks the idea bought.</summary>
+    public const string IdeaId = "ideaId";
 
     public static string? Get(IDictionary<string, object> p, string key) =>
         p.TryGetValue(key, out var v) ? v?.ToString() is { Length: > 0 } s ? Uri.UnescapeDataString(s) : null : null;

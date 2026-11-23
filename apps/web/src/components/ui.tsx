@@ -223,6 +223,7 @@ const PATHS: Record<string, ReactNode> = {
   gift: <><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8" /><path d="M12 8v13" /><path d="M12 8C10.5 4.5 6.5 4 6.5 6.3 6.5 8 10 8 12 8zm0 0c1.5-3.5 5.5-4 5.5-1.7C17.5 8 14 8 12 8z" /></>,
   sparkle: <><path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
+  camera: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13.5" r="3.5" /></>,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   back: <path d="m15 6-6 6 6 6" />,
   chevron: <path d="m9 6 6 6-6 6" />,

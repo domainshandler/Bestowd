@@ -99,7 +99,12 @@ export async function giftRoutes(app: FastifyInstance) {
     const { groupId } = request.params
     const userId = userIdOf(request)
     await requireMember(userId, groupId)
-    const gift = await createGiftEntry(groupId, userId, parseGiftDates(request.body) as GiftInput)
+    const gift = await db.$transaction(async (tx) => {
+      const created = await createGiftEntry(groupId, userId, parseGiftDates(request.body) as GiftInput, tx)
+      // A given gift logged from an idea marks the idea bought, as "Mark as bought" does.
+      if (created.ideaId && created.direction === 'GIVEN') await tx.idea.update({ where: { id: created.ideaId }, data: { status: 'BOUGHT' } })
+      return created
+    })
     await advanceForGift(gift)
     return reply.code(201).send(toGiftDto(gift))
   })

@@ -768,6 +768,7 @@ public sealed class CreateGiftBody
     public Reaction? Reaction { get; init; }
     public string? Notes { get; init; }
     public List<string>? CreditPersonIds { get; init; }
+    public string? IdeaId { get; init; }
 }
 
 public sealed class CreateIdeaBody

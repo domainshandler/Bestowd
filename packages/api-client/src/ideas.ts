@@ -23,3 +23,7 @@ export function buyIdea(id: string, body: BuyIdeaBody = {}): Promise<BuyIdeaResu
 export function deleteIdea(id: string): Promise<void> {
   return apiFetch(`/ideas/${id}`, { method: 'DELETE' })
 }
+
+export function getIdea(id: string): Promise<Omit<Idea, 'repeat'>> {
+  return apiFetch(`/ideas/${id}`)
+}

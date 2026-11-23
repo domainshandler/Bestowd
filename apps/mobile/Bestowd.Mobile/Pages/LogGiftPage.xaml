@@ -14,6 +14,15 @@
     <ScrollView>
         <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
             <Label Text="{Binding ScreenTitle}" Style="{StaticResource Title}" FontSize="26" />
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding FromPhoto}">
+                <Image Source="{Binding Photo.Source}" HeightRequest="220" Aspect="AspectFit" SemanticProperties.Description="Your photo" />
+                <HorizontalStackLayout Spacing="8" IsVisible="{Binding Capture.IsBusy}">
+                    <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" HeightRequest="20" />
+                    <Label Text="Reading the photo…" Style="{StaticResource Small}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
+                <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
+            </VerticalStackLayout>
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44" IsVisible="{Binding GiftId, Converter={StaticResource Has}, ConverterParameter=invert}">
                 <Label Text="We received this" VerticalOptions="Center" />
                 <Switch Grid.Column="1" IsToggled="{Binding IsReceived}" SemanticProperties.Description="We received this" />
@@ -78,9 +87,11 @@
                 <Button Text="Fill in from photo" Style="{StaticResource Secondary}" Command="{Binding Capture.FromPhotoCommand}" HorizontalOptions="Start" IsVisible="{Binding Capture.CanReadPhotos}" />
                 <Label Text="To read details from photos, add an AI key under Settings (the group's owner can)." Style="{StaticResource Small}" IsVisible="{Binding Capture.CanReadPhotos, Converter={StaticResource Not}}" />
             </VerticalStackLayout>
-            <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" IsVisible="{Binding Capture.IsBusy}" />
-            <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
-            <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding FromPhoto, Converter={StaticResource Not}}">
+                <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" IsVisible="{Binding Capture.IsBusy}" />
+                <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
+                <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
+            </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Notes" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>

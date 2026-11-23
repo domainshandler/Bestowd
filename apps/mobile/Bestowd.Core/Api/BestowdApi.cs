@@ -180,6 +180,8 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<IdeaList> ListIdeasAsync(string groupId, string? personId = null, string? occasionId = null, string? familyId = null, CancellationToken ct = default) =>
         GetAsync($"/groups/{groupId}/ideas{Query(("personId", personId), ("occasionId", occasionId), ("familyId", familyId))}", Json.IdeaList, ct);
 
+    public Task<Idea> GetIdeaAsync(string id, CancellationToken ct = default) => GetAsync($"/ideas/{id}", Json.Idea, ct);
+
     public Task<Idea> CreateIdeaAsync(string groupId, CreateIdeaBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/groups/{groupId}/ideas", Body(body, Json.CreateIdeaBody), Json.Idea, ct);
 

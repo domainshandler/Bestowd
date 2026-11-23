@@ -136,7 +136,6 @@ public class ViewModelTests
         var kit = new Idea { Id = "kit", Title = "Kit", People = [new PersonRef { Id = "p9", Name = "Leo" }] };
         vm.SetData(new IdeaList { Ideas = [kit] }, null, "CAD");
         Assert.False(vm.Ideas[0].IsTopPick);
-        Assert.True(vm.Ideas[0].CanBuy);
         var body = vm.BuyBodyFor(kit);
         Assert.Equal("p9", body.PersonId);
         Assert.Null(body.OccasionId);

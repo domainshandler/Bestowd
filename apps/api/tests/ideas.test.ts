@@ -141,8 +141,28 @@ describe('ideas', () => {
     // The failed attempt left the idea unbought.
   })
 
+  it('reads and edits an idea with nobody tagged', async () => {
+    const idea = await createIdea({ title: 'Untagged lamp' })
+    expect((await auth(api().get(`/ideas/${idea.body.id}`))).body).toMatchObject({ title: 'Untagged lamp', people: [] })
+    const res = await auth(api().patch(`/ideas/${idea.body.id}`)).send({ title: 'Reading lamp', brand: 'IKEA', personIds: [mia] })
+    expect(res.body).toMatchObject({ title: 'Reading lamp', brand: 'IKEA', people: [{ id: mia }] })
+  })
+
+  it('logging a given gift from an idea marks the idea bought; a received one does not', async () => {
+    const given = await createIdea({ title: 'Kite' })
+    const res = await auth(api().post(`/groups/${a.groupId}/gifts`)).send({ direction: 'GIVEN', title: 'Kite', date: '2026-11-01', personId: leo, ideaId: given.body.id })
+    expect(res.status).toBe(201)
+    expect(res.body.ideaId).toBe(given.body.id)
+    expect((await db.idea.findUniqueOrThrow({ where: { id: given.body.id } })).status).toBe('BOUGHT')
+
+    const received = await createIdea({ title: 'Scarf' })
+    await auth(api().post(`/groups/${a.groupId}/gifts`)).send({ direction: 'RECEIVED', title: 'Scarf', date: '2026-11-01', personId: leo, ideaId: received.body.id })
+    expect((await db.idea.findUniqueOrThrow({ where: { id: received.body.id } })).status).toBe('SAVED')
+  })
+
   it("404s another group's ideas and deletes your own", async () => {
     const theirs = await db.idea.create({ data: { groupId: b.groupId, createdById: b.user.id, title: 'Theirs' } })
+    expect((await auth(api().get(`/ideas/${theirs.id}`))).status).toBe(404)
     expect((await auth(api().patch(`/ideas/${theirs.id}`)).send({ title: 'x' })).status).toBe(404)
     expect((await auth(api().post(`/ideas/${theirs.id}/buy`)).send({})).status).toBe(404)
     expect((await auth(api().delete(`/ideas/${theirs.id}`))).status).toBe(404)

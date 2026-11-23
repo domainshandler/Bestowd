@@ -8,8 +8,17 @@ using Bestowd.Core.Models;
 namespace Bestowd.Core.ViewModels;
 
 /// <summary>Home: the next 30 days across all of the user's groups.</summary>
-public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupState groups, DataChanged changes) : ViewModelBase, ILoadable
+public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupState groups, DataChanged changes, IPhotoSource? photos = null, IPrompts? prompts = null) : ViewModelBase, ILoadable
 {
+    public const string AsIdea = "A gift idea";
+    public const string AsGiven = "A gift I gave or bought";
+    public const string AsReceived = "A gift we received";
+
+    /// <summary>"Snap a gift" needs a camera or photo library and a group to save into.</summary>
+    public bool CanSnap => photos is not null && prompts is not null;
+    [ObservableProperty] public partial bool IsSnapping { get; private set; }
+    [ObservableProperty] public partial string? SnapError { get; private set; }
+
     [ObservableProperty] public partial IReadOnlyList<OccasionItem> Occasions { get; private set; } = [];
     [ObservableProperty] public partial OccasionType? Filter { get; private set; }
     [ObservableProperty] public partial string Headline { get; private set; } = "";
@@ -117,4 +126,36 @@ public sealed partial class HomeViewModel(BestowdApi api, INavigator nav, GroupS
 
     [RelayCommand]
     public Task LogGiftAsync() => nav.GoToAsync(Routes.LogGift);
+
+    [RelayCommand] public Task SnapAsync() => SnapWithAsync(() => photos!.TakeAsync());
+    [RelayCommand] public Task SnapFromLibraryAsync() => SnapWithAsync(() => photos!.ChooseAsync());
+
+    /// <summary>
+    /// Photo first, decide later: uploads the photo, asks whether it's an idea or a gift, and opens that form with
+    /// the photo, which reads it when the group has AI.
+    /// </summary>
+    private async Task SnapWithAsync(Func<Task<byte[]?>> pick)
+    {
+        if (!CanSnap || IsSnapping || groups.GroupId is not { } g) return;
+        SnapError = null;
+        string? url;
+        try
+        {
+            IsSnapping = true;
+            if (await pick() is not { Length: > 0 } jpeg) return;
+            url = await api.UploadPhotoAsync(g, jpeg);
+        }
+        catch (Exception e) when (e is ApiException or HttpRequestException) { SnapError = "Couldn't upload the photo. Try again."; return; }
+        catch (Exception e) when (e is PhotoAccessException or NotSupportedException) { SnapError = e.Message; return; }
+        finally { IsSnapping = false; }
+
+        var choice = await prompts!.ChooseAsync("What is it?", [AsIdea, AsGiven, AsReceived]);
+        var p = new Dictionary<string, object> { [Params.GroupId] = g, [Params.PhotoUrl] = url };
+        switch (choice)
+        {
+            case AsIdea: await nav.GoToAsync(Routes.IdeaForm, p); break;
+            case AsGiven: await nav.GoToAsync(Routes.LogGift, p); break;
+            case AsReceived: p[Params.Direction] = "RECEIVED"; await nav.GoToAsync(Routes.LogGift, p); break;
+        }
+    }
 }

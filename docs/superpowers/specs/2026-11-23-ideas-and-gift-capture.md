@@ -97,3 +97,10 @@ These are mirrored in the scope document.
   - **OpenAI:** JSON-schema `response_format`.
   - **Gemini:** `responseSchema`.
   - Unreadable fields come back null, and the forms fill only the fields that were found.
+
+## Follow-up: photo first, and editing ideas (2026-11-23)
+
+- **Snap a gift on Home.** A card near the top of Home takes (or chooses) a photo and uploads it before anything else is decided. Then it asks "What is it?": a gift idea, a gift I gave or bought, or a gift we received. That form opens with the photo shown first. When the group has AI it reads the photo straight away, once, and fills what it finds.
+- **Every idea can be edited.** Ideas get an Edit button on web and mobile, and `GET /ideas/:id` loads one. This covers ideas with nobody tagged, which before could only be dismissed.
+- **"Mark as bought" is always offered.** When the recipient is known (the person being viewed, the idea's only tagged person, or its occasion), it buys straight away as before. Otherwise it opens Log a gift, filled in from the idea and set to "Bought, not given yet", so the user picks who it's for.
+- **A gift logged with `ideaId`** (direction GIVEN) marks that idea BOUGHT in the same transaction. A received gift leaves the idea as it was.

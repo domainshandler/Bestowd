@@ -17,6 +17,20 @@ export interface GiftDefaults {
   personId?: string | null
   familyId?: string | null
   occasionId?: string | null
+  /** Details to start from: an idea being bought, or a snapped photo. */
+  title?: string
+  brand?: string | null
+  store?: string | null
+  category?: string | null
+  amount?: number | null
+  url?: string | null
+  photoUrl?: string | null
+  notes?: string | null
+  status?: GiftStatus
+  /** Logging a given gift from this idea marks the idea bought. */
+  ideaId?: string | null
+  /** Started from a snapped photo: show it first and read it straight away when the group has AI. */
+  fromPhoto?: boolean
 }
 
 /** Log a given or received gift, or edit one. */
@@ -24,23 +38,23 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
   open: boolean; onClose: () => void; groupId: string; defaults?: GiftDefaults; gift?: Gift
 }) {
   const [direction, setDirection] = useState<GiftDirection>(gift?.direction ?? defaults.direction ?? 'GIVEN')
-  const [title, setTitle] = useState(gift?.title ?? '')
+  const [title, setTitle] = useState(gift?.title ?? defaults.title ?? '')
   const [who, setWho] = useState<Subject>({ personId: gift?.personId ?? defaults.personId ?? null, familyId: gift?.familyId ?? defaults.familyId ?? null })
   const [date, setDate] = useState(gift?.date.slice(0, 10) ?? todayInput())
   const [occasionId, setOccasionId] = useState(gift?.occasionId ?? defaults.occasionId ?? '')
-  const [amount, setAmount] = useState(gift?.amount?.toString() ?? '')
-  const [category, setCategory] = useState(gift?.category ?? '')
-  const [brand, setBrand] = useState(gift?.brand ?? '')
-  const [store, setStore] = useState(gift?.store ?? '')
-  const [url, setUrl] = useState(gift?.url ?? '')
-  const [status, setStatus] = useState<GiftStatus>(gift?.status ?? 'GIVEN')
+  const [amount, setAmount] = useState(gift?.amount?.toString() ?? defaults.amount?.toString() ?? '')
+  const [category, setCategory] = useState(gift?.category ?? defaults.category ?? '')
+  const [brand, setBrand] = useState(gift?.brand ?? defaults.brand ?? '')
+  const [store, setStore] = useState(gift?.store ?? defaults.store ?? '')
+  const [url, setUrl] = useState(gift?.url ?? defaults.url ?? '')
+  const [status, setStatus] = useState<GiftStatus>(gift?.status ?? defaults.status ?? 'GIVEN')
   const [valueHidden, setValueHidden] = useState(gift?.valueHidden ?? true)
   const [hasGiftReceipt, setHasGiftReceipt] = useState(gift?.hasGiftReceipt ?? false)
   const [returnBy, setReturnBy] = useState(gift?.returnBy?.slice(0, 10) ?? '')
   const [thankYouSent, setThankYouSent] = useState(gift?.thankYouSent ?? false)
   const [reaction, setReaction] = useState<Reaction | ''>(gift?.reaction ?? '')
-  const [notes, setNotes] = useState(gift?.notes ?? '')
-  const [photoUrl, setPhotoUrl] = useState<string | null>(gift?.photoUrl ?? null)
+  const [notes, setNotes] = useState(gift?.notes ?? defaults.notes ?? '')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(gift?.photoUrl ?? defaults.photoUrl ?? null)
   const [captureNote, setCaptureNote] = useState<string | null>(null)
   const onDraft = (d: ProductDraft) => setCaptureNote(applyDraft(d,
     { title: setTitle, brand: setBrand, store: setStore, price: setAmount, url: setUrl, photo: setPhotoUrl },
@@ -87,13 +101,23 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
     const body: CreateGiftBody = received
       ? { direction: 'RECEIVED', ...common, ...receivedFields }
       : { direction: 'GIVEN', ...common, status }
-    return createGift(groupId, body)
+    return createGift(groupId, { ...body, ...(defaults.ideaId ? { ideaId: defaults.ideaId } : {}) })
   }, onClose)
   const submit = (e: FormEvent) => { e.preventDefault(); save.mutate(undefined) }
+
+  const photoFirst = Boolean(defaults.fromPhoto && !gift)
+  const photo = (
+    <>
+      <PhotoField groupId={groupId} value={photoUrl} onChange={setPhotoUrl} />
+      <FillFromPhoto groupId={groupId} photoUrl={photoUrl} onDraft={onDraft} auto={photoFirst} />
+      {captureNote && <p role="status" className="text-sm text-brand">{captureNote}</p>}
+    </>
+  )
 
   return (
     <Modal open={open} onClose={onClose} title={gift ? 'Edit gift' : 'Log a gift'}>
       <form onSubmit={submit} className="flex flex-col gap-4">
+        {photoFirst && photo}
         {!gift && (
           <Segmented label="Direction" value={direction} onChange={setDirection}
             options={[{ value: 'GIVEN', label: 'I gave' }, { value: 'RECEIVED', label: 'We received' }]} />
@@ -147,9 +171,7 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
           )}
         </Field>
         <FillFromLink groupId={groupId} url={url} onDraft={onDraft} />
-        <PhotoField groupId={groupId} value={photoUrl} onChange={setPhotoUrl} />
-        <FillFromPhoto groupId={groupId} photoUrl={photoUrl} onDraft={onDraft} />
-        {captureNote && <p role="status" className="text-sm text-brand">{captureNote}</p>}
+        {!photoFirst && photo}
         <Field label="Notes">{(id) => <TextArea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
         <FormError error={save.error} />
         <Button type="submit" disabled={!title.trim() || (!who.personId && !who.familyId) || save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</Button>
