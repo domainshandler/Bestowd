@@ -102,13 +102,17 @@ model User {
 }
 
 model Group {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   name                String
-  currency            String   @default("CAD")
-  defaultBudgets      Json     @default("{}")
-  defaultReminderDays Int[]    @default([14, 3])
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  currency            String    @default("CAD")
+  defaultBudgets      Json      @default("{}")
+  defaultReminderDays Int[]     @default([14, 3])
+  /// Built-in holidays the group said it doesn't celebrate: no longer suggested.
+  dismissedHolidays   String[]  @default([])
+  /// When the group answered "Which holidays do you celebrate?". Until then Home asks.
+  holidaysChosenAt    DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   memberships     GroupMembership[]
   primaryFor      User[]            @relation("PrimaryGroup")

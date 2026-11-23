@@ -112,22 +112,87 @@ async function initialCoverage(groupId: string, familyIds: string[] | undefined)
   return families.map((f) => f.id)
 }
 
-export async function occasionRoutes(app: FastifyInstance) {
-  app.addHook('preHandler', app.authenticate)
-
-  // The built-in holidays, with each one's next date and the group's occasion for it (if added).
-  app.get<{ Params: { groupId: string } }>('/groups/:groupId/holidays', async (request) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const added = await db.occasion.findMany({ where: { groupId, holidayKey: { not: null } }, select: { id: true, holidayKey: true } })
-    const today = startOfUtcDay(new Date())
-    return HOLIDAYS.map((h) => ({
+/** The built-in holidays for a group, with next dates, the group's occasion for each, and what it dismissed. */
+export async function holidayChoices(groupId: string) {
+  const [group, added] = await Promise.all([
+    db.group.findUniqueOrThrow({ where: { id: groupId }, select: { holidaysChosenAt: true, dismissedHolidays: true } }),
+    db.occasion.findMany({ where: { groupId, holidayKey: { not: null } }, select: { id: true, holidayKey: true } }),
+  ])
+  const today = startOfUtcDay(new Date())
+  return {
+    chosen: group.holidaysChosenAt !== null,
+    holidays: HOLIDAYS.map((h) => ({
       key: h.key,
       name: h.name,
       note: h.note ?? null,
       nextDate: nextHolidayDate(h.rule, today)?.toISOString() ?? null,
       occasionId: added.find((o) => o.holidayKey === h.key)?.id ?? null,
-    }))
+      dismissed: group.dismissedHolidays.includes(h.key),
+    })),
+  }
+}
+
+/** Adds a built-in holiday as a group-wide occasion covering every non-archived family. */
+async function createHolidayOccasion(groupId: string, key: string) {
+  const holiday = findHoliday(key)!
+  const next = nextHolidayDate(holiday.rule, new Date())
+  if (!next) return
+  const families = await initialCoverage(groupId, undefined)
+  await db.occasion.create({
+    data: {
+      groupId, holidayKey: key, type: 'HOLIDAY', name: holiday.name, date: next, recursAnnually: true, nextOccurrence: next,
+      ...(families.length ? { coverage: { create: families.map((familyId) => ({ familyId })) } } : {}),
+    },
+  })
+}
+
+/** A holiday that's been added is no longer dismissed. */
+async function undismiss(groupId: string, key: string) {
+  const group = await db.group.findUniqueOrThrow({ where: { id: groupId }, select: { dismissedHolidays: true } })
+  if (group.dismissedHolidays.includes(key)) {
+    await db.group.update({ where: { id: groupId }, data: { dismissedHolidays: group.dismissedHolidays.filter((k) => k !== key) } })
+  }
+}
+
+export async function occasionRoutes(app: FastifyInstance) {
+  app.addHook('preHandler', app.authenticate)
+
+  // The built-in holidays: each one's next date, the group's occasion for it (if added), and whether the group
+  // said it doesn't celebrate it. `chosen` is false until the group answers "Which holidays do you celebrate?".
+  app.get<{ Params: { groupId: string } }>('/groups/:groupId/holidays', async (request) => {
+    const { groupId } = request.params
+    await requireMember(userIdOf(request), groupId)
+    return holidayChoices(groupId)
+  })
+
+  // Answers "Which holidays do you celebrate?": adds the picked ones (covering every family) and stops
+  // suggesting the rest. Holidays already added are left as they are.
+  app.post<{ Params: { groupId: string }; Body: { keys: string[] } }>('/groups/:groupId/holidays/choose', {
+    schema: { body: { type: 'object', additionalProperties: false, required: ['keys'], properties: { keys: { type: 'array', maxItems: 100, items: { type: 'string', maxLength: 64 } } } } },
+  }, async (request) => {
+    const { groupId } = request.params
+    await requireMember(userIdOf(request), groupId)
+    const keys = new Set(request.body.keys)
+    for (const key of keys) if (!findHoliday(key)) throw badRequest(`Unknown holiday: ${key}`)
+    const added = new Set((await db.occasion.findMany({ where: { groupId, holidayKey: { not: null } }, select: { holidayKey: true } })).map((o) => o.holidayKey!))
+    for (const key of keys) if (!added.has(key)) await createHolidayOccasion(groupId, key)
+    await db.group.update({
+      where: { id: groupId },
+      data: { holidaysChosenAt: new Date(), dismissedHolidays: HOLIDAYS.map((h) => h.key).filter((k) => !keys.has(k) && !added.has(k)) },
+    })
+    return holidayChoices(groupId)
+  })
+
+  // "Not for us" on a suggested holiday: stop suggesting it. It can still be added from the holiday list.
+  app.post<{ Params: { groupId: string; key: string } }>('/groups/:groupId/holidays/:key/dismiss', async (request) => {
+    const { groupId, key } = request.params
+    await requireMember(userIdOf(request), groupId)
+    if (!findHoliday(key)) throw badRequest(`Unknown holiday: ${key}`)
+    const group = await db.group.findUniqueOrThrow({ where: { id: groupId } })
+    if (!group.dismissedHolidays.includes(key)) {
+      await db.group.update({ where: { id: groupId }, data: { dismissedHolidays: [...group.dismissedHolidays, key] } })
+    }
+    return holidayChoices(groupId)
   })
 
   app.post<{ Params: { groupId: string }; Body: CreateBody }>('/groups/:groupId/occasions', {
@@ -183,6 +248,7 @@ export async function occasionRoutes(app: FastifyInstance) {
       },
       include: occasionInclude,
     })
+    if (holidayKey) await undismiss(groupId, holidayKey)
     const [dto] = await serialiseOccasions([created])
     return reply.code(201).send(dto)
   })

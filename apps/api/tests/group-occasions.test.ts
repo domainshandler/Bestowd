@@ -45,8 +45,9 @@ describe('built-in holidays', () => {
   it('lists the catalog with next dates and whether the group has added each', async () => {
     const res = await auth(api().get(`/groups/${a.groupId}/holidays`))
     expect(res.status).toBe(200)
-    const christmas = res.body.find((h: { key: string }) => h.key === 'christmas')
-    expect(christmas).toMatchObject({ name: 'Christmas', occasionId: null })
+    expect(res.body.chosen).toBe(false)
+    const christmas = res.body.holidays.find((h: { key: string }) => h.key === 'christmas')
+    expect(christmas).toMatchObject({ name: 'Christmas', occasionId: null, dismissed: false })
     expect(christmas.nextDate).toBe(nextHolidayDate(findHoliday('christmas')!.rule, new Date())!.toISOString())
     expect((await auth(api().get(`/groups/${a.groupId}/holidays`), b)).status).toBe(404)
   })
@@ -68,7 +69,7 @@ describe('built-in holidays', () => {
     expect(res.body.needsGift).toBe(true)
 
     const listed = await auth(api().get(`/groups/${a.groupId}/holidays`))
-    expect(listed.body.find((h: { key: string }) => h.key === 'christmas').occasionId).toBe(res.body.id)
+    expect(listed.body.holidays.find((h: { key: string }) => h.key === 'christmas').occasionId).toBe(res.body.id)
   })
 
   it('refuses the same holiday twice, unknown holidays, and holidays on a person', async () => {
@@ -197,5 +198,49 @@ describe('reminders', () => {
     expect(due).toHaveLength(1)
     expect(due[0]).toMatchObject({ kind: 'OCCASION', body: 'Lantern night is in 14 days and 2 of 2 families still need a gift.' })
     expect(due[0]!.data).toMatchObject({ occasionId: occ.id, scope: 'GROUP' })
+  })
+})
+
+describe('choosing holidays', () => {
+  let c: Awaited<ReturnType<typeof createTestUser>>
+  beforeAll(async () => { c = await createTestUser(app) })
+  afterAll(async () => { await cleanupUser(c.user.id) })
+  const holidays = () => auth(api().get(`/groups/${c.groupId}/holidays`), c)
+  const byKey = (body: { holidays: { key: string }[] }, key: string) => body.holidays.find((h) => h.key === key) as Record<string, unknown>
+
+  it('adds the picked holidays, covering every family, and stops suggesting the rest', async () => {
+    const res = await auth(api().post(`/groups/${c.groupId}/holidays/choose`), c).send({ keys: ['christmas', 'mothers-day'] })
+    expect(res.status).toBe(200)
+    expect(res.body.chosen).toBe(true)
+    expect(byKey(res.body, 'christmas')).toMatchObject({ dismissed: false, occasionId: expect.any(String) })
+    expect(byKey(res.body, 'mothers-day').occasionId).toEqual(expect.any(String))
+    expect(byKey(res.body, 'diwali')).toMatchObject({ dismissed: true, occasionId: null })
+
+    const christmas = await db.occasion.findFirstOrThrow({ where: { groupId: c.groupId, holidayKey: 'christmas' }, include: { coverage: true } })
+    expect(christmas.coverage.map((f) => f.familyId)).toEqual([c.householdId])
+    expect(christmas.nextOccurrence).toEqual(nextHolidayDate(findHoliday('christmas')!.rule, new Date()))
+  })
+
+  it('answering again keeps holidays already added and adds new picks', async () => {
+    const res = await auth(api().post(`/groups/${c.groupId}/holidays/choose`), c).send({ keys: ['christmas', 'easter'] })
+    expect(byKey(res.body, 'easter').occasionId).toEqual(expect.any(String))
+    // Mother's Day was already added, so it stays (and isn't dismissed).
+    expect(byKey(res.body, 'mothers-day')).toMatchObject({ dismissed: false, occasionId: expect.any(String) })
+    expect(await db.occasion.count({ where: { groupId: c.groupId, holidayKey: 'christmas' } })).toBe(1)
+  })
+
+  it('dismisses one suggestion, and adding it later undoes the dismissal', async () => {
+    const dismissed = await auth(api().post(`/groups/${c.groupId}/holidays/valentines/dismiss`), c)
+    expect(dismissed.status).toBe(200)
+    expect(byKey(dismissed.body, 'valentines').dismissed).toBe(true)
+
+    await auth(api().post(`/groups/${c.groupId}/occasions`), c).send({ groupWide: true, holidayKey: 'valentines' })
+    expect(byKey((await holidays()).body, 'valentines')).toMatchObject({ dismissed: false, occasionId: expect.any(String) })
+  })
+
+  it('rejects unknown holidays and non-members', async () => {
+    expect((await auth(api().post(`/groups/${c.groupId}/holidays/choose`), c).send({ keys: ['nope'] })).status).toBe(400)
+    expect((await auth(api().post(`/groups/${c.groupId}/holidays/nope/dismiss`), c)).status).toBe(400)
+    expect((await auth(api().post(`/groups/${c.groupId}/holidays/choose`), a).send({ keys: [] })).status).toBe(404)
   })
 })
