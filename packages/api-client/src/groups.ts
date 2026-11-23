@@ -1,6 +1,6 @@
 import { apiFetch } from './client.js'
 import { json } from './query.js'
-import type { Group, LeaveGroupBody, UpdateGroupBody } from '@bestowd/types'
+import type { Group, LeaveGroupBody, LeaveOptions, LeaveResult, UpdateGroupBody } from '@bestowd/types'
 
 export function getGroup(groupId: string): Promise<Group> {
   return apiFetch(`/groups/${groupId}`)
@@ -16,6 +16,10 @@ export function createGroup(name?: string): Promise<Group> {
 }
 
 /** Leave a group. Returns the group to open next (a fresh one if this was your last). */
-export function leaveGroup(groupId: string, body: LeaveGroupBody = {}): Promise<{ primaryGroupId: string }> {
+export function getLeaveOptions(groupId: string): Promise<LeaveOptions> {
+  return apiFetch(`/groups/${groupId}/leave-options`)
+}
+
+export function leaveGroup(groupId: string, body: LeaveGroupBody = {}): Promise<LeaveResult> {
   return apiFetch(`/groups/${groupId}/leave`, { method: 'POST', body: json(body) })
 }

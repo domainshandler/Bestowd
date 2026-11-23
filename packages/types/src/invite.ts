@@ -91,4 +91,17 @@ export interface LeaveGroupBody {
   newOwnerId?: string
   /** An owner alone in the group confirms that leaving deletes it. */
   deleteGroup?: boolean
+  /** Families to take a copy of, with their people and gift history. Into toGroupId, or another group of yours (a new one if none). */
+  copy?: { familyIds: string[]; toGroupId?: string; toNewGroup?: boolean }
+}
+
+/** Before leaving: families you could take a copy of, and your other groups to put them in. */
+export interface LeaveOptions {
+  families: MovableFamily[]
+  destinations: { groupId: string; groupName: string }[]
+}
+
+export interface LeaveResult {
+  primaryGroupId: string
+  copied: { families: number; gifts: number }
 }

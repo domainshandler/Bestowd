@@ -256,43 +256,11 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         ? nav.GoToAsync(Routes.Bring, new Dictionary<string, object> { [Params.GroupId] = g })
         : Task.CompletedTask;
 
-    /// <summary>
-    /// Leave the current group. What you added stays with it. An owner hands it to another member first;
-    /// an owner on their own deletes it. Leaving your last group starts a fresh one.
-    /// </summary>
+    /// <summary>Leave the current group: choose what to take a copy of on the Leave screen.</summary>
     [RelayCommand]
-    public async Task LeaveAsync()
-    {
-        if (groups.GroupId is not { } groupId || groups.Current is not { } current) return;
-        Group? group = null;
-        if (!await RunAsync(async () => group = await api.GetGroupAsync(groupId))) return;
-        var name = current.GroupName;
-        var others = group!.Members.Where(m => m.UserId != session.User?.Id).ToList();
-        LeaveGroupBody body;
-        if (IsOwner && others.Count == 0)
-        {
-            if (!await prompts.ConfirmAsync($"Delete {name}?", $"You're the only one in {name}, so leaving deletes it with every family, gift and idea in it. This can't be undone.", "Delete group")) return;
-            body = new LeaveGroupBody { DeleteGroup = true };
-        }
-        else
-        {
-            string? newOwnerId = null;
-            if (IsOwner)
-            {
-                var pick = others.Count == 1 ? others[0].Name : await prompts.ChooseAsync($"Who looks after {name} now?", others.Select(m => m.Name).ToList());
-                if (pick is null) return;
-                newOwnerId = others.First(m => m.Name == pick).UserId;
-            }
-            var handover = newOwnerId is null ? "" : $" {others.First(m => m.UserId == newOwnerId).Name} becomes its owner.";
-            if (!await prompts.ConfirmAsync($"Leave {name}?", $"What you've added stays in {name}, and you stay listed in its household so gift history keeps your name.{handover} You can be invited back.", "Leave")) return;
-            body = new LeaveGroupBody { NewOwnerId = newOwnerId };
-        }
-        LeaveGroupResult? result = null;
-        if (!await RunAsync(async () => result = await api.LeaveGroupAsync(groupId, body))) return;
-        await session.LoadAsync();
-        groups.Select(result!.PrimaryGroupId);
-        await nav.GoToAsync(Routes.Home);
-    }
+    public Task LeaveAsync() => groups.GroupId is { } g
+        ? nav.GoToAsync(Routes.Leave, new Dictionary<string, object> { [Params.GroupId] = g })
+        : Task.CompletedTask;
 
     /// <summary>Start a new, empty group of your own and open it.</summary>
     [RelayCommand]

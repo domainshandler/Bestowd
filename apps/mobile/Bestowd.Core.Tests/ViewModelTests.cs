@@ -238,24 +238,74 @@ public class ViewModelTests
         Assert.Empty(body.KeepBothPeople);
     }
 
-    [Fact]
-    public async Task Account_owner_leaving_hands_the_group_to_the_chosen_member()
+    private static async Task<(LeaveViewModel Vm, FakeHandler Handler, FakeNavigator Nav)> LeaveScreen(string meJson, string groupJson, string optionsJson)
     {
         var (api, handler, _) = Fake.Api();
-        handler.On("GET /me", Json.Me());
-        handler.On("GET /groups/g1", """{"id":"g1","name":"Renny's group","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[], "members":[{"userId":"u1","name":"Renny","role":"OWNER"},{"userId":"u2","name":"Sheldon","role":"MEMBER"},{"userId":"u3","name":"Ana","role":"MEMBER"}]}"""); handler.On("POST /groups/g1/leave", """{"primaryGroupId":"g1"}""");
+        handler.On("GET /me", meJson);
+        handler.On("GET /groups/g1", groupJson);
+        handler.On("GET /groups/g1/leave-options", optionsJson);
+        handler.On("POST /groups/g1/leave", """{"primaryGroupId":"g2","copied":{"families":2,"gifts":3}}""");
         var groups = new GroupState(new MemorySettingsStore());
         var session = new Session(api, new Api.MemoryTokenStore("tok"), groups, new NoPush(), new MemorySettingsStore());
         await session.LoadAsync();
-        var prompts = new FakePrompts { Choice = "Ana" };
         var nav = new FakeNavigator();
-        var vm = new AccountViewModel(api, session, groups, nav, prompts);
+        var vm = new LeaveViewModel(api, session, groups, nav, new DataChanged());
+        vm.Apply(new Dictionary<string, object> { [Params.GroupId] = "g1" });
+        await vm.LoadAsync();
+        return (vm, handler, nav);
+    }
+
+    private const string LeaveOptionsJson = """{"families":[{"id":"hh","name":"Renny's household","isOwnHousehold":true,"people":2,"gifts":2},{"id":"f1","name":"Hugo toddler room","isOwnHousehold":false,"people":2,"gifts":1},{"id":"f2","name":"Neighbours","isOwnHousehold":false,"people":0,"gifts":0}],"destinations":[{"groupId":"g2","groupName":"Mine"}]}""";
+
+    [Fact]
+    public async Task Leave_copies_the_ticked_families_into_your_own_group()
+    {
+        var (vm, handler, nav) = await LeaveScreen(
+            Json.Me("g1", ("g1", "Renny's family", "MEMBER"), ("g2", "Mine", "OWNER")),
+            """{"id":"g1","name":"Renny's family","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[],"members":[{"userId":"u9","name":"Renny","role":"OWNER"},{"userId":"u1","name":"Me","role":"MEMBER"}]}""",
+            LeaveOptionsJson);
+        Assert.Equal("Leave Renny's family?", vm.Title);
+        Assert.False(vm.ChoosesOwner);
+        Assert.Equal(["Renny's household (the household's people)", "Hugo toddler room", "Neighbours"], vm.Families.Select(f => f.Label));
+        Assert.Equal("g2", vm.Destination?.GroupId);
+        vm.Families.Single(f => f.Id == "f2").IsOn = false;
 
         await vm.LeaveAsync();
         using var doc = JsonDocument.Parse(handler.Requests.Single(r => r.PathAndQuery == "/groups/g1/leave").Body!);
-        Assert.Equal("u3", doc.RootElement.GetProperty("newOwnerId").GetString());
-        Assert.Contains(prompts.Asked, t => t.StartsWith("Who looks after"));
+        var copy = doc.RootElement.GetProperty("copy");
+        Assert.Equal(["hh", "f1"], copy.GetProperty("familyIds").EnumerateArray().Select(e => e.GetString()!));
+        Assert.Equal("g2", copy.GetProperty("toGroupId").GetString());
+        Assert.False(doc.RootElement.TryGetProperty("newOwnerId", out _));
         Assert.Equal(Routes.Home, nav.Visited.Last().Route);
+
+        // Or into a new group of your own.
+        vm.Destination = vm.Destinations[^1];
+        Assert.True(vm.BuildBody().Copy!.ToNewGroup);
+    }
+
+    [Fact]
+    public async Task Leave_owner_names_who_takes_over_and_a_lone_owner_confirms_delete()
+    {
+        var (vm, _, _) = await LeaveScreen(
+            Json.Me("g1", ("g1", "Ours", "OWNER")),
+            """{"id":"g1","name":"Ours","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[],"members":[{"userId":"u1","name":"Me","role":"OWNER"},{"userId":"u2","name":"Sheldon","role":"MEMBER"}]}""",
+            """{"families":[],"destinations":[]}""");
+        Assert.True(vm.ChoosesOwner);
+        Assert.Equal("u2", vm.BuildBody().NewOwnerId);
+        Assert.Null(vm.BuildBody().Copy);
+
+        var (alone, handler, _) = await LeaveScreen(
+            Json.Me("g1", ("g1", "Ours", "OWNER")),
+            """{"id":"g1","name":"Ours","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[],"members":[{"userId":"u1","name":"Me","role":"OWNER"}]}""",
+            """{"families":[],"destinations":[]}""");
+        Assert.True(alone.Alone);
+        Assert.Equal("Delete Ours?", alone.Title);
+        await alone.LeaveAsync();
+        Assert.Equal("Type delete to confirm.", alone.Error);
+        Assert.DoesNotContain(handler.Requests, r => r.PathAndQuery == "/groups/g1/leave");
+        alone.ConfirmText = "Delete";
+        await alone.LeaveAsync();
+        Assert.Contains(handler.Requests, r => r.PathAndQuery == "/groups/g1/leave");
     }
 
     [Fact]

@@ -22,6 +22,7 @@ public static class Routes
     public const string HolidayChoice = "holidaychoice";
     public const string MoveRequest = "moverequest";
     public const string Bring = "bring";
+    public const string Leave = "leave";
 }
 
 /// <summary>Navigation, implemented by the app with Shell.</summary>

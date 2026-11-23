@@ -41,6 +41,7 @@ namespace Bestowd.Core.Api;
 [JsonSerializable(typeof(ApproveMoveBody))]
 [JsonSerializable(typeof(LeaveGroupBody))]
 [JsonSerializable(typeof(LeaveGroupResult))]
+[JsonSerializable(typeof(LeaveOptions))]
 [JsonSerializable(typeof(CreateGroupBody))]
 [JsonSerializable(typeof(StatusResult))]
 [JsonSerializable(typeof(ErrorBody))]

@@ -63,6 +63,7 @@ public static class MauiProgram
         s.AddTransient<HolidayChoiceViewModel>().AddTransient<HolidayChoicePage>();
         s.AddTransient<MoveRequestViewModel>().AddTransient<MoveRequestPage>();
         s.AddTransient<BringViewModel>().AddTransient<BringPage>();
+        s.AddTransient<LeaveViewModel>().AddTransient<LeavePage>();
         s.AddTransient<LogGiftViewModel>().AddTransient<LogGiftPage>();
         s.AddTransient<IdeaFormViewModel>().AddTransient<IdeaFormPage>();
         s.AddTransient<SignInPage>().AddTransient<LaunchPage>();

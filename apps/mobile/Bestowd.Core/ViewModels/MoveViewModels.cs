@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Bestowd.Core.Api;
+using Bestowd.Core.Auth;
 using Bestowd.Core.Formatting;
 using Bestowd.Core.Groups;
 using Bestowd.Core.Models;
@@ -235,4 +236,92 @@ public sealed partial class BringViewModel(BestowdApi api, GroupState groups, IN
         if (selection.IsEmpty) { Error = "Tick something to bring."; return Task.CompletedTask; }
         return SaveAndCloseAsync(() => api.RequestMoveAsync(_groupId, selection));
     }
+}
+
+public sealed record LeaveTarget(string? GroupId, string Name);
+
+/// <summary>
+/// Leaving a group: tick which families to take a copy of (with their people, birthdays and gift
+/// history) and which of your groups they go into. The group keeps its originals. An owner names who
+/// takes over; an owner on their own types "delete" to confirm the group goes.
+/// </summary>
+public sealed partial class LeaveViewModel(BestowdApi api, Session session, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
+{
+    private string _groupId = "";
+
+    [ObservableProperty] public partial string GroupName { get; private set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<BringItem> Families { get; private set; } = [];
+    [ObservableProperty] public partial IReadOnlyList<LeaveTarget> Destinations { get; private set; } = [];
+    [ObservableProperty] public partial LeaveTarget? Destination { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<GroupMember> NextOwners { get; private set; } = [];
+    [ObservableProperty] public partial GroupMember? NextOwner { get; set; }
+    [ObservableProperty] public partial bool Alone { get; private set; }
+    [ObservableProperty] public partial string ConfirmText { get; set; } = "";
+
+    public bool IsOwner => groups.Memberships.FirstOrDefault(m => m.GroupId == _groupId)?.Role == MembershipRole.Owner;
+    public bool ChoosesOwner => NextOwners.Count > 0;
+    public bool HasFamilies => Families.Count > 0;
+    public string Title => Alone ? $"Delete {GroupName}?" : $"Leave {GroupName}?";
+    public string Intro => Alone
+        ? $"You're the only one in {GroupName}, so leaving deletes it with every family, gift and idea in it. This can't be undone."
+        : $"What you've added stays in {GroupName}, and you stay listed in its household so gift history keeps your name. You can be invited back.";
+    public string CopyNote => $"Copies include their people, birthdays and every gift for them, given and received, including ones the others logged. {GroupName} keeps its own. Anything matching a family you already have is combined with it.";
+    public string ButtonText => Alone ? "Delete group" : "Leave group";
+
+    public void Apply(IDictionary<string, object> p) => _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
+
+    [RelayCommand]
+    public Task LoadAsync() => RunAsync(async () =>
+    {
+        var group = api.GetGroupAsync(_groupId);
+        var options = await api.GetLeaveOptionsAsync(_groupId);
+        SetData(await group, options);
+    });
+
+    public void SetData(Group group, LeaveOptions options)
+    {
+        GroupName = group.Name;
+        var others = group.Members.Where(m => m.UserId != session.User?.Id).ToList();
+        Alone = IsOwner && others.Count == 0;
+        NextOwners = IsOwner ? others : [];
+        NextOwner = NextOwners.FirstOrDefault();
+        Families = options.Families
+            .Select(f => new BringItem(BringKind.Family, f.Id, f.IsOwnHousehold ? $"{f.Name} (the household's people)" : f.Name, MoveText.Contents(f.People, f.Gifts)))
+            .ToList();
+        Destinations = [.. options.Destinations.Select(d => new LeaveTarget(d.GroupId, d.GroupName)), new LeaveTarget(null, "A new group of my own")];
+        var owned = options.Destinations.FirstOrDefault(d => groups.Memberships.FirstOrDefault(m => m.GroupId == d.GroupId)?.Role == MembershipRole.Owner);
+        Destination = Destinations.FirstOrDefault(d => d.GroupId == (owned ?? options.Destinations.FirstOrDefault())?.GroupId) ?? Destinations[^1];
+        HasLoaded = true;
+        foreach (var name in new[] { nameof(IsOwner), nameof(ChoosesOwner), nameof(HasFamilies), nameof(Title), nameof(Intro), nameof(CopyNote), nameof(ButtonText) })
+            OnPropertyChanged(name);
+    }
+
+    public LeaveGroupBody BuildBody()
+    {
+        var ids = Families.Where(f => f.IsOn).Select(f => f.Id).ToList();
+        var copy = ids.Count == 0 ? null
+            : Destination?.GroupId is { } to ? new LeaveCopy { FamilyIds = ids, ToGroupId = to }
+            : new LeaveCopy { FamilyIds = ids, ToNewGroup = true };
+        return new LeaveGroupBody
+        {
+            DeleteGroup = Alone ? true : null,
+            NewOwnerId = ChoosesOwner ? NextOwner?.UserId : null,
+            Copy = copy,
+        };
+    }
+
+    [RelayCommand]
+    public async Task LeaveAsync()
+    {
+        if (Alone && !string.Equals(ConfirmText.Trim(), "delete", StringComparison.OrdinalIgnoreCase)) { Error = "Type delete to confirm."; return; }
+        var body = BuildBody();
+        LeaveGroupResult? result = null;
+        if (!await RunAsync(async () => result = await api.LeaveGroupAsync(_groupId, body))) return;
+        await session.LoadAsync();
+        groups.Select(result!.PrimaryGroupId);
+        changes.Notify();
+        await nav.GoToAsync(Routes.Home);
+    }
+
+    [RelayCommand] public Task CancelAsync() => nav.GoBackAsync();
 }

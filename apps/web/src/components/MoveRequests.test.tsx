@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
-import { getGroup, getMe, leaveGroup, listMoveRequests } from '@bestowd/api-client'
+import { getGroup, getLeaveOptions, getMe, leaveGroup, listMoveRequests } from '@bestowd/api-client'
 import { LeaveGroup, PendingMoves, countsSummary } from './MoveRequests.tsx'
 import { me, membership, renderApp, user } from '../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', async () => {
   class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
-  return { ApiError, getMe: vi.fn(), getGroup: vi.fn(), leaveGroup: vi.fn(), listMoveRequests: vi.fn(), createGroup: vi.fn(), getGroupMovable: vi.fn(), requestMove: vi.fn() }
+  return { ApiError, getMe: vi.fn(), getGroup: vi.fn(), getLeaveOptions: vi.fn(), leaveGroup: vi.fn(), listMoveRequests: vi.fn(), createGroup: vi.fn(), getGroupMovable: vi.fn(), requestMove: vi.fn() }
 })
 
 const member = (userId: string, name: string, role: 'OWNER' | 'MEMBER') => ({ userId, name, avatarUrl: null, role })
@@ -28,9 +28,10 @@ describe('move requests and leaving', () => {
   })
 
   it('has an owner hand the group over before leaving', async () => {
+    vi.mocked(getLeaveOptions).mockResolvedValue({ families: [], destinations: [] })
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Ours')]))
     vi.mocked(getGroup).mockResolvedValue({ id: 'g1', members: [member(user.id, 'Me', 'OWNER'), member('u2', 'Sheldon', 'MEMBER')] } as never)
-    vi.mocked(leaveGroup).mockResolvedValue({ primaryGroupId: 'g2' })
+    vi.mocked(leaveGroup).mockResolvedValue({ primaryGroupId: 'g2', copied: { families: 0, gifts: 0 } })
     renderApp(<LeaveGroup groupId="g1" groupName="Ours" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Leave or delete group' }))
     expect(await screen.findByLabelText('Who looks after the group now?')).toHaveValue('u2')
@@ -39,9 +40,10 @@ describe('move requests and leaving', () => {
   })
 
   it('asks a lone owner to confirm deleting the group', async () => {
+    vi.mocked(getLeaveOptions).mockResolvedValue({ families: [], destinations: [] })
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Ours')]))
     vi.mocked(getGroup).mockResolvedValue({ id: 'g1', members: [member(user.id, 'Me', 'OWNER')] } as never)
-    vi.mocked(leaveGroup).mockResolvedValue({ primaryGroupId: 'g2' })
+    vi.mocked(leaveGroup).mockResolvedValue({ primaryGroupId: 'g2', copied: { families: 0, gifts: 0 } })
     renderApp(<LeaveGroup groupId="g1" groupName="Ours" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Leave or delete group' }))
     const button = await screen.findByRole('button', { name: 'Delete group' })
@@ -49,5 +51,28 @@ describe('move requests and leaving', () => {
     fireEvent.change(screen.getByLabelText('Type "delete" to confirm'), { target: { value: 'Delete' } })
     fireEvent.click(button)
     await waitFor(() => expect(leaveGroup).toHaveBeenCalledWith('g1', { deleteGroup: true }))
+  })
+
+  it('asks which families to take a copy of, and where they go', async () => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Ours', 'MEMBER'), membership('g2', 'Mine')]))
+    vi.mocked(getGroup).mockResolvedValue({ id: 'g1', members: [member('u9', 'Renny', 'OWNER'), member(user.id, 'Me', 'MEMBER')] } as never)
+    vi.mocked(getLeaveOptions).mockResolvedValue({
+      families: [
+        { id: 'hh', name: "Renny's household", isOwnHousehold: true, people: 2, gifts: 2 },
+        { id: 'f1', name: 'Hugo toddler room', isOwnHousehold: false, people: 2, gifts: 1 },
+        { id: 'f2', name: 'Neighbours', isOwnHousehold: false, people: 0, gifts: 0 },
+      ],
+      destinations: [{ groupId: 'g2', groupName: 'Mine' }],
+    })
+    vi.mocked(leaveGroup).mockResolvedValue({ primaryGroupId: 'g2', copied: { families: 2, gifts: 3 } })
+    renderApp(<LeaveGroup groupId="g1" groupName="Ours" />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave group' }))
+    expect(await screen.findByText('Take a copy of')).toBeInTheDocument()
+    expect(screen.getByLabelText('Put the copies in')).toHaveValue('g2')
+    fireEvent.click(screen.getByRole('checkbox', { name: /Neighbours/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Leave group' }).at(-1)!)
+    await waitFor(() => expect(leaveGroup).toHaveBeenCalledWith('g1', { copy: { familyIds: ['hh', 'f1'], toGroupId: 'g2' } }))
   })
 })

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BasePage x:TypeArguments="vm:LeaveViewModel"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Bestowd.Mobile.Pages"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             xmlns:m="clr-namespace:Bestowd.Core.Models;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.LeavePage"
+             x:DataType="vm:LeaveViewModel"
+             Title="Leave group">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel" Command="{Binding CancelCommand}" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <VerticalStackLayout Padding="20,12,20,32" Spacing="14">
+            <Label Text="{Binding Title}" Style="{StaticResource Title}" FontSize="24" />
+            <Label Text="{Binding Intro}" Style="{StaticResource Small}" FontSize="14" />
+
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding HasFamilies}">
+                <Label Text="Take a copy of" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Families}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BringItem">
+                                <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="52">
+                                    <VerticalStackLayout VerticalOptions="Center">
+                                        <Label Text="{Binding Label}" />
+                                        <Label Text="{Binding Hint}" Style="{StaticResource Small}" />
+                                    </VerticalStackLayout>
+                                    <CheckBox Grid.Column="1" IsChecked="{Binding IsOn}" VerticalOptions="Center" SemanticProperties.Description="{Binding Label}" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="{Binding CopyNote}" Style="{StaticResource Small}" />
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Put the copies in" Style="{StaticResource FieldLabel}" />
+                    <Border Style="{StaticResource FieldBox}">
+                        <Picker ItemsSource="{Binding Destinations}" SelectedItem="{Binding Destination}" ItemDisplayBinding="{Binding Name, x:DataType=vm:LeaveTarget}" Title="Put the copies in" />
+                    </Border>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding ChoosesOwner}">
+                <Label Text="Who looks after the group now?" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}">
+                    <Picker ItemsSource="{Binding NextOwners}" SelectedItem="{Binding NextOwner}" ItemDisplayBinding="{Binding Name, x:DataType=m:GroupMember}" Title="New owner" />
+                </Border>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding Alone}">
+                <Label Text="Type &quot;delete&quot; to confirm" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding ConfirmText}" /></Border>
+            </VerticalStackLayout>
+
+            <Label Text="{Binding Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Error, Converter={StaticResource Has}}" />
+            <Button Text="{Binding ButtonText}" Style="{StaticResource DangerButton}" Command="{Binding LeaveCommand}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>

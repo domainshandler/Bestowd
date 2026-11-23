@@ -185,6 +185,9 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<Group> CreateGroupAsync(string? name, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "/groups", Body(new CreateGroupBody { Name = name }, Json.CreateGroupBody), Json.Group, ct);
 
+    public Task<LeaveOptions> GetLeaveOptionsAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/leave-options", Json.LeaveOptions, ct);
+
     /// <summary>Leave a group. Returns the group to open next (a fresh one if it was your last).</summary>
     public Task<LeaveGroupResult> LeaveGroupAsync(string groupId, LeaveGroupBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/groups/{groupId}/leave", Body(body, Json.LeaveGroupBody), Json.LeaveGroupResult, ct);

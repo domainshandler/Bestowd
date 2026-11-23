@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { createGroup, getGroup, getGroupMovable, leaveGroup, listMoveRequests, requestMove } from '@bestowd/api-client'
+import { createGroup, getGroup, getGroupMovable, getLeaveOptions, leaveGroup, listMoveRequests, requestMove } from '@bestowd/api-client'
 import type { MovableItems, MoveRequestSummary, MoveSelection } from '@bestowd/types'
 import { Button, Card, Checkbox, Field, FormError, Modal, Select, TextInput } from './ui.tsx'
 import { useSave } from './forms/useSave.ts'
@@ -109,25 +109,38 @@ export function BringMyThings({ groupId, groupName }: { groupId: string; groupNa
   )
 }
 
+const NEW_GROUP = '__new__'
+
 /**
- * Settings: leave the group. Your gifts and notes stay with it. An owner hands it to someone first;
- * an owner on their own deletes it.
+ * Settings: leave the group. You choose which families to take a copy of, with their people and
+ * gift history, and which of your groups they go into. The group keeps its originals. An owner hands
+ * it to someone first; an owner on their own deletes it.
  */
 export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName: string }) {
-  const { group: membership, me, setGroupId } = useGroup()
+  const { group: membership, me, memberships, setGroupId } = useGroup()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const details = useQuery({ queryKey: ['group', groupId], queryFn: () => getGroup(groupId), enabled: open })
+  const options = useQuery({ queryKey: ['leave-options', groupId], queryFn: () => getLeaveOptions(groupId), enabled: open })
   const others = (details.data?.members ?? []).filter((m) => m.userId !== me?.user.id)
   const [newOwnerId, setNewOwnerId] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [picked, setPicked] = useState<string[] | null>(null)
+  const [destination, setDestination] = useState<string | null>(null)
   const isOwner = membership?.role === 'OWNER'
   const alone = isOwner && details.data !== undefined && others.length === 0
+  const families = options.data?.families ?? []
+  const familyIds = picked ?? families.map((f) => f.id)
+  const destinations = options.data?.destinations ?? []
+  // Default: a group you own, else any other group, else a new one.
+  const defaultDestination = (destinations.find((d) => memberships.find((m) => m.groupId === d.groupId)?.role === 'OWNER') ?? destinations[0])?.groupId ?? NEW_GROUP
+  const to = destination ?? defaultDestination
+  const copy = familyIds.length === 0 ? undefined : to === NEW_GROUP ? { familyIds, toNewGroup: true } : { familyIds, toGroupId: to }
   const leave = useSave(
-    () => leaveGroup(groupId, isOwner ? (alone ? { deleteGroup: true } : { newOwnerId: newOwnerId || others[0]?.userId }) : {}),
+    () => leaveGroup(groupId, { ...(isOwner ? (alone ? { deleteGroup: true } : { newOwnerId: newOwnerId || others[0]?.userId }) : {}), ...(copy ? { copy } : {}) }),
     (r) => { setGroupId(r.primaryGroupId); navigate('/') },
   )
-  const ready = details.data !== undefined && (!alone || confirm.trim().toLowerCase() === 'delete')
+  const ready = details.data !== undefined && options.data !== undefined && (!alone || confirm.trim().toLowerCase() === 'delete')
 
   return (
     <>
@@ -135,28 +148,48 @@ export function LeaveGroup({ groupId, groupName }: { groupId: string; groupName:
       {open && (
         <Modal open onClose={() => setOpen(false)} title={alone ? `Delete ${groupName}?` : `Leave ${groupName}?`}>
           <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); leave.mutate(undefined) }}>
-            {alone ? (
-              <>
-                <p className="text-sm text-muted">You're the only one in {groupName}, so leaving deletes it with every family, gift and idea in it. This can't be undone.</p>
-                <Field label='Type "delete" to confirm'>{(id) => <TextInput id={id} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" />}</Field>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted">
-                  What you've added stays in {groupName}, and you stay listed in its household so gift history keeps your name. You can be invited back.
+            <p className="text-sm text-muted">
+              {alone
+                ? `You're the only one in ${groupName}, so leaving deletes it with every family, gift and idea in it. This can't be undone.`
+                : `What you've added stays in ${groupName}, and you stay listed in its household so gift history keeps your name. You can be invited back.`}
+            </p>
+
+            {families.length > 0 && (
+              <fieldset className="bg-white border border-line rounded-2xl px-4 py-2">
+                <legend className="text-sm font-medium px-1">Take a copy of</legend>
+                {families.map((f) => (
+                  <Checkbox key={f.id} label={f.isOwnHousehold ? `${f.name} (the household's people)` : f.name}
+                    hint={listOf([count(f.people, 'person', 'people'), count(f.gifts, 'gift', 'gifts')])}
+                    checked={familyIds.includes(f.id)} onChange={(on) => setPicked(toggle(familyIds, f.id, on))} />
+                ))}
+                <p className="text-xs text-muted pb-2">
+                  Copies include their people, birthdays and every gift for them, given and received, including ones the others logged. {groupName} keeps its own.
+                  {' '}Anything that matches a family you already have is combined with it.
                 </p>
-                {isOwner && others.length > 0 && (
-                  <Field label="Who looks after the group now?">
-                    {(id) => (
-                      <Select id={id} value={newOwnerId || others[0]!.userId} onChange={(e) => setNewOwnerId(e.target.value)}>
-                        {others.map((m) => <option key={m.userId} value={m.userId}>{m.name}</option>)}
-                      </Select>
-                    )}
-                  </Field>
-                )}
-              </>
+              </fieldset>
             )}
-            <p className="text-xs text-muted">If this is your only group, you'll start a fresh one.</p>
+            {copy && (
+              <Field label="Put the copies in">
+                {(id) => (
+                  <Select id={id} value={to} onChange={(e) => setDestination(e.target.value)}>
+                    {destinations.map((d) => <option key={d.groupId} value={d.groupId}>{d.groupName}</option>)}
+                    <option value={NEW_GROUP}>A new group of my own</option>
+                  </Select>
+                )}
+              </Field>
+            )}
+
+            {isOwner && others.length > 0 && (
+              <Field label="Who looks after the group now?">
+                {(id) => (
+                  <Select id={id} value={newOwnerId || others[0]!.userId} onChange={(e) => setNewOwnerId(e.target.value)}>
+                    {others.map((m) => <option key={m.userId} value={m.userId}>{m.name}</option>)}
+                  </Select>
+                )}
+              </Field>
+            )}
+            {alone && <Field label='Type "delete" to confirm'>{(id) => <TextInput id={id} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" />}</Field>}
+            {!copy && destinations.length === 0 && <p className="text-xs text-muted">This is your only group, so you'll start a fresh one.</p>}
             <FormError error={leave.error} />
             <Button type="submit" variant="danger" disabled={!ready || leave.isPending}>
               {leave.isPending ? 'Leaving…' : alone ? 'Delete group' : 'Leave group'}

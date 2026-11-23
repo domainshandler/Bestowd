@@ -18,6 +18,8 @@ const inviteToken = async (owner: U) => (await as(owner).post(`/groups/${owner.g
 
 beforeAll(async () => { app = await createTestApp() })
 afterAll(async () => {
+  // Copies can credit gifts to someone else, so remove every group before any user.
+  await db.group.deleteMany({ where: { memberships: { some: { userId: { in: users.map((u) => u.user.id) } } } } })
   for (const u of users) await cleanupUser(u.user.id)
   await app.close()
 })
@@ -255,5 +257,97 @@ describe('starting a new group', () => {
     expect((await as(u).get('/me')).body.primaryGroupId).toBe(res.body.id)
     const people = (await as(u).get(`/groups/${res.body.id}/people`)).body
     expect(people).toEqual([expect.objectContaining({ name: 'Nina New', isAccountHolder: true })])
+  })
+})
+
+describe('taking copies when you leave', () => {
+  let owner: U, leaver: U
+  const ids: Record<string, string> = {}
+
+  beforeAll(async () => {
+    owner = await user('Renny Copy')
+    leaver = await user('Sheldon Copy')
+    await as(leaver).post(`/invites/${await inviteToken(owner)}/accept`)
+    const g = owner.groupId
+    ids.hugo = (await db.person.create({ data: { groupId: g, familyId: owner.householdId, name: 'Hugo', birthMonth: 3, birthDay: 4 } })).id
+    ids.daycare = (await as(owner).post(`/groups/${g}/families`, { name: 'Hugo toddler room', type: 'SCHOOL' })).body.id
+    ids.teacher = (await db.person.create({ data: { groupId: g, familyId: ids.daycare, name: 'Ms Ana' } })).id
+    ids.sharon = (await as(owner).post(`/groups/${g}/families`, { name: 'Sharon Miranda' })).body.id
+    ids.unpicked = (await as(owner).post(`/groups/${g}/families`, { name: 'Neighbours' })).body.id
+    ids.xmas = (await as(owner).post(`/groups/${g}/occasions`, { groupWide: true, holidayKey: 'christmas' })).body.id
+    ids.bday = (await db.occasion.create({ data: { groupId: g, personId: ids.hugo, type: 'BIRTHDAY', name: "Hugo's birthday", date: new Date('2024-03-04') } })).id
+    const gift = (title: string, by: U, data: object) => db.giftEntry.create({ data: { groupId: g, direction: 'GIVEN', title, date: new Date('2026-11-01'), createdById: by.user.id, ...data } })
+    ids.waterBottle = (await gift('water bottle', leaver, { familyId: ids.daycare, occasionId: ids.xmas })).id
+    ids.truck = (await gift('Truck', owner, { personId: ids.hugo, occasionId: ids.bday })).id
+    ids.airFryer = (await gift('Air Fryer', leaver, { familyId: owner.householdId })).id
+    await gift('Pie', owner, { familyId: ids.unpicked })
+    // The leaver's own group already has a Sharon Miranda.
+    ids.mySharon = (await db.family.create({ data: { groupId: leaver.groupId, name: 'sharon miranda' } })).id
+  })
+
+  it('lists the families you could copy and where they could go', async () => {
+    const res = await as(leaver).get(`/groups/${owner.groupId}/leave-options`)
+    expect(res.body.families.map((f: any) => [f.name, f.isOwnHousehold, f.people, f.gifts])).toEqual([
+      ["Renny's household", true, 2, 2], ['Hugo toddler room', false, 1, 1], ['Neighbours', false, 0, 1], ['Sharon Miranda', false, 0, 0],
+    ])
+    expect(res.body.destinations).toEqual([{ groupId: leaver.groupId, groupName: "Sheldon's group" }])
+  })
+
+  it('copies the chosen families with their people and gift history into your own group', async () => {
+    const res = await as(leaver).post(`/groups/${owner.groupId}/leave`, { copy: { familyIds: [owner.householdId, ids.daycare, ids.sharon] } })
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ primaryGroupId: leaver.groupId, copied: { families: 3, gifts: 3 } })
+    const mine = leaver.groupId
+
+    // The household's people join yours: Hugo and Renny, without a second you.
+    const household = await db.person.findMany({ where: { familyId: leaver.householdId }, orderBy: { name: 'asc' } })
+    expect(household.map((p) => [p.name, p.userId === leaver.user.id])).toEqual([['Hugo', false], ['Renny Copy', false], ['Sheldon Copy', true]])
+    // The daycare is copied; Sharon Miranda is combined with the one you had.
+    const families = await db.family.findMany({ where: { groupId: mine, householdOfGroupId: null }, orderBy: { name: 'asc' } })
+    expect(families.map((f) => f.name)).toEqual(['Hugo toddler room', 'sharon miranda'])
+
+    // Gift history, including what the other co-giver logged.
+    const gifts = await db.giftEntry.findMany({ where: { groupId: mine }, include: { occasion: true, person: true, family: true }, orderBy: { title: 'asc' } })
+    expect(gifts.map((x) => [x.title, x.createdById === owner.user.id ? 'Renny' : 'Sheldon', x.occasion?.name ?? null, x.person?.name ?? x.family?.name])).toEqual([
+      ['Air Fryer', 'Sheldon', null, "Sheldon's household"],
+      ['Truck', 'Renny', "Hugo's birthday", 'Hugo'],
+      ['water bottle', 'Sheldon', 'Christmas', 'Hugo toddler room'],
+    ])
+    const xmas = await db.occasion.findFirstOrThrow({ where: { groupId: mine, holidayKey: 'christmas' }, include: { coverage: true } })
+    expect(xmas.coverage.map((c) => c.familyId)).toContain(families[0]!.id)
+
+    // The group keeps its originals, and you're no longer in it.
+    expect(await db.giftEntry.count({ where: { groupId: owner.groupId } })).toBe(4)
+    expect((await db.family.findUniqueOrThrow({ where: { id: ids.daycare } })).groupId).toBe(owner.groupId)
+    expect((await as(leaver).get(`/groups/${owner.groupId}`)).status).toBe(404)
+  })
+
+  it('makes a new group for the copies when you have no other', async () => {
+    const solo = await user('Solo Copier')
+    const fam = (await as(solo).post(`/groups/${solo.groupId}/families`, { name: 'Book club' })).body.id
+    await db.giftEntry.create({ data: { groupId: solo.groupId, direction: 'GIVEN', title: 'Novel', date: new Date('2026-01-01'), familyId: fam, createdById: solo.user.id } })
+    const res = await as(solo).post(`/groups/${solo.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [fam] } })
+    expect(res.status).toBe(200)
+    expect(res.body.copied).toEqual({ families: 1, gifts: 1 })
+    expect(await db.group.findUnique({ where: { id: solo.groupId } })).toBeNull()
+    expect(await db.giftEntry.count({ where: { groupId: res.body.primaryGroupId, title: 'Novel' } })).toBe(1)
+    expect((await as(solo).get('/me')).body.memberships).toHaveLength(1)
+  })
+
+  it('copies into a new group when asked, even with another group to hand', async () => {
+    const o = await user('Owen Owner')
+    const l = await user('Lia Leaver')
+    await as(l).post(`/invites/${await inviteToken(o)}/accept`)
+    const fam = (await as(o).post(`/groups/${o.groupId}/families`, { name: 'Cousins' })).body.id
+    const res = await as(l).post(`/groups/${o.groupId}/leave`, { copy: { familyIds: [fam], toNewGroup: true } })
+    expect(res.body.primaryGroupId).not.toBe(l.groupId)
+    expect(await db.family.count({ where: { groupId: res.body.primaryGroupId, name: 'Cousins' } })).toBe(1)
+    expect((await as(l).get('/me')).body.memberships).toHaveLength(2)
+  })
+
+  it("won't copy into the group you're leaving or one you're not in", async () => {
+    const a = await user('Ann Copy')
+    expect((await as(a).post(`/groups/${a.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [], toGroupId: a.groupId } })).status).toBe(400)
+    expect((await as(a).post(`/groups/${a.groupId}/leave`, { deleteGroup: true, copy: { familyIds: [], toGroupId: owner.groupId } })).status).toBe(404)
   })
 })
