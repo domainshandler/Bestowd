@@ -137,6 +137,8 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         new("openai", "OpenAI", "Create a key at platform.openai.com → API keys."),
         new("google", "Google (Gemini)", "Create a key at aistudio.google.com → Get API key."),
     ];
+    /// <summary>The provider list for the picker. An instance property because compiled XAML bindings can't bind to statics.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "Bound from XAML, which needs an instance property.")]
     public IReadOnlyList<AiProviderOption> AiProviderOptions => AiProviders;
     private AiSettings? _ai;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(AiKeyHelp), nameof(AiModelHelp))] public partial AiProviderOption? AiProvider { get; set; }

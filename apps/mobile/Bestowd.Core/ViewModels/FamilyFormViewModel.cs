@@ -16,10 +16,10 @@ public sealed partial class FamilyFormViewModel(BestowdApi api, INavigator nav, 
     public IReadOnlyList<FamilyType> Types { get; } = Enum.GetValues<FamilyType>();
     public string Title => FamilyId is null ? "Add family" : "Edit family";
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        _groupId = Params.Get(p, Params.GroupId) ?? "";
-        FamilyId = Params.Get(p, Params.Id);
+        _groupId = Params.Get(parameters, Params.GroupId) ?? "";
+        FamilyId = Params.Get(parameters, Params.Id);
         OnPropertyChanged(nameof(Title));
     }
 

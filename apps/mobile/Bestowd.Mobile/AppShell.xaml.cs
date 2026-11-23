@@ -1,4 +1,3 @@
-using Bestowd.Core.Auth;
 using Bestowd.Core.ViewModels;
 using Bestowd.Mobile.Pages;
 

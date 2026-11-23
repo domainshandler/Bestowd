@@ -259,10 +259,10 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
 
     private static string? DateText(DateOnly? d) => d?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static HttpContent Body<T>(T value, JsonTypeInfo<T> info) =>
+    private static StringContent Body<T>(T value, JsonTypeInfo<T> info) =>
         new StringContent(JsonSerializer.Serialize(value, info), Encoding.UTF8, "application/json");
 
-    private static HttpContent Body(Patch patch) => new StringContent(patch.ToJson(), Encoding.UTF8, "application/json");
+    private static StringContent Body(Patch patch) => new StringContent(patch.ToJson(), Encoding.UTF8, "application/json");
 
     private Task<T> GetAsync<T>(string path, JsonTypeInfo<T> info, CancellationToken ct) => SendAsync(HttpMethod.Get, path, null, info, ct);
 

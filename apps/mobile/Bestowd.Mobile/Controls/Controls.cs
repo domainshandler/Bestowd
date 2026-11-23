@@ -1,6 +1,5 @@
 using System.Windows.Input;
 using Microsoft.Maui.Controls.Shapes;
-using Bestowd.Core.Auth;
 using Bestowd.Core.Formatting;
 using Bestowd.Core.ViewModels;
 using Bestowd.Mobile.Converters;
@@ -249,7 +248,7 @@ public sealed class NotesCard : Border
         Content = stack;
     }
 
-    private static View Section(string title, View body) => new VerticalStackLayout
+    private static VerticalStackLayout Section(string title, View body) => new()
     {
         Spacing = 8,
         Children = { new Label { Text = title, Style = Ui.S("Caps") }, body },

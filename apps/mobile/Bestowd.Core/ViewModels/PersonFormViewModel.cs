@@ -28,10 +28,10 @@ public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, 
     public IReadOnlyList<string> Months { get; } = ["Month", .. CultureInfo.InvariantCulture.DateTimeFormat.MonthNames.Take(12)];
     public string Title => PersonId is null ? "Add person" : $"Edit {Name}";
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        FamilyId = Params.Get(p, Params.FamilyId) ?? "";
-        PersonId = Params.Get(p, Params.Id);
+        FamilyId = Params.Get(parameters, Params.FamilyId) ?? "";
+        PersonId = Params.Get(parameters, Params.Id);
         OnPropertyChanged(nameof(Title));
     }
 

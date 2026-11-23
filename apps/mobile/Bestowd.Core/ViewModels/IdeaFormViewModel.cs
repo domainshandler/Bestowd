@@ -48,13 +48,13 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         }
     }
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        _groupId = Params.Get(p, Params.GroupId) ?? "";
-        _personId = Params.Get(p, Params.PersonId);
-        _occasionId = Params.Get(p, Params.OccasionId);
-        IdeaId = Params.Get(p, Params.Id);
-        if (Params.Get(p, Params.PhotoUrl) is { } photo) Product.StartFromPhoto(photo);
+        _groupId = Params.Get(parameters, Params.GroupId) ?? "";
+        _personId = Params.Get(parameters, Params.PersonId);
+        _occasionId = Params.Get(parameters, Params.OccasionId);
+        IdeaId = Params.Get(parameters, Params.Id);
+        if (Params.Get(parameters, Params.PhotoUrl) is { } photo) Product.StartFromPhoto(photo);
     }
 
     [RelayCommand]

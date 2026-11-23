@@ -13,9 +13,9 @@ public sealed class FakeHandler : HttpMessageHandler
 
     public FakeHandler On(string key, string json, HttpStatusCode status = HttpStatusCode.OK) { Responses[key] = (status, json); return this; }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
+        var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
         var pathAndQuery = request.RequestUri!.PathAndQuery;
         Requests.Add((request.Method, pathAndQuery, body, request.Headers.Authorization?.ToString()));
         var key = Responses.Keys.FirstOrDefault(k => k == $"{request.Method} {pathAndQuery}")

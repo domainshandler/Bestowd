@@ -7,6 +7,9 @@ namespace Bestowd.Mobile.Services;
 /// Android: Credential Manager ("Sign in with Google"); Google no longer allows browser redirects into Android apps.
 /// iOS: the system browser (ASWebAuthenticationSession) with PKCE and the reversed iOS client ID as redirect.
 /// </summary>
+// The HttpClient and instance methods are used by the iOS sign-in only; on Android the analyzers see them as unused.
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0052", Justification = "Used on iOS.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822", Justification = "Instance methods on iOS.")]
 public sealed partial class GoogleAuthService(HttpClient http)
 {
     private readonly HttpClient _http = http;

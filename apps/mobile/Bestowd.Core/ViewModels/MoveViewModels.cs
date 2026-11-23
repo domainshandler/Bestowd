@@ -153,7 +153,7 @@ public sealed partial class MoveRequestViewModel(BestowdApi api, INavigator nav,
         }
     }
 
-    public void Apply(IDictionary<string, object> p) => _id = Params.Get(p, Params.Id) ?? "";
+    public void Apply(IDictionary<string, object> parameters) => _id = Params.Get(parameters, Params.Id) ?? "";
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
@@ -216,7 +216,7 @@ public sealed partial class BringViewModel(BestowdApi api, GroupState groups, IN
     [ObservableProperty] public partial IReadOnlyList<BringItem> Items { get; private set; } = [];
     [ObservableProperty] public partial string Intro { get; private set; } = "";
 
-    public void Apply(IDictionary<string, object> p) => _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
+    public void Apply(IDictionary<string, object> parameters) => _groupId = Params.Get(parameters, Params.GroupId) ?? groups.GroupId ?? "";
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
@@ -272,7 +272,7 @@ public sealed partial class LeaveViewModel(BestowdApi api, Session session, Grou
     public string CopyNote => $"Copies include their people, birthdays and every gift for them, given and received, including ones the others logged. {GroupName} keeps its own. Anything matching a family you already have is combined with it.";
     public string ButtonText => Alone ? "Delete group" : "Leave group";
 
-    public void Apply(IDictionary<string, object> p) => _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
+    public void Apply(IDictionary<string, object> parameters) => _groupId = Params.Get(parameters, Params.GroupId) ?? groups.GroupId ?? "";
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>

@@ -70,7 +70,7 @@ public sealed partial class PersonViewModel(BestowdApi api, INavigator nav, IPro
         History = GiftGrouping.ByYear(_gifts.Gifts.Where(g => g.Direction == direction), _gifts.Currency);
     }
 
-    private Dictionary<string, object> P(params (string, object)[] values) => values.ToDictionary(v => v.Item1, v => v.Item2);
+    private static Dictionary<string, object> P(params (string, object)[] values) => values.ToDictionary(v => v.Item1, v => v.Item2);
 
     [RelayCommand] public Task EditAsync() => Person is null ? Task.CompletedTask : nav.GoToAsync(Routes.PersonForm, P((Params.Id, PersonId), (Params.FamilyId, Person.FamilyId)));
     [RelayCommand] public Task LogGiftAsync() => Person is null ? Task.CompletedTask : nav.GoToAsync(Routes.LogGift, P((Params.GroupId, Person.GroupId), (Params.PersonId, PersonId)));

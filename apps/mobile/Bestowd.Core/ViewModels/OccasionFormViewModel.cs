@@ -27,12 +27,12 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
 
     partial void OnTypeChanged(OccasionType value) => RecursAnnually = value != OccasionType.OneOff;
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        _groupId = Params.Get(p, Params.GroupId) ?? "";
-        FixedPersonId = Params.Get(p, Params.PersonId);
-        FixedFamilyId = FixedPersonId is null ? Params.Get(p, Params.FamilyId) : null;
-        if (Params.Get(p, Params.SubjectName) is { } name) Name = $"{name}'s birthday";
+        _groupId = Params.Get(parameters, Params.GroupId) ?? "";
+        FixedPersonId = Params.Get(parameters, Params.PersonId);
+        FixedFamilyId = FixedPersonId is null ? Params.Get(parameters, Params.FamilyId) : null;
+        if (Params.Get(parameters, Params.SubjectName) is { } name) Name = $"{name}'s birthday";
         OnPropertyChanged(nameof(ChoosesSubject));
     }
 

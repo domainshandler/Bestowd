@@ -32,7 +32,7 @@ public class LogGiftOccasionTests
         await vm.LoadAsync();
         Assert.Null(vm.Subject);
         Assert.Equal(["xmas", "bday"], vm.Occasions.Select(o => o.Id));
-        var query = handler.Requests.Last(r => r.PathAndQuery.StartsWith("/groups/g1/occasions")).PathAndQuery;
+        var query = handler.Requests.Last(r => r.PathAndQuery.StartsWith("/groups/g1/occasions", StringComparison.Ordinal)).PathAndQuery;
         Assert.DoesNotContain("personId", query);
         Assert.DoesNotContain("familyId", query);
     }
@@ -46,7 +46,7 @@ public class LogGiftOccasionTests
         await vm.LoadAsync();
         Assert.Equal("f1", vm.Subject?.FamilyId);
         Assert.Equal("xmas", vm.Occasion?.Id);
-        Assert.Contains("familyId=f1", handler.Requests.Last(r => r.PathAndQuery.StartsWith("/groups/g1/occasions")).PathAndQuery);
+        Assert.Contains("familyId=f1", handler.Requests.Last(r => r.PathAndQuery.StartsWith("/groups/g1/occasions", StringComparison.Ordinal)).PathAndQuery);
     }
 
     [Fact]

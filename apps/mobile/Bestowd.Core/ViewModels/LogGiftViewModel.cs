@@ -81,16 +81,16 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         Subject = Subjects.FirstOrDefault(s => value.PersonId is { } p ? s.PersonId == p : s.PersonId is null && s.FamilyId == value.FamilyId);
     }
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
-        GiftId = Params.Get(p, Params.Id);
-        _defaultPersonId = Params.Get(p, Params.PersonId);
-        _defaultFamilyId = Params.Get(p, Params.FamilyId);
-        _pendingOccasionId = Params.Get(p, Params.OccasionId);
-        IsReceived = Params.Get(p, Params.Direction) == "RECEIVED";
-        _ideaId = Params.Get(p, Params.IdeaId);
-        if (Params.Get(p, Params.PhotoUrl) is { } photo) Product.StartFromPhoto(photo);
+        _groupId = Params.Get(parameters, Params.GroupId) ?? groups.GroupId ?? "";
+        GiftId = Params.Get(parameters, Params.Id);
+        _defaultPersonId = Params.Get(parameters, Params.PersonId);
+        _defaultFamilyId = Params.Get(parameters, Params.FamilyId);
+        _pendingOccasionId = Params.Get(parameters, Params.OccasionId);
+        IsReceived = Params.Get(parameters, Params.Direction) == "RECEIVED";
+        _ideaId = Params.Get(parameters, Params.IdeaId);
+        if (Params.Get(parameters, Params.PhotoUrl) is { } photo) Product.StartFromPhoto(photo);
         OnPropertyChanged(nameof(ScreenTitle));
     }
 

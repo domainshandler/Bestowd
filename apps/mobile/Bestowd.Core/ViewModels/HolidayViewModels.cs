@@ -39,7 +39,7 @@ public sealed partial class HolidayChoiceViewModel(BestowdApi api, GroupState gr
 
     [ObservableProperty] public partial IReadOnlyList<HolidayCheck> Holidays { get; private set; } = [];
 
-    public void Apply(IDictionary<string, object> p) => _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
+    public void Apply(IDictionary<string, object> parameters) => _groupId = Params.Get(parameters, Params.GroupId) ?? groups.GroupId ?? "";
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () => SetData(await api.ListHolidaysAsync(_groupId)));

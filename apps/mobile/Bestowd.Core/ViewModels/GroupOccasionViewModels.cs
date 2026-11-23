@@ -133,10 +133,10 @@ public sealed partial class GroupOccasionFormViewModel(BestowdApi api, GroupStat
     public string? HolidayNote => Holiday?.Note;
     public string ScreenTitle => IsEditing ? "Families & budgets" : "Add a group occasion";
 
-    public void Apply(IDictionary<string, object> p)
+    public void Apply(IDictionary<string, object> parameters)
     {
-        _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
-        OccasionId = Params.Get(p, Params.Id);
+        _groupId = Params.Get(parameters, Params.GroupId) ?? groups.GroupId ?? "";
+        OccasionId = Params.Get(parameters, Params.Id);
         foreach (var name in new[] { nameof(IsEditing), nameof(IsCustom), nameof(ChoosesOccasion), nameof(ScreenTitle) }) OnPropertyChanged(name);
     }
 
