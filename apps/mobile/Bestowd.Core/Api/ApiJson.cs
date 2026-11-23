@@ -46,6 +46,7 @@ namespace Bestowd.Core.Api;
 [JsonSerializable(typeof(CreateGroupBody))]
 [JsonSerializable(typeof(StatusResult))]
 [JsonSerializable(typeof(PhotoUpload))]
+[JsonSerializable(typeof(SuggestionList))]
 [JsonSerializable(typeof(ErrorBody))]
 [JsonSerializable(typeof(GoogleLoginBody))]
 [JsonSerializable(typeof(CreateFamilyBody))]

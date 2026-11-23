@@ -37,6 +37,12 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task UnregisterDeviceAsync(string token, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, $"/me/devices/{Uri.EscapeDataString(token)}", null, ct);
 
+    // ---- Autofill ----
+
+    /// <summary>Suggestions for a form field ("title", "brand", "store" or "category") as the user types.</summary>
+    public async Task<List<Suggestion>> SuggestAsync(string groupId, string field, string q, CancellationToken ct = default) =>
+        (await GetAsync($"/groups/{groupId}/suggest{Query(("field", field), ("q", q))}", Json.SuggestionList, ct)).Suggestions;
+
     // ---- Photos ----
 
     /// <summary>Uploads a photo (already shrunk to a JPEG) for the group; returns the link to save on an idea or gift.</summary>

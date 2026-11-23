@@ -13,6 +13,7 @@ export interface Idea {
   groupId: string
   title: string
   brand: string | null
+  store: string | null
   category: string | null
   url: string | null
   imageUrl: string | null
@@ -47,6 +48,7 @@ export interface IdeaList {
 export interface CreateIdeaBody {
   title: string
   brand?: string | null
+  store?: string | null
   category?: string | null
   url?: string | null
   imageUrl?: string | null
@@ -74,3 +76,7 @@ export interface BuyIdeaResult {
   idea: Omit<Idea, 'repeat'>
   gift: Gift
 }
+
+export type SuggestField = 'title' | 'brand' | 'store' | 'category'
+/** yours = logged in your group before; popular = across Bestowd lately; common = a built-in list. */
+export interface Suggestion { value: string; source: 'yours' | 'popular' | 'common' }

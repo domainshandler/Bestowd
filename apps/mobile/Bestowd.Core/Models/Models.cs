@@ -312,6 +312,7 @@ public sealed class Gift
     public GiftDirection Direction { get; init; }
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
+    public string? Store { get; init; }
     /// <summary>Product page.</summary>
     public string? Url { get; init; }
     public string? Category { get; init; }
@@ -362,6 +363,7 @@ public sealed class Idea
     public string GroupId { get; init; } = "";
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
+    public string? Store { get; init; }
     public string? Category { get; init; }
     public string? Url { get; init; }
     public string? ImageUrl { get; init; }
@@ -605,6 +607,18 @@ public sealed class CreateGroupBody
     public string? Name { get; init; }
 }
 
+public sealed class Suggestion
+{
+    public string Value { get; init; } = "";
+    /// <summary>"yours", "popular" or "common".</summary>
+    public string Source { get; init; } = "";
+}
+
+public sealed class SuggestionList
+{
+    public List<Suggestion> Suggestions { get; init; } = [];
+}
+
 public sealed class PhotoUpload
 {
     public string Url { get; init; } = "";
@@ -693,6 +707,7 @@ public sealed class CreateGiftBody
     public GiftDirection Direction { get; init; }
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
+    public string? Store { get; init; }
     public string? Url { get; init; }
     public string? PhotoUrl { get; init; }
     public string Date { get; init; } = "";
@@ -715,6 +730,7 @@ public sealed class CreateIdeaBody
 {
     public string Title { get; init; } = "";
     public string? Brand { get; init; }
+    public string? Store { get; init; }
     public string? ImageUrl { get; init; }
     public string? Category { get; init; }
     public string? Url { get; init; }

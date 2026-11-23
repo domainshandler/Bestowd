@@ -8,6 +8,7 @@ export interface Gift {
   direction: GiftDirection
   title: string
   brand: string | null
+  store: string | null
   /** Product page. */
   url: string | null
   category: string | null
@@ -76,6 +77,7 @@ export interface Spend {
 interface GiftFields {
   title: string
   brand?: string | null
+  store?: string | null
   url?: string | null
   date: string
   personId?: string | null

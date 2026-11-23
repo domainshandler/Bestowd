@@ -47,7 +47,7 @@ export function occasion(over: Partial<Occasion> = {}): Occasion {
 
 export function gift(over: Partial<Gift> = {}): Gift {
   return {
-    id: 'gift1', groupId: 'g1', direction: 'GIVEN', title: 'Art easel', brand: null, url: null, category: null, occasionId: null, occasionDate: null, occasionName: null,
+    id: 'gift1', groupId: 'g1', direction: 'GIVEN', title: 'Art easel', brand: null, store: null, url: null, category: null, occasionId: null, occasionDate: null, occasionName: null,
     date: '2026-03-09T00:00:00.000Z', personId: 'p1', familyId: null, counterpartyName: 'Maya', amount: 45, status: 'GIVEN',
     valueHidden: false, hasGiftReceipt: false, returnBy: null, thankYouSent: false, thankYouDueAt: null, reaction: null,
     photoUrl: null, notes: null, ideaId: null, credits: [], createdById: 'u1', createdAt: '2026-03-09T00:00:00.000Z', updatedAt: '2026-03-09T00:00:00.000Z',
@@ -57,7 +57,7 @@ export function gift(over: Partial<Gift> = {}): Gift {
 
 export function idea(over: Partial<Idea> = {}): Idea {
   return {
-    id: 'i1', groupId: 'g1', title: 'Watercolour kit', brand: null, category: 'Art', url: null, imageUrl: null, price: 35, notes: null,
+    id: 'i1', groupId: 'g1', title: 'Watercolour kit', brand: null, store: null, category: 'Art', url: null, imageUrl: null, price: 35, notes: null,
     ageMin: null, ageMax: null, status: 'SAVED', occasionId: null, people: [{ id: 'p1', name: 'Maya' }], createdById: 'u1',
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', repeat: null,
     ...over,

@@ -10,6 +10,7 @@ export interface GiftInput {
   direction: GiftDirection
   title: string
   brand?: string | null
+  store?: string | null
   url?: string | null
   date: Date
   personId?: string | null
@@ -58,6 +59,7 @@ export function toGiftDto(g: GiftRow) {
     direction: g.direction,
     title: g.title,
     brand: g.brand,
+    store: g.store,
     url: g.url,
     category: g.category,
     occasionId: g.occasionId,

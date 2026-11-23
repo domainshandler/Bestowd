@@ -239,6 +239,20 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
     public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
 
+    private Suggester? _titleS, _brandS, _storeS, _categoryS;
+    public Suggester TitleSuggest => _titleS ??= new Suggester(api, () => _groupId, "title", v => Title = v);
+    public Suggester BrandSuggest => _brandS ??= new Suggester(api, () => _groupId, "brand", v => Brand = v);
+    public Suggester StoreSuggest => _storeS ??= new Suggester(api, () => _groupId, "store", v => Store = v);
+    public Suggester CategorySuggest => _categoryS ??= new Suggester(api, () => _groupId, "category", v => Category = v);
+    // Suggest only while the user is typing, not when a saved gift or idea is loaded.
+    private bool _loading = false;
+    partial void OnTitleChanged(string value) { if (!_loading) _ = TitleSuggest.UpdateAsync(value); }
+    partial void OnBrandChanged(string value) { if (!_loading) _ = BrandSuggest.UpdateAsync(value); }
+    partial void OnStoreChanged(string value) { if (!_loading) _ = StoreSuggest.UpdateAsync(value); }
+    partial void OnCategoryChanged(string value) { if (!_loading) _ = CategorySuggest.UpdateAsync(value); }
+
+
+
     /// <summary>Who the gift is to or from: a type-to-search picker over people and families, with "+ Add".</summary>
     public RecipientPicker Who
     {
@@ -266,6 +280,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     [ObservableProperty] public partial string Amount { get; set; } = "";
     [ObservableProperty] public partial string Category { get; set; } = "";
     [ObservableProperty] public partial string Brand { get; set; } = "";
+    [ObservableProperty] public partial string Store { get; set; } = "";
     [ObservableProperty] public partial string Url { get; set; } = "";
     [ObservableProperty] public partial bool BoughtNotGiven { get; set; }
     [ObservableProperty] public partial bool ValueHidden { get; set; } = true;
@@ -325,13 +340,16 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     private void Fill(Gift g)
     {
         IsReceived = g.Direction == GiftDirection.Received;
+        _loading = true;
         Title = g.Title;
         Subject = Subjects.FirstOrDefault(s => s.PersonId == g.PersonId && s.FamilyId == g.FamilyId);
         Date = g.Date.ToUniversalTime().Date;
         Amount = g.Amount?.ToString(CultureInfo.CurrentCulture) ?? "";
         Category = g.Category ?? "";
         Brand = g.Brand ?? "";
+        Store = g.Store ?? "";
         Url = g.Url ?? "";
+        _loading = false;
         Photo.Url = g.PhotoUrl;
         BoughtNotGiven = g.Status == GiftStatus.Bought;
         ValueHidden = g.ValueHidden;
@@ -372,7 +390,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             PersonId = Subject.PersonId, FamilyId = Subject.FamilyId,
             OccasionId = Occasion?.Id, Amount = amount, Category = Text(Category), Notes = Text(Notes),
-            Brand = Text(Brand), Url = Text(Url), PhotoUrl = Photo.Url,
+            Brand = Text(Brand), Store = IsReceived ? null : Text(Store), Url = Text(Url), PhotoUrl = Photo.Url,
             Status = IsReceived ? null : BoughtNotGiven ? GiftStatus.Bought : GiftStatus.Given,
             ValueHidden = IsReceived ? ValueHidden : null,
             HasGiftReceipt = IsReceived ? HasGiftReceipt : null,
@@ -397,7 +415,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         var patch = new Patch().Set("title", body.Title).SetDate("date", DateOnly.ParseExact(body.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture))
             .Set("personId", body.PersonId).Set("familyId", body.FamilyId).Set("occasionId", body.OccasionId)
             .Set("amount", body.Amount).Set("category", body.Category).Set("notes", body.Notes)
-            .Set("brand", body.Brand).Set("url", body.Url).Set("photoUrl", body.PhotoUrl);
+            .Set("brand", body.Brand).Set("store", body.Store).Set("url", body.Url).Set("photoUrl", body.PhotoUrl);
         if (IsReceived) patch.Set("valueHidden", ValueHidden).Set("hasGiftReceipt", HasGiftReceipt).Set("thankYouSent", ThankYouSent);
         else patch.SetEnum("status", body.Status!.Value);
         await SaveAndCloseAsync(() => api.UpdateGiftAsync(GiftId, patch));
@@ -410,11 +428,21 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
 {
     private PhotoSlot? _photo;
     public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
+    private Suggester? _titleS, _brandS, _storeS, _categoryS;
+    public Suggester TitleSuggest => _titleS ??= new Suggester(api, () => _groupId, "title", v => Title = v);
+    public Suggester BrandSuggest => _brandS ??= new Suggester(api, () => _groupId, "brand", v => Brand = v);
+    public Suggester StoreSuggest => _storeS ??= new Suggester(api, () => _groupId, "store", v => Store = v);
+    public Suggester CategorySuggest => _categoryS ??= new Suggester(api, () => _groupId, "category", v => Category = v);
+    partial void OnTitleChanged(string value) { _ = TitleSuggest.UpdateAsync(value); }
+    partial void OnBrandChanged(string value) { _ = BrandSuggest.UpdateAsync(value); }
+    partial void OnStoreChanged(string value) { _ = StoreSuggest.UpdateAsync(value); }
+    partial void OnCategoryChanged(string value) { _ = CategorySuggest.UpdateAsync(value); }
 
     private string _groupId = "";
     private string? _personId, _occasionId;
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Brand { get; set; } = "";
+    [ObservableProperty] public partial string Store { get; set; } = "";
     [ObservableProperty] public partial string Category { get; set; } = "";
     [ObservableProperty] public partial string Price { get; set; } = "";
     [ObservableProperty] public partial string Url { get; set; } = "";
@@ -465,7 +493,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         string? Text(string s) => s.Trim() is { Length: > 0 } t ? t : null;
         return new CreateIdeaBody
         {
-            Title = Title.Trim(), Brand = Text(Brand), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
+            Title = Title.Trim(), Brand = Text(Brand), Store = Text(Store), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
             ImageUrl = Photo.Url,
             AgeMin = min, AgeMax = max, OccasionId = _occasionId,
             PersonIds = People.ChosenPersonIds.ToList(),

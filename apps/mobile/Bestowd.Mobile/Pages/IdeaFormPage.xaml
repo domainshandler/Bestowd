@@ -16,18 +16,26 @@
             <VerticalStackLayout Spacing="4">
                 <Label Text="Idea" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Watercolour paint kit" MaxLength="200" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding TitleSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Brand" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Brand}" Placeholder="Crayola" MaxLength="80" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding BrandSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Category" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" Placeholder="Art" MaxLength="60" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding CategorySuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Price" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Price}" Keyboard="Numeric" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Store" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Store}" Placeholder="Where to buy it" MaxLength="80" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding StoreSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Link" Style="{StaticResource FieldLabel}" />

@@ -3,6 +3,7 @@ import { createIdea } from '@bestowd/api-client'
 import { Button, Field, FormError, Modal, TextArea, TextInput } from '../ui.tsx'
 import RecipientPicker from './RecipientPicker.tsx'
 import PhotoField from './PhotoField.tsx'
+import AutoText from './AutoText.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export default function IdeaForm({ open, onClose, groupId, personId, occasionId }: {
@@ -10,6 +11,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
 }) {
   const [title, setTitle] = useState('')
   const [brand, setBrand] = useState('')
+  const [store, setStore] = useState('')
   const [category, setCategory] = useState('')
   const [price, setPrice] = useState('')
   const [url, setUrl] = useState('')
@@ -22,6 +24,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
   const save = useSave(() => createIdea(groupId, {
     title: title.trim(),
     brand: brand.trim() || null,
+    store: store.trim() || null,
     category: category.trim() || null,
     price: numberOrNull(price),
     url: url.trim() || null,
@@ -37,11 +40,12 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
   return (
     <Modal open={open} onClose={onClose} title="Add an idea">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <Field label="Idea">{(id) => <TextInput id={id} required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Watercolour paint kit" />}</Field>
+        <Field label="Idea">{(id) => <AutoText id={id} groupId={groupId} field="title" required maxLength={200} value={title} onChange={setTitle} placeholder="Watercolour paint kit" />}</Field>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Brand">{(id) => <TextInput id={id} maxLength={80} value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Crayola" />}</Field>
-          <Field label="Category">{(id) => <TextInput id={id} maxLength={60} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Art" />}</Field>
+          <Field label="Brand">{(id) => <AutoText id={id} groupId={groupId} field="brand" maxLength={80} value={brand} onChange={setBrand} placeholder="Crayola" />}</Field>
+          <Field label="Category">{(id) => <AutoText id={id} groupId={groupId} field="category" maxLength={60} value={category} onChange={setCategory} placeholder="Art" />}</Field>
         </div>
+        <Field label="Store">{(id) => <AutoText id={id} groupId={groupId} field="store" maxLength={80} value={store} onChange={setStore} placeholder="Where to buy it" />}</Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Price">{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
           <Field label="Link">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>

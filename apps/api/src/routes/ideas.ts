@@ -14,6 +14,7 @@ import { id, idList, isoDate, money as moneySchema, nullableId, nullableString, 
 interface IdeaBody {
   title?: string
   brand?: string | null
+  store?: string | null
   category?: string | null
   url?: string | null
   imageUrl?: string | null
@@ -30,6 +31,7 @@ const age = { type: ['integer', 'null'], minimum: 0, maximum: 120 }
 const ideaProperties = {
   title: { type: 'string', minLength: 1, maxLength: 200 },
   brand: nullableString(80),
+  store: nullableString(80),
   category: nullableString(60),
   url: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
   // A web image, or a photo uploaded to Bestowd.
@@ -51,6 +53,7 @@ function toIdeaDto(idea: IdeaRow) {
     groupId: idea.groupId,
     title: idea.title,
     brand: idea.brand,
+    store: idea.store,
     category: idea.category,
     url: idea.url,
     imageUrl: idea.imageUrl,
@@ -201,6 +204,7 @@ export async function ideaRoutes(app: FastifyInstance) {
         title: idea.title,
         // The idea's details carry over to the gift.
         brand: idea.brand,
+        store: idea.store,
         category: idea.category,
         url: idea.url,
         photoUrl: idea.imageUrl,

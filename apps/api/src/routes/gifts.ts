@@ -12,6 +12,7 @@ interface GiftBody {
   direction?: GiftDirection
   title?: string
   brand?: string | null
+  store?: string | null
   url?: string | null
   date?: string
   personId?: string | null
@@ -36,6 +37,7 @@ interface GiftBody {
 const giftProperties = {
   title: { type: 'string', minLength: 1, maxLength: 200 },
   brand: nullableString(80),
+  store: nullableString(80),
   url: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
   date: isoDate,
   personId: nullableId,

@@ -21,6 +21,7 @@
             <VerticalStackLayout Spacing="4">
                 <Label Text="Gift" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Wooden art easel" MaxLength="200" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding TitleSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="{Binding SubjectLabel}" Style="{StaticResource FieldLabel}" />
@@ -41,6 +42,12 @@
             <VerticalStackLayout Spacing="4">
                 <Label Text="Brand" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Brand}" Placeholder="Garmin" MaxLength="80" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding BrandSuggest}" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding IsReceived, Converter={StaticResource Not}}">
+                <Label Text="Store" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Store}" Placeholder="Where to buy it" MaxLength="80" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding StoreSuggest}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Link to product" Style="{StaticResource FieldLabel}" />
@@ -49,6 +56,7 @@
             <VerticalStackLayout Spacing="4">
                 <Label Text="Category (warns about repeats, e.g. Puzzle)" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" MaxLength="60" /></Border>
+                <pages:SuggestionsView BindingContext="{Binding CategorySuggest}" />
             </VerticalStackLayout>
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Bought, not given yet" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding BoughtNotGiven}" SemanticProperties.Description="Bought, not given yet" /></Grid>
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44"><Label Text="Keep value hidden" VerticalOptions="Center" /><Switch Grid.Column="1" IsToggled="{Binding ValueHidden}" SemanticProperties.Description="Keep value hidden" /></Grid>

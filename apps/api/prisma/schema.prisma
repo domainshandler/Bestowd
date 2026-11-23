@@ -268,6 +268,8 @@ model GiftEntry {
   direction      GiftDirection
   title          String
   brand          String?
+  /// Where it was bought, e.g. "Best Buy".
+  store          String?
   category       String?
   /// Product page, e.g. the store listing.
   url            String?
@@ -317,6 +319,7 @@ model Idea {
   groupId     String
   title       String
   brand       String?
+  store       String?
   category    String?
   url         String?
   imageUrl    String?
