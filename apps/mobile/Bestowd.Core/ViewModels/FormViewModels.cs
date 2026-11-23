@@ -239,6 +239,10 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
     public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
 
+    private CaptureHelper? _capture;
+    public CaptureHelper Capture => _capture ??= new CaptureHelper(api, () => _groupId, new DraftTargets(
+        v => Title = v, v => Brand = v, v => Store = v, v => Amount = v, v => Url = v, v => Photo.Url = v, () => Url, () => Photo.Url));
+
     private Suggester? _titleS, _brandS, _storeS, _categoryS;
     public Suggester TitleSuggest => _titleS ??= new Suggester(api, () => _groupId, "title", v => Title = v);
     public Suggester BrandSuggest => _brandS ??= new Suggester(api, () => _groupId, "brand", v => Brand = v);
@@ -322,6 +326,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     [RelayCommand]
     public async Task LoadAsync()
     {
+        _ = Capture.LoadAsync();
         var loaded = await RunAsync(async () =>
         {
             var people = api.ListPeopleAsync(_groupId);
@@ -428,6 +433,10 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
 {
     private PhotoSlot? _photo;
     public PhotoSlot Photo => _photo ??= new PhotoSlot(api, photos, () => _groupId);
+
+    private CaptureHelper? _capture;
+    public CaptureHelper Capture => _capture ??= new CaptureHelper(api, () => _groupId, new DraftTargets(
+        v => Title = v, v => Brand = v, v => Store = v, v => Price = v, v => Url = v, v => Photo.Url = v, () => Url, () => Photo.Url));
     private Suggester? _titleS, _brandS, _storeS, _categoryS;
     public Suggester TitleSuggest => _titleS ??= new Suggester(api, () => _groupId, "title", v => Title = v);
     public Suggester BrandSuggest => _brandS ??= new Suggester(api, () => _groupId, "brand", v => Brand = v);
@@ -473,6 +482,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
     {
+        _ = Capture.LoadAsync();
         var options = SubjectOption.Build(await api.ListPeopleAsync(_groupId), []);
         People.SetOptions(options, options.Where(o => o.PersonId == _personId));
     });

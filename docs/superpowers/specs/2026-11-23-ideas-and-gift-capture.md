@@ -1,6 +1,6 @@
 # Ideas and gift logging: details, photos, capture and autofill
 
-Status: proposed, 2026-11-23. Product requirements are in the scope document (sections 5 and 10, and the Open questions). This file is the technical design and build order.
+Status: built, 2026-11-23 (phases 1–5). Decisions from the user: photos stored on the NAS for now; popular threshold 5 groups / 90 days; **no barcode scanning**; AI key entered in Settings, with a choice of provider (Anthropic, OpenAI or Google). Product requirements are in the scope document (sections 5 and 10, and the Open questions). This file is the technical design and build order.
 
 Today an idea has a name, link, price, image URL and notes, but a logged gift has no brand or link. Buying an idea copies only its title and price. Neither form takes a photo: the API has no uploads. Picking people uses chips, and the people filter on Ideas is one chip per person.
 
@@ -56,7 +56,7 @@ All three routes end the same way: a draft `{ title, brand, price, currency, url
 2. **Photo of the item or price tag.** `POST /capture/photo` sends the uploaded image to a Claude vision model (`claude-haiku-5-5` for cost). It asks for strict JSON: name, brand, price, currency and a confidence for each.
    - Low-confidence fields are left empty rather than guessed.
    - The photo is kept as the item's picture.
-3. **Barcode.** The phone decodes it on the device (ML Kit barcode scanning, or ZXing.Net.MAUI). `GET /capture/barcode/:code` looks it up with a UPC provider, behind a 30-day cache per code.
+3. ~~Barcode.~~ Dropped: reading the photo covers it, including the price on a tag.
 
 ### R7: autofill
 
@@ -84,3 +84,16 @@ These are mirrored in the scope document.
 - Which UPC provider? Free tiers allow about 100 lookups a day; paid ones cost about $0.01–0.05 a lookup.
 - Is sending item photos to the Claude API for reading acceptable? Photos would be sent only when the user taps "Fill in from photo".
 - Popular terms: is 5 groups over 90 days the right privacy threshold?
+
+
+## As built: capture and AI
+
+- **Settings (owner only):** `GET/PUT/DELETE /groups/:id/ai`. The fields are `provider` (`anthropic` | `openai` | `google`), `model` and `apiKey`.
+  - The key is encrypted with `ENCRYPTION_KEY` and never returned; only its last 4 characters are shown.
+  - Anthropic defaults to `claude-opus-5-5` (about 1 cent a photo). `claude-haiku-5-5` can be entered for less. OpenAI and Google need a model named.
+- **`POST /groups/:id/capture/link {url}`** reads schema.org Product JSON-LD, then Open Graph tags. Private, loopback and link-local addresses are refused, including after redirects, with an 8 s timeout and a 2 MB cap. No AI is involved.
+- **`POST /groups/:id/capture/photo {photoUrl}`** reads an uploaded photo from this group with the group's AI.
+  - **Claude:** the official SDK's `beta.messages.parse` with Zod structured output, effort `low`, and server-side refusal fallback (`fallbacks: "default"`).
+  - **OpenAI:** JSON-schema `response_format`.
+  - **Gemini:** `responseSchema`.
+  - Unreadable fields come back null, and the forms fill only the fields that were found.

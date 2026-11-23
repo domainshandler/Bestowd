@@ -43,6 +43,26 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public async Task<List<Suggestion>> SuggestAsync(string groupId, string field, string q, CancellationToken ct = default) =>
         (await GetAsync($"/groups/{groupId}/suggest{Query(("field", field), ("q", q))}", Json.SuggestionList, ct)).Suggestions;
 
+    // ---- Capture ----
+
+    public Task<AiSettings> GetAiSettingsAsync(string groupId, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/ai", Json.AiSettings, ct);
+
+    /// <summary>Owner only. A null key keeps the saved one.</summary>
+    public Task<AiSettings> SaveAiSettingsAsync(string groupId, SaveAiSettingsBody body, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, $"/groups/{groupId}/ai", Body(body, Json.SaveAiSettingsBody), Json.AiSettings, ct);
+
+    public Task RemoveAiSettingsAsync(string groupId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"/groups/{groupId}/ai", null, ct);
+
+    /// <summary>Reads the product on a store page.</summary>
+    public async Task<ProductDraft> CaptureLinkAsync(string groupId, string url, CancellationToken ct = default) =>
+        (await SendAsync(HttpMethod.Post, $"/groups/{groupId}/capture/link", Body(new CaptureLinkBody { Url = url }, Json.CaptureLinkBody), Json.DraftResponse, ct)).Draft;
+
+    /// <summary>Reads an uploaded photo of an item or price tag with the group's AI.</summary>
+    public async Task<ProductDraft> CapturePhotoAsync(string groupId, string photoUrl, CancellationToken ct = default) =>
+        (await SendAsync(HttpMethod.Post, $"/groups/{groupId}/capture/photo", Body(new CapturePhotoBody { PhotoUrl = photoUrl }, Json.CapturePhotoBody), Json.DraftResponse, ct)).Draft;
+
     // ---- Photos ----
 
     /// <summary>Uploads a photo (already shrunk to a JPEG) for the group; returns the link to save on an idea or gift.</summary>

@@ -121,6 +121,14 @@ model Group {
   dismissedHolidays   String[]  @default([])
   /// When the group answered "Which holidays do you celebrate?". Until then Home asks.
   holidaysChosenAt    DateTime?
+  /// AI for reading photos of items and price tags: "anthropic", "openai" or "google". Set by the owner in Settings.
+  aiProvider          String?
+  /// The provider's model id; empty uses the provider's default.
+  aiModel             String?
+  /// The owner's API key, encrypted at rest; never sent back to clients.
+  aiKeyEnc            String?
+  /// The key's last 4 characters, to show which key is set.
+  aiKeyHint           String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

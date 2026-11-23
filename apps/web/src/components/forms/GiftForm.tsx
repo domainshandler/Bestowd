@@ -8,6 +8,8 @@ import { recipientsToSubject, subjectToRecipients, type Subject } from './Subjec
 import RecipientPicker from './RecipientPicker.tsx'
 import PhotoField from './PhotoField.tsx'
 import AutoText from './AutoText.tsx'
+import { FillFromLink, FillFromPhoto, applyDraft } from './Capture.tsx'
+import type { ProductDraft } from '@bestowd/types'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export interface GiftDefaults {
@@ -39,6 +41,10 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
   const [reaction, setReaction] = useState<Reaction | ''>(gift?.reaction ?? '')
   const [notes, setNotes] = useState(gift?.notes ?? '')
   const [photoUrl, setPhotoUrl] = useState<string | null>(gift?.photoUrl ?? null)
+  const [captureNote, setCaptureNote] = useState<string | null>(null)
+  const onDraft = (d: ProductDraft) => setCaptureNote(applyDraft(d,
+    { title: setTitle, brand: setBrand, store: setStore, price: setAmount, url: setUrl, photo: setPhotoUrl },
+    { url: Boolean(url.trim()), photo: Boolean(photoUrl) }))
 
   // Occasions for the chosen person or family (group-wide ones included), or every occasion in the group when nobody
   // is chosen yet; from a year back to a year ahead.
@@ -140,7 +146,10 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
             </Select>
           )}
         </Field>
+        <FillFromLink groupId={groupId} url={url} onDraft={onDraft} />
         <PhotoField groupId={groupId} value={photoUrl} onChange={setPhotoUrl} />
+        <FillFromPhoto groupId={groupId} photoUrl={photoUrl} onDraft={onDraft} />
+        {captureNote && <p role="status" className="text-sm text-brand">{captureNote}</p>}
         <Field label="Notes">{(id) => <TextArea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
         <FormError error={save.error} />
         <Button type="submit" disabled={!title.trim() || (!who.personId && !who.familyId) || save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</Button>

@@ -80,3 +80,27 @@ export interface BuyIdeaResult {
 export type SuggestField = 'title' | 'brand' | 'store' | 'category'
 /** yours = logged in your group before; popular = across Bestowd lately; common = a built-in list. */
 export interface Suggestion { value: string; source: 'yours' | 'popular' | 'common' }
+
+/** What capture (a store link or a photo) fills into the idea or gift form. */
+export interface ProductDraft {
+  title: string | null
+  brand: string | null
+  price: number | null
+  currency: string | null
+  store: string | null
+  url: string | null
+  imageUrl: string | null
+}
+
+export type AiProvider = 'anthropic' | 'openai' | 'google'
+
+/** The group's AI for reading photos. The key itself is never sent back. */
+export interface AiSettings {
+  provider: AiProvider | null
+  model: string | null
+  /** Used when model is empty (Anthropic only). */
+  defaultModel: string | null
+  /** Last 4 characters of the saved key. */
+  keyHint: string | null
+  configured: boolean
+}

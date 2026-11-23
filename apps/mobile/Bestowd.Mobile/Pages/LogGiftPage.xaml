@@ -53,6 +53,7 @@
                 <Label Text="Link to product" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Url}" Keyboard="Url" Placeholder="https://" /></Border>
             </VerticalStackLayout>
+            <Button Text="Fill in from link" Style="{StaticResource Secondary}" Command="{Binding Capture.FromLinkCommand}" HorizontalOptions="Start" />
             <VerticalStackLayout Spacing="4">
                 <Label Text="Category (warns about repeats, e.g. Puzzle)" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" MaxLength="60" /></Border>
@@ -73,6 +74,13 @@
                 <ActivityIndicator IsRunning="{Binding Photo.IsBusy}" IsVisible="{Binding Photo.IsBusy}" />
                 <Label Text="{Binding Photo.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Photo.Error, Converter={StaticResource Has}}" />
             </VerticalStackLayout>
+            <VerticalStackLayout Spacing="6" IsVisible="{Binding Photo.HasPhoto}">
+                <Button Text="Fill in from photo" Style="{StaticResource Secondary}" Command="{Binding Capture.FromPhotoCommand}" HorizontalOptions="Start" IsVisible="{Binding Capture.CanReadPhotos}" />
+                <Label Text="To read details from photos, add an AI key under Settings (the group's owner can)." Style="{StaticResource Small}" IsVisible="{Binding Capture.CanReadPhotos, Converter={StaticResource Not}}" />
+            </VerticalStackLayout>
+            <ActivityIndicator IsRunning="{Binding Capture.IsBusy}" IsVisible="{Binding Capture.IsBusy}" />
+            <Label Text="{Binding Capture.Note}" Style="{StaticResource Small}" TextColor="{StaticResource Brand}" IsVisible="{Binding Capture.Note, Converter={StaticResource Has}}" />
+            <Label Text="{Binding Capture.Error}" Style="{StaticResource ErrorText}" IsVisible="{Binding Capture.Error, Converter={StaticResource Has}}" />
             <VerticalStackLayout Spacing="4">
                 <Label Text="Notes" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Editor Text="{Binding Notes}" /></Border>

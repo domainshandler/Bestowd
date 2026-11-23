@@ -4,6 +4,8 @@ import { Button, Field, FormError, Modal, TextArea, TextInput } from '../ui.tsx'
 import RecipientPicker from './RecipientPicker.tsx'
 import PhotoField from './PhotoField.tsx'
 import AutoText from './AutoText.tsx'
+import { FillFromLink, FillFromPhoto, applyDraft } from './Capture.tsx'
+import type { ProductDraft } from '@bestowd/types'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export default function IdeaForm({ open, onClose, groupId, personId, occasionId }: {
@@ -19,6 +21,10 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
   const [ageMax, setAgeMax] = useState('')
   const [notes, setNotes] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [captureNote, setCaptureNote] = useState<string | null>(null)
+  const onDraft = (d: ProductDraft) => setCaptureNote(applyDraft(d,
+    { title: setTitle, brand: setBrand, store: setStore, price: setPrice, url: setUrl, photo: setImageUrl },
+    { url: Boolean(url.trim()), photo: Boolean(imageUrl) }))
   const [tagged, setTagged] = useState<string[]>(personId ? [personId] : [])
 
   const save = useSave(() => createIdea(groupId, {
@@ -50,7 +56,10 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
           <Field label="Price">{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
           <Field label="Link">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>
         </div>
+        <FillFromLink groupId={groupId} url={url} onDraft={onDraft} />
         <PhotoField groupId={groupId} value={imageUrl} onChange={setImageUrl} />
+        <FillFromPhoto groupId={groupId} photoUrl={imageUrl} onDraft={onDraft} />
+        {captureNote && <p role="status" className="text-sm text-brand">{captureNote}</p>}
         <fieldset>
           <legend className="text-sm font-medium mb-1">Good for ages</legend>
           <div className="grid grid-cols-2 gap-2">

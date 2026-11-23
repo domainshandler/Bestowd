@@ -112,6 +112,8 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
     [RelayCommand] public Task DoneAsync() => nav.GoToAsync(Routes.Home);
 }
 
+public sealed record AiProviderOption(string Value, string Label, string KeyHelp);
+
 public sealed partial class BudgetField(OccasionType type, string label, string text) : ObservableObject
 {
     public OccasionType Type { get; } = type;
@@ -127,6 +129,63 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
     /// <summary>You have things in your own group you could still bring here.</summary>
     [ObservableProperty] public partial bool CanBring { get; private set; }
     public string LeaveText => IsOwner ? "Leave or delete group" : "Leave group";
+
+    // ---- AI for reading photos ----
+    public static IReadOnlyList<AiProviderOption> AiProviders { get; } =
+    [
+        new("anthropic", "Anthropic (Claude)", "Create a key at console.anthropic.com → API keys."),
+        new("openai", "OpenAI", "Create a key at platform.openai.com → API keys."),
+        new("google", "Google (Gemini)", "Create a key at aistudio.google.com → Get API key."),
+    ];
+    public IReadOnlyList<AiProviderOption> AiProviderOptions => AiProviders;
+    private AiSettings? _ai;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(AiKeyHelp), nameof(AiModelHelp))] public partial AiProviderOption? AiProvider { get; set; }
+    [ObservableProperty] public partial string AiModel { get; set; } = "";
+    [ObservableProperty] public partial string AiKey { get; set; } = "";
+    [ObservableProperty] public partial string? AiStatus { get; private set; }
+    [ObservableProperty] public partial bool AiConfigured { get; private set; }
+    public string AiModelHelp => AiProvider?.Value == "anthropic"
+        ? $"Leave blank for {_ai?.DefaultModel ?? "claude-opus-5-5"}. claude-haiku-5-5 costs less."
+        : "Required: the model name from your provider's console.";
+    public string AiKeyHelp => _ai?.KeyHint is { } hint && _ai.Provider == AiProvider?.Value
+        ? $"A key ending in {hint} is saved. Leave blank to keep it. {AiProvider?.KeyHelp}"
+        : AiProvider?.KeyHelp ?? "";
+
+    public void SetAi(AiSettings ai)
+    {
+        _ai = ai;
+        AiConfigured = ai.Configured;
+        AiProvider = AiProviders.FirstOrDefault(p => p.Value == ai.Provider) ?? AiProviders[0];
+        AiModel = ai.Model ?? "";
+        AiKey = "";
+        var label = AiProviders.FirstOrDefault(p => p.Value == ai.Provider)?.Label;
+        AiStatus = ai.Configured
+            ? (IsOwner ? $"Using {label}." : $"Reading photos of items uses {label}, set up by the group's owner.")
+            : (IsOwner ? "Not set up." : "Reading details from photos isn't set up. The group's owner can add an AI key here.");
+        OnPropertyChanged(nameof(AiKeyHelp));
+        OnPropertyChanged(nameof(AiModelHelp));
+    }
+
+    [RelayCommand]
+    public async Task SaveAiAsync()
+    {
+        if (groups.GroupId is not { } g || AiProvider is null) return;
+        AiSettings? saved = null;
+        if (await RunAsync(async () => saved = await api.SaveAiSettingsAsync(g, new SaveAiSettingsBody
+            {
+                Provider = AiProvider.Value,
+                Model = AiModel.Trim() is { Length: > 0 } m ? m : null,
+                ApiKey = AiKey.Trim() is { Length: > 0 } k ? k : null,
+            })))
+            SetAi(saved!);
+    }
+
+    [RelayCommand]
+    public async Task RemoveAiAsync()
+    {
+        if (groups.GroupId is not { } g) return;
+        if (await RunAsync(() => api.RemoveAiSettingsAsync(g))) SetAi(new AiSettings());
+    }
 
     [ObservableProperty] public partial string GroupName { get; set; } = "";
     [ObservableProperty] public partial string Currency { get; set; } = "";
@@ -156,6 +215,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         var holidays = api.ListHolidaysAsync(groupId);
         var moves = api.ListMoveRequestsAsync(groupId);
         var movable = api.GetGroupMovableAsync(groupId);
+        var ai = api.GetAiSettingsAsync(groupId);
         var group = await api.GetGroupAsync(groupId);
         GroupName = group.Name;
         Currency = group.Currency;
@@ -171,6 +231,7 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         PendingMoves = (await moves).Select(r => MoveRequestRow.From(r, IsOwner)).ToList();
         var m = await movable;
         CanBring = m.Movable is not null && !m.Pending;
+        SetAi(await ai);
         HasLoaded = true;
         OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(LeaveText));

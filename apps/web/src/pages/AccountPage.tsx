@@ -7,6 +7,7 @@ import { useAuth } from '../auth/useAuth.ts'
 import { GROUP_KEY, useGroup } from '../groups/GroupContext.tsx'
 import InviteLinkModal from '../components/forms/InviteLinkModal.tsx'
 import { BringMyThings, LeaveGroup, PendingMoves, StartGroup } from '../components/MoveRequests.tsx'
+import AiSetting from '../components/AiSetting.tsx'
 import GroupOccasionForm from '../components/forms/GroupOccasionForm.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
 import { ChooseHolidays } from '../components/HolidaySuggestions.tsx'
@@ -152,6 +153,7 @@ export default function AccountPage() {
           <PendingMoves groupId={groupId} />
           <BringMyThings groupId={groupId} groupName={group?.groupName ?? 'this group'} />
           <HolidaysSetting groupId={groupId} />
+          <AiSetting groupId={groupId} isOwner={group?.role === 'OWNER'} />
           <Card className="p-4 flex flex-col gap-4">
             {group?.role === 'OWNER'
               ? <GroupSettings groupId={groupId} />

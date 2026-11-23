@@ -74,6 +74,24 @@
                         <Button Grid.Column="1" Text="Change" Style="{StaticResource Secondary}" Command="{Binding ChooseHolidaysCommand}" VerticalOptions="Center" />
                     </Grid>
                 </Border>
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="AI for reading photos" Style="{StaticResource Strong}" />
+                        <Label Text="Lets “Fill in from photo” read an item's name, brand and price from a photo or price tag. It uses your own API key, and each photo read is billed to it (usually around a cent). Store links work without it." Style="{StaticResource Small}" IsVisible="{Binding IsOwner}" />
+                        <Label Text="{Binding AiStatus}" Style="{StaticResource Small}" />
+                        <VerticalStackLayout Spacing="8" IsVisible="{Binding IsOwner}">
+                            <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding AiProviderOptions}" SelectedItem="{Binding AiProvider}" ItemDisplayBinding="{Binding Label, x:DataType=vm:AiProviderOption}" Title="Provider" /></Border>
+                            <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding AiModel}" Placeholder="Model" SemanticProperties.Description="Model" /></Border>
+                            <Label Text="{Binding AiModelHelp}" Style="{StaticResource Small}" FontSize="12" />
+                            <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding AiKey}" IsPassword="True" Placeholder="API key" SemanticProperties.Description="API key" /></Border>
+                            <Label Text="{Binding AiKeyHelp}" Style="{StaticResource Small}" FontSize="12" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Save AI settings" Style="{StaticResource Secondary}" Command="{Binding SaveAiCommand}" />
+                                <Button Text="Remove key" Style="{StaticResource Ghost}" Command="{Binding RemoveAiCommand}" IsVisible="{Binding AiConfigured}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
                 <Label Text="Only the group's owner can change its settings." Style="{StaticResource Small}" IsVisible="{Binding IsOwner, Converter={StaticResource Not}}" />
                 <VerticalStackLayout Spacing="12" IsVisible="{Binding IsOwner}">
                     <VerticalStackLayout Spacing="4">

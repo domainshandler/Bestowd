@@ -15,6 +15,7 @@ import { inviteRoutes } from './routes/invites.js'
 import { moveRoutes } from './routes/moves.js'
 import { uploadRoutes } from './routes/uploads.js'
 import { suggestRoutes } from './routes/suggest.js'
+import { captureRoutes } from './routes/capture.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -53,6 +54,7 @@ export async function buildApp() {
   await app.register(moveRoutes)
   await app.register(uploadRoutes)
   await app.register(suggestRoutes)
+  await app.register(captureRoutes)
 
   return app
 }
