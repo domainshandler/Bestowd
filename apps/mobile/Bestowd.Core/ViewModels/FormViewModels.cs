@@ -232,8 +232,23 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
 // ---------------- Gift ----------------
 
 /// <summary>Log a given or received gift, or edit one.</summary>
-public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
+public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, Session session, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
+    private RecipientPicker? _who;
+
+    /// <summary>Who the gift is to or from: a type-to-search picker over people and families, with "+ Add".</summary>
+    public RecipientPicker Who
+    {
+        get
+        {
+            if (_who is not null) return _who;
+            _who = new RecipientPicker(includeFamilies: true, single: true);
+            if (quickAdd is not null) _who.AddNew = name => quickAdd.AddAsync(_groupId, name, allowFamily: true);
+            _who.Changed += (_, _) => { if (Subject != _who.Chosen.FirstOrDefault()) Subject = _who.Chosen.FirstOrDefault(); };
+            return _who;
+        }
+    }
+
     private string _groupId = "";
     private string? _defaultPersonId, _defaultFamilyId;
 
@@ -260,7 +275,13 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     public string AmountLabel => IsReceived ? "Estimated value" : "Price";
 
     partial void OnIsReceivedChanged(bool value) { OnPropertyChanged(nameof(SubjectLabel)); OnPropertyChanged(nameof(AmountLabel)); }
-    partial void OnSubjectChanged(SubjectOption? value) => LoadOccasionsCommand.Execute(null);
+    partial void OnSubjectChanged(SubjectOption? value)
+    {
+        if (Who.Chosen.FirstOrDefault() != value) Who.SetChosen(value);
+        LoadOccasionsCommand.Execute(null);
+    }
+
+    partial void OnSubjectsChanged(IReadOnlyList<SubjectOption> value) => Who.SetOptions(value, Subject is null ? [] : [Subject]);
 
     /// <summary>Picking an occasion first fills in who it's for, when it belongs to one person or family.</summary>
     partial void OnOccasionChanged(Occasion? value)
@@ -381,7 +402,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
 // ---------------- Idea ----------------
 
-public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes) : FormViewModel(nav, changes), INavigationTarget, ILoadable
+public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, DataChanged changes, QuickAdd? quickAdd = null) : FormViewModel(nav, changes), INavigationTarget, ILoadable
 {
     private string _groupId = "";
     private string? _personId, _occasionId;
@@ -393,8 +414,19 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     [ObservableProperty] public partial string AgeMin { get; set; } = "";
     [ObservableProperty] public partial string AgeMax { get; set; } = "";
     [ObservableProperty] public partial string Notes { get; set; } = "";
-    /// <summary>Who the idea is for: search and add people rather than toggling everyone.</summary>
-    public PeoplePicker People { get; } = new();
+    private RecipientPicker? _people;
+
+    /// <summary>Who the idea is for: search and add people rather than toggling everyone, or add someone new.</summary>
+    public RecipientPicker People
+    {
+        get
+        {
+            if (_people is not null) return _people;
+            _people = new RecipientPicker();
+            if (quickAdd is not null) _people.AddNew = name => quickAdd.AddAsync(_groupId, name, allowFamily: false);
+            return _people;
+        }
+    }
 
     public void Apply(IDictionary<string, object> p)
     {
@@ -405,7 +437,10 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
-        People.SetPeople(await api.ListPeopleAsync(_groupId), _personId is null ? [] : [_personId]));
+    {
+        var options = SubjectOption.Build(await api.ListPeopleAsync(_groupId), []);
+        People.SetOptions(options, options.Where(o => o.PersonId == _personId));
+    });
 
     private bool CanSave() => Title.Trim().Length > 0;
 
@@ -425,7 +460,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         {
             Title = Title.Trim(), Brand = Text(Brand), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
             AgeMin = min, AgeMax = max, OccasionId = _occasionId,
-            PersonIds = People.ChosenIds.ToList(),
+            PersonIds = People.ChosenPersonIds.ToList(),
         };
     }
 

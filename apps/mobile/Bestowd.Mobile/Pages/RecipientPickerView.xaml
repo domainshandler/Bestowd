@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Type-to-search over people (and families): chosen ones as removable chips, matches below, and "+ Add" for someone new.
+     Its BindingContext is a Bestowd.Core.ViewModels.RecipientPicker. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Bestowd.Core.ViewModels;assembly=Bestowd.Core"
+             x:Class="Bestowd.Mobile.Pages.RecipientPickerView"
+             x:DataType="vm:RecipientPicker">
+    <VerticalStackLayout Spacing="8">
+        <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Chosen}" IsVisible="{Binding HasChosen}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:SubjectOption">
+                    <Border Style="{StaticResource Card}" Padding="12,6" Margin="0,0,8,8" StrokeShape="RoundRectangle 999">
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="{Binding ChipText}" VerticalOptions="Center" />
+                            <Button Text="×" Style="{StaticResource Ghost}" Padding="6,0" MinimumWidthRequest="32" MinimumHeightRequest="32" CommandParameter="{Binding .}"
+                                    SemanticProperties.Description="{Binding DisplayName, StringFormat='Remove {0}'}"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipientPicker}}, Path=RemoveCommand, x:DataType=vm:RecipientPicker}" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </FlexLayout>
+        <Border Style="{StaticResource FieldBox}" IsVisible="{Binding ShowSearch}">
+            <Entry Text="{Binding Search}" Placeholder="{Binding Placeholder}" SemanticProperties.Description="{Binding Placeholder}" />
+        </Border>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Matches}" IsVisible="{Binding ShowSearch}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:SubjectOption">
+                    <Grid MinimumHeightRequest="44" Padding="4,0">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer CommandParameter="{Binding .}" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RecipientPicker}}, Path=AddCommand, x:DataType=vm:RecipientPicker}" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="{Binding MatchText}" VerticalOptions="Center" TextColor="{StaticResource Brand}" />
+                    </Grid>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+        <Grid MinimumHeightRequest="44" Padding="4,0" IsVisible="{Binding CanAddNew}">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding AddNewCommand}" />
+            </Grid.GestureRecognizers>
+            <Label Text="{Binding AddLabel}" VerticalOptions="Center" FontFamily="InterSemiBold" TextColor="{StaticResource Brand}" SemanticProperties.Description="{Binding AddLabel}" />
+        </Grid>
+    </VerticalStackLayout>
+</ContentView>

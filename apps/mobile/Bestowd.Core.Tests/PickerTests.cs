@@ -12,37 +12,65 @@ public class PickerTests
         P("1", "Mia", "Smiths"), P("2", "Amelia", "Chen family"), P("3", "Leo", "Smiths"), P("4", "Zoë", "Park"), P("5", "Liam", "Park"),
     ];
 
+    private static readonly List<FamilyListItem> Families = [new() { Id = "s", Name = "Smiths" }, new() { Id = "k", Name = "Park" }];
+    private static List<SubjectOption> Options(bool families = false) => SubjectOption.Build(People, families ? Families : []);
+
     [Fact]
     public void Finds_by_name_or_family_ignoring_case_and_accents_prefix_first()
     {
-        Assert.Equal(["Mia"], PeoplePicker.Find(People, "mi", []).Select(p => p.Name));
-        Assert.Equal(["Amelia"], PeoplePicker.Find(People, "AM", []).Select(p => p.Name));
-        Assert.Equal(["Zoë"], PeoplePicker.Find(People, "zoe", []).Select(p => p.Name));
-        Assert.Equal(["Leo", "Mia"], PeoplePicker.Find(People, "smith", []).Select(p => p.Name));
-        Assert.Empty(PeoplePicker.Find(People, "  ", []));
-        Assert.Empty(PeoplePicker.Find(People, "mi", ["1"]));
+        string[] Names(string q, IEnumerable<SubjectOption>? exclude = null, bool families = false) =>
+            RecipientPicker.Find(Options(families), q, exclude ?? []).Select(o => o.DisplayName).ToArray();
+        Assert.Equal(["Mia"], Names("mi"));
+        Assert.Equal(["Amelia"], Names("AM"));
+        Assert.Equal(["Zoë"], Names("zoe"));
+        Assert.Equal(["Leo", "Mia"], Names("smith"));
+        Assert.Equal(["Smiths", "Leo", "Mia"], Names("smith", families: true));
+        Assert.Empty(Names("  "));
+        Assert.Empty(Names("mi", Options().Where(o => o.PersonId == "1")));
     }
 
     [Fact]
     public void Adding_clears_the_search_and_removes_the_person_from_matches()
     {
-        var picker = new PeoplePicker();
-        picker.SetPeople(People, ["3"]);
-        Assert.Equal(["3"], picker.ChosenIds);
+        var picker = new RecipientPicker();
+        var options = Options(families: true);
+        picker.SetOptions(options, options.Where(o => o.PersonId == "3"));
+        Assert.Equal(["3"], picker.ChosenPersonIds);
 
         picker.Search = "park";
-        Assert.Equal(["Liam", "Zoë"], picker.Matches.Select(m => m.Person.Name));
+        Assert.Equal(["Liam", "Zoë"], picker.Matches.Select(m => m.DisplayName));
         picker.AddCommand.Execute(picker.Matches[1]);
         Assert.Equal("", picker.Search);
-        Assert.Equal(["3", "4"], picker.ChosenIds);
+        Assert.Equal(["3", "4"], picker.ChosenPersonIds);
 
         picker.Search = "park";
-        Assert.Equal(["Liam"], picker.Matches.Select(m => m.Person.Name));
-        picker.Search = "nobody";
-        Assert.True(picker.NoMatches);
+        Assert.Equal(["Liam"], picker.Matches.Select(m => m.DisplayName));
+        Assert.False(picker.CanAddNew); // no AddNew set
 
         picker.RemoveCommand.Execute(picker.Chosen[0]);
-        Assert.Equal(["4"], picker.ChosenIds);
+        Assert.Equal(["4"], picker.ChosenPersonIds);
+    }
+
+    [Fact]
+    public async Task Single_choice_replaces_and_adding_someone_new_chooses_them()
+    {
+        var picker = new RecipientPicker(includeFamilies: true, single: true);
+        var changes = 0;
+        picker.Changed += (_, _) => changes++;
+        picker.SetOptions(Options(families: true));
+        picker.Search = "park";
+        picker.AddCommand.Execute(picker.Matches.First(m => m.FamilyId == "k"));
+        Assert.False(picker.ShowSearch);
+        Assert.Equal("Park · family", picker.Chosen.Single().ChipText);
+
+        picker.RemoveCommand.Execute(picker.Chosen[0]);
+        picker.AddNew = name => Task.FromResult<SubjectOption?>(new SubjectOption(name, "new", null, name, "Nora's family"));
+        picker.Search = "Nora";
+        Assert.True(picker.CanAddNew);
+        Assert.Equal("+ Add “Nora”", picker.AddLabel);
+        await picker.AddNewCommand.ExecuteAsync(null);
+        Assert.Equal("new", picker.Chosen.Single().PersonId);
+        Assert.Equal(3, changes);
     }
 
     [Fact]

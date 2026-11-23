@@ -19,8 +19,8 @@
 
                 <Border Style="{StaticResource Card}" Padding="14,10">
                     <VerticalStackLayout Spacing="2">
-                        <Picker ItemsSource="{Binding People}" SelectedItem="{Binding Selected}" ItemDisplayBinding="{Binding Label, x:DataType=vm:PersonChoice}"
-                                Title="Ideas for" SemanticProperties.Description="Ideas for" FontFamily="InterSemiBold" />
+                        <Label Text="Ideas for (everyone unless you choose)" Style="{StaticResource FieldLabel}" />
+                        <pages:RecipientPickerView BindingContext="{Binding Filter}" />
                         <Label Text="{Binding Header}" Style="{StaticResource Small}" IsVisible="{Binding Header, Converter={StaticResource Has}}" />
                     </VerticalStackLayout>
                 </Border>

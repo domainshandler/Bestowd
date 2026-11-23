@@ -104,24 +104,30 @@ export async function ideaRoutes(app: FastifyInstance) {
     return reply.code(201).send(toIdeaDto(idea))
   })
 
-  app.get<{ Params: { groupId: string }; Querystring: { personId?: string; occasionId?: string; status?: IdeaStatus } }>('/groups/:groupId/ideas', {
+  app.get<{ Params: { groupId: string }; Querystring: { personId?: string; familyId?: string; occasionId?: string; status?: IdeaStatus } }>('/groups/:groupId/ideas', {
     schema: {
       querystring: {
         type: 'object',
-        properties: { personId: id, occasionId: id, status: { type: 'string', enum: ['SAVED', 'BOUGHT', 'DISMISSED'] } },
+        properties: { personId: id, familyId: id, occasionId: id, status: { type: 'string', enum: ['SAVED', 'BOUGHT', 'DISMISSED'] } },
       },
     },
   }, async (request) => {
     const { groupId } = request.params
     await requireMember(userIdOf(request), groupId)
-    const { personId, occasionId, status = 'SAVED' } = request.query
+    const { personId, familyId, occasionId, status = 'SAVED' } = request.query
 
     const occasion = occasionId ? await db.occasion.findUnique({ where: { id: occasionId } }) : null
     if (occasionId && occasion?.groupId !== groupId) throw badRequest('occasion not in this group')
 
+    if (familyId) {
+      const family = await db.family.findUnique({ where: { id: familyId } })
+      if (!family || family.groupId !== groupId) throw badRequest('family not in this group')
+    }
+
     if (!personId) {
+      // A family: ideas tagged with anyone in it.
       const ideas = await db.idea.findMany({
-        where: { groupId, status, ...(occasionId ? { occasionId } : {}) },
+        where: { groupId, status, ...(occasionId ? { occasionId } : {}), ...(familyId ? { tags: { some: { person: { familyId } } } } : {}) },
         include: ideaInclude,
         orderBy: { createdAt: 'desc' },
       })

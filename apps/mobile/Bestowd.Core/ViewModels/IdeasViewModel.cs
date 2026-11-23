@@ -15,6 +15,28 @@ public sealed record PersonChoice(string? Id, string Label);
 public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, INavigator nav, DataChanged changes) : ViewModelBase, INavigationTarget, ILoadable
 {
     private string? _requestedOccasionId;
+    private string? _familyId;
+    private RecipientPicker? _filter;
+
+    /// <summary>"Ideas for": type a person's or family's name to narrow the board. Empty = everyone.</summary>
+    public RecipientPicker Filter
+    {
+        get
+        {
+            if (_filter is not null) return _filter;
+            _filter = new RecipientPicker(includeFamilies: true, single: true);
+            _filter.Changed += (_, _) =>
+            {
+                var chosen = _filter.Chosen.FirstOrDefault();
+                var familyChanged = _familyId != chosen?.FamilyId;
+                _familyId = chosen?.FamilyId;
+                var before = Selected?.Id;
+                Selected = chosen?.PersonId is { } id ? new PersonChoice(id, $"For {chosen.DisplayName}") : People[0];
+                if (before == Selected?.Id && familyChanged && HasLoaded) LoadCommand.Execute(null);
+            };
+            return _filter;
+        }
+    }
 
     [ObservableProperty] public partial IReadOnlyList<PersonChoice> People { get; private set; } = [new(null, "Everyone")];
     [ObservableProperty] public partial PersonChoice? Selected { get; set; }
@@ -24,7 +46,8 @@ public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, IN
     [ObservableProperty] public partial string? RepeatNotice { get; private set; }
 
     public bool IsEmpty => HasLoaded && Ideas.Count == 0 && Error is null;
-    public string EmptyText => Selected?.Id is null ? "No saved ideas yet." : $"No saved ideas fit {Selected.Label.Replace("For ", "")} yet.";
+    public string EmptyText => Selected?.Id is not null ? $"No saved ideas fit {Selected.Label.Replace("For ", "")} yet."
+        : _familyId is not null ? "No saved ideas for anyone in this family yet." : "No saved ideas yet.";
 
     public void Apply(IDictionary<string, object> parameters)
     {
@@ -42,16 +65,20 @@ public sealed partial class IdeasViewModel(BestowdApi api, GroupState groups, IN
     public Task LoadAsync() => RunAsync(async () =>
     {
         if (groups.GroupId is not { } groupId) return;
-        var people = await api.ListPeopleAsync(groupId);
+        var peopleTask = api.ListPeopleAsync(groupId);
+        var families = await api.ListFamiliesAsync(groupId);
+        var people = await peopleTask;
         People = [new PersonChoice(null, "Everyone"), .. people.Select(p => new PersonChoice(p.Id, $"For {p.Name}"))];
         var personId = Selected?.Id;
+        var options = SubjectOption.Build(people, families);
+        Filter.SetOptions(options, options.Where(o => personId is not null ? o.PersonId == personId : _familyId is not null && o.FamilyId == _familyId));
         // Keep the selection pointing at the item in the new list (the picker matches by reference).
         Selected = People.FirstOrDefault(p => p.Id == personId) ?? People[0];
 
         GroupOccasions? occasions = personId is null ? null
             : await api.ListOccasionsAsync(groupId, personId: personId, to: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(366)));
         var occasion = occasions?.Occasions.FirstOrDefault(o => o.Id == _requestedOccasionId) ?? occasions?.Occasions.FirstOrDefault();
-        var ideas = await api.ListIdeasAsync(groupId, personId, occasion?.Id);
+        var ideas = await api.ListIdeasAsync(groupId, personId, occasion?.Id, personId is null ? _familyId : null);
         SetData(ideas, occasion, occasions?.Currency ?? "CAD", people.FirstOrDefault(p => p.Id == personId)?.FamilyName);
     });
 

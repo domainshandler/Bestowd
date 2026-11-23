@@ -6,7 +6,8 @@ import type { Idea } from '@bestowd/types'
 import { useGroup } from '../groups/GroupContext.tsx'
 import IdeaForm from '../components/forms/IdeaForm.tsx'
 import { useSave } from '../components/forms/useSave.ts'
-import { Avatar, Badge, Button, Card, EmptyState, FormError, Icon, LoadError, Loading, Select } from '../components/ui.tsx'
+import { Avatar, Badge, Button, Card, EmptyState, FormError, Icon, LoadError, Loading } from '../components/ui.tsx'
+import RecipientPicker, { type Recipient } from '../components/forms/RecipientPicker.tsx'
 import { formatDate, formatMoney } from '../lib/format.ts'
 
 function IdeaCard({ idea, featured, currency, onBuy, onDismiss, busy }: {
@@ -46,6 +47,7 @@ export default function IdeasPage() {
   const { groupId } = useGroup()
   const [params, setParams] = useSearchParams()
   const personId = params.get('personId') ?? ''
+  const familyId = params.get('familyId') ?? ''
   const [adding, setAdding] = useState(false)
   const enabled = Boolean(groupId)
 
@@ -59,8 +61,8 @@ export default function IdeasPage() {
   // Age and budget are taken on the chosen occasion, else the person's next one.
   const occasion = occasions.data?.occasions.find((o) => o.id === params.get('occasionId')) ?? occasions.data?.occasions[0]
   const ideas = useQuery({
-    queryKey: ['ideas', groupId, { personId, occasionId: occasion?.id }],
-    queryFn: () => listIdeas(groupId!, personId ? { personId, ...(occasion ? { occasionId: occasion.id } : {}) } : {}),
+    queryKey: ['ideas', groupId, { personId, familyId, occasionId: occasion?.id }],
+    queryFn: () => listIdeas(groupId!, personId ? { personId, ...(occasion ? { occasionId: occasion.id } : {}) } : familyId ? { familyId } : {}),
     enabled: enabled && (!personId || !occasions.isLoading),
   })
 
@@ -74,7 +76,7 @@ export default function IdeasPage() {
   })
   const dismiss = useSave((idea: Idea) => updateIdea(idea.id, { status: 'DISMISSED' }))
 
-  const pick = (id: string) => setParams(id ? { personId: id } : {})
+  const pick = (r: Recipient[]) => setParams(r[0] ? { [r[0].kind === 'person' ? 'personId' : 'familyId']: r[0].id } : {})
   const person = people.data?.find((p) => p.id === personId)
   const list = ideas.data?.ideas ?? []
   const featuredId = list.find((i) => !i.repeat)?.id
@@ -89,14 +91,13 @@ export default function IdeasPage() {
         <Button variant="secondary" onClick={() => setAdding(true)} disabled={!groupId}><Icon name="plus" size={18} /> Add idea</Button>
       </div>
 
-      <label className="flex items-center gap-3 px-3.5 py-3 bg-white border border-line rounded-2xl">
+      <div className="flex items-start gap-3 px-3.5 py-3 bg-white border border-line rounded-2xl">
         <Avatar name={person?.name ?? '?'} />
         <span className="flex-1 flex flex-col gap-0.5 min-w-0">
-          <span className="sr-only">Ideas for</span>
-          <Select aria-label="Ideas for" value={personId} onChange={(e) => pick(e.target.value)} className="border-none min-h-0 p-0 text-[15px] font-semibold bg-transparent focus:ring-0">
-            <option value="">Everyone</option>
-            {people.data?.map((p) => <option key={p.id} value={p.id}>For {p.name}</option>)}
-          </Select>
+          {groupId && (
+            <RecipientPicker groupId={groupId} label="Ideas for" include="both" single placeholder="Everyone: type a name to narrow"
+              value={personId ? [{ kind: 'person', id: personId }] : familyId ? [{ kind: 'family', id: familyId }] : []} onChange={pick} />
+          )}
           {person && (
             <span className="text-[13px] text-muted">
               {[
@@ -107,7 +108,7 @@ export default function IdeasPage() {
             </span>
           )}
         </span>
-      </label>
+      </div>
 
       {repeats.length > 0 && (
         <p className="flex items-center gap-2 text-[13px] text-chip-ink bg-amber-soft rounded-xl px-3 py-2.5">

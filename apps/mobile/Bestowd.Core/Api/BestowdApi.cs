@@ -134,8 +134,9 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
 
     // ---- Ideas ----
 
-    public Task<IdeaList> ListIdeasAsync(string groupId, string? personId = null, string? occasionId = null, CancellationToken ct = default) =>
-        GetAsync($"/groups/{groupId}/ideas{Query(("personId", personId), ("occasionId", occasionId))}", Json.IdeaList, ct);
+    /// <summary>Saved ideas: for a person (by tag or age), a family (tagged with anyone in it), or everyone.</summary>
+    public Task<IdeaList> ListIdeasAsync(string groupId, string? personId = null, string? occasionId = null, string? familyId = null, CancellationToken ct = default) =>
+        GetAsync($"/groups/{groupId}/ideas{Query(("personId", personId), ("occasionId", occasionId), ("familyId", familyId))}", Json.IdeaList, ct);
 
     public Task<Idea> CreateIdeaAsync(string groupId, CreateIdeaBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/groups/{groupId}/ideas", Body(body, Json.CreateIdeaBody), Json.Idea, ct);

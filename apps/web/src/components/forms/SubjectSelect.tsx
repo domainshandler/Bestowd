@@ -4,6 +4,12 @@ import { Select } from '../ui.tsx'
 
 export interface Subject { personId: string | null; familyId: string | null }
 
+/** A subject as a picker choice, and back. */
+export const subjectToRecipients = (s: Subject): { kind: 'person' | 'family'; id: string }[] =>
+  s.personId ? [{ kind: 'person', id: s.personId }] : s.familyId ? [{ kind: 'family', id: s.familyId }] : []
+export const recipientsToSubject = (r: { kind: 'person' | 'family'; id: string }[]): Subject =>
+  r[0] ? { personId: r[0].kind === 'person' ? r[0].id : null, familyId: r[0].kind === 'family' ? r[0].id : null } : { personId: null, familyId: null }
+
 export const encodeSubject = (s: Subject) => (s.personId ? `person:${s.personId}` : s.familyId ? `family:${s.familyId}` : '')
 export function decodeSubject(v: string): Subject {
   const [kind, id] = v.split(':')

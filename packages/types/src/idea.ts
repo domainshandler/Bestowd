@@ -32,6 +32,8 @@ export interface Idea {
 
 export interface IdeaQuery {
   personId?: string
+  /** Ideas tagged with anyone in this family. */
+  familyId?: string
   occasionId?: string
   status?: IdeaStatus
 }

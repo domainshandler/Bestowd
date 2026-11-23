@@ -24,7 +24,7 @@
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="{Binding SubjectLabel}" Style="{StaticResource FieldLabel}" />
-                <Border Style="{StaticResource FieldBox}"><Picker ItemsSource="{Binding Subjects}" SelectedItem="{Binding Subject}" ItemDisplayBinding="{Binding Label, x:DataType=vm:SubjectOption}" Title="Choose who" /></Border>
+                <pages:RecipientPickerView BindingContext="{Binding Who}" />
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Occasion" Style="{StaticResource FieldLabel}" />

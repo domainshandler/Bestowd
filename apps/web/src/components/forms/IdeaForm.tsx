@@ -1,14 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { createIdea, listPeople } from '@bestowd/api-client'
+import { createIdea } from '@bestowd/api-client'
 import { Button, Field, FormError, Modal, TextArea, TextInput } from '../ui.tsx'
-import PeopleSearch from './PeopleSearch.tsx'
+import RecipientPicker from './RecipientPicker.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export default function IdeaForm({ open, onClose, groupId, personId, occasionId }: {
   open: boolean; onClose: () => void; groupId: string; personId?: string | null; occasionId?: string | null
 }) {
-  const people = useQuery({ queryKey: ['people', groupId], queryFn: () => listPeople(groupId) })
   const [title, setTitle] = useState('')
   const [brand, setBrand] = useState('')
   const [category, setCategory] = useState('')
@@ -52,7 +50,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
             <TextInput aria-label="Maximum age" type="number" min={0} max={120} placeholder="To" value={ageMax} onChange={(e) => setAgeMax(e.target.value)} />
           </div>
         </fieldset>
-        <PeopleSearch label="For" people={people.data ?? []} value={tagged} onChange={setTagged} />
+        <RecipientPicker groupId={groupId} label="For" value={tagged.map((id) => ({ kind: 'person' as const, id }))} onChange={(r) => setTagged(r.map((x) => x.id))} />
         <Field label="Why it fits">{(id) => <TextArea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
         <FormError error={save.error} />
         <Button type="submit" disabled={!title.trim() || save.isPending}>{save.isPending ? 'Saving…' : 'Save idea'}</Button>

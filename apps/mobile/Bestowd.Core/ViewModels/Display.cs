@@ -126,11 +126,16 @@ public static class GiftGrouping
 }
 
 /// <summary>One option in a "who is this for / from" picker: a person or a whole family.</summary>
-public sealed record SubjectOption(string Label, string? PersonId, string? FamilyId)
+/// <summary>A person or a whole family to choose. Name and Detail (a person's family) are what search matches.</summary>
+public sealed record SubjectOption(string Label, string? PersonId, string? FamilyId, string? Name = null, string? Detail = null)
 {
+    public string DisplayName => Name ?? Label;
+    public string ChipText => PersonId is null ? $"{DisplayName} · family" : DisplayName;
+    public string MatchText => Detail is null ? DisplayName : $"{DisplayName} · {Detail}";
+
     public static List<SubjectOption> Build(IEnumerable<PersonListItem> people, IEnumerable<FamilyListItem> families) =>
-        people.Select(p => new SubjectOption($"{p.Name} ({p.FamilyName})", p.Id, null))
-            .Concat(families.Select(f => new SubjectOption($"{f.Name} (whole family)", null, f.Id)))
+        people.Select(p => new SubjectOption($"{p.Name} ({p.FamilyName})", p.Id, null, p.Name, p.FamilyName))
+            .Concat(families.Select(f => new SubjectOption($"{f.Name} (whole family)", null, f.Id, f.Name, "Whole family")))
             .ToList();
 }
 

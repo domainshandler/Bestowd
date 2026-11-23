@@ -4,7 +4,8 @@ import { createGift, listOccasions, updateGift } from '@bestowd/api-client'
 import type { CreateGiftBody, Gift, GiftDirection, GiftStatus, Reaction } from '@bestowd/types'
 import { Button, Checkbox, Field, FormError, Modal, Segmented, Select, TextArea, TextInput } from '../ui.tsx'
 import { REACTION_LABEL, formatDate, todayInput } from '../../lib/format.ts'
-import SubjectSelect, { type Subject } from './SubjectSelect.tsx'
+import { recipientsToSubject, subjectToRecipients, type Subject } from './SubjectSelect.tsx'
+import RecipientPicker from './RecipientPicker.tsx'
 import { numberOrNull, useSave } from './useSave.ts'
 
 export interface GiftDefaults {
@@ -86,7 +87,8 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
             options={[{ value: 'GIVEN', label: 'I gave' }, { value: 'RECEIVED', label: 'We received' }]} />
         )}
         <Field label="Gift">{(id) => <TextInput id={id} required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Wooden art easel" />}</Field>
-        <Field label={received ? 'From' : 'To'}>{(id) => <SubjectSelect id={id} groupId={groupId} value={who} onChange={setWho} />}</Field>
+        <RecipientPicker groupId={groupId} label={received ? 'From' : 'To'} include="both" single
+          value={subjectToRecipients(who)} onChange={(r) => setWho(recipientsToSubject(r))} />
         <Field label="Occasion">
           {(id) => (
             <Select id={id} value={occasionId} onChange={(e) => chooseOccasion(e.target.value)}>

@@ -50,6 +50,15 @@ describe('ideas', () => {
     expect(await titlesFor(`?personId=${mia}`)).not.toContain('Leo telescope')
   })
 
+  it('filters to ideas tagged with anyone in a family', async () => {
+    const other = (await db.family.create({ data: { groupId: a.groupId, name: 'Parks' } })).id
+    const kim = (await db.person.create({ data: { groupId: a.groupId, familyId: other, name: 'Kim' } })).id
+    const forKim = await createIdea({ title: 'For Kim', personIds: [kim] })
+    const res = await auth(api().get(`/groups/${a.groupId}/ideas?familyId=${other}`))
+    expect(res.body.ideas.map((i: any) => i.id)).toEqual([forKim.body.id])
+    expect((await auth(api().get(`/groups/${a.groupId}/ideas?familyId=${b.householdId}`))).status).toBe(400)
+  })
+
   it('matches age ranges, measured on the occasion date when given', async () => {
     await createIdea({ title: 'Ages 5-6', ageMin: 5, ageMax: 6 })
     await createIdea({ title: 'Ages 7-9', ageMin: 7, ageMax: 9 })
