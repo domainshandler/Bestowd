@@ -4,7 +4,14 @@ import { getMe, listGifts, updateGift } from '@bestowd/api-client'
 import GiftsPage, { groupGifts } from './GiftsPage.tsx'
 import { gift, me, membership, renderApp } from '../test-utils.tsx'
 
-vi.mock('@bestowd/api-client', () => ({ getMe: vi.fn(), listGifts: vi.fn(), updateGift: vi.fn(), listPeople: vi.fn(), listFamilies: vi.fn(), listOccasions: vi.fn() }))
+vi.mock('@bestowd/api-client', () => ({
+  getMe: vi.fn(),
+  listGifts: vi.fn(),
+  updateGift: vi.fn(),
+  listPeople: vi.fn(),
+  listFamilies: vi.fn(),
+  listOccasions: vi.fn(),
+}))
 
 const totals = { givenCount: 1, receivedCount: 1, spent: 45, receivedValue: 0, hiddenReceivedCount: 1, thankYouDueCount: 1 }
 
@@ -16,7 +23,15 @@ describe('GiftsPage', () => {
       totals,
       gifts: [
         gift(),
-        gift({ id: 'r1', direction: 'RECEIVED', title: 'Cookie tin', counterpartyName: 'Chen family', amount: 30, valueHidden: true, status: null }),
+        gift({
+          id: 'r1',
+          direction: 'RECEIVED',
+          title: 'Cookie tin',
+          counterpartyName: 'Chen family',
+          amount: 30,
+          valueHidden: true,
+          status: null,
+        }),
       ],
     })
   })
@@ -44,6 +59,9 @@ describe('GiftsPage', () => {
       gift({ id: 'b', occasionName: 'Christmas', occasionDate: '2025-12-25T00:00:00.000Z' }),
       gift({ id: 'c', occasionName: null, date: '2026-02-01T00:00:00.000Z' }),
     ])
-    expect(groups.map((g) => [g.title, g.gifts.length])).toEqual([['Christmas · 2025', 2], ['Other gifts · 2026', 1]])
+    expect(groups.map((g) => [g.title, g.gifts.length])).toEqual([
+      ['Christmas · 2025', 2],
+      ['Other gifts · 2026', 1],
+    ])
   })
 })

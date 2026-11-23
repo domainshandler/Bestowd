@@ -42,11 +42,7 @@ export function round2(n: number): number {
 /** Gifts whose counterparty is the family, one of its people, or a person credited with the gift. */
 export function familyGiftsWhere(familyId: string): Prisma.GiftEntryWhereInput {
   return {
-    OR: [
-      { familyId },
-      { person: { is: { familyId } } },
-      { credits: { some: { person: { familyId } } } },
-    ],
+    OR: [{ familyId }, { person: { is: { familyId } } }, { credits: { some: { person: { familyId } } } }],
   }
 }
 

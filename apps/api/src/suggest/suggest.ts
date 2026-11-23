@@ -5,7 +5,10 @@ import { SEED } from './seed.js'
 export const SUGGEST_FIELDS = ['title', 'brand', 'store', 'category'] as const
 export type SuggestField = (typeof SUGGEST_FIELDS)[number]
 export type SuggestSource = 'yours' | 'popular' | 'common'
-export interface Suggestion { value: string; source: SuggestSource }
+export interface Suggestion {
+  value: string
+  source: SuggestSource
+}
 
 export const MAX_SUGGESTIONS = 8
 /** A value counts as popular once this many different groups logged it in the last POPULAR_DAYS. */
@@ -18,12 +21,20 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
 /** "gar" matches "Garmin" and "The Garden"; ignores case and accents. */
 export function wordStarts(value: string, q: string): boolean {
   const f = fold(q)
-  return f.length > 0 && fold(value).split(/[\s'&.,/-]+/).some((w) => w.startsWith(f))
+  return (
+    f.length > 0 &&
+    fold(value)
+      .split(/[\s'&.,/-]+/)
+      .some((w) => w.startsWith(f))
+  )
 }
 
 // Column names are fixed per field, so they can be put into SQL safely.
 const COLUMN: Record<SuggestField, Prisma.Sql> = {
-  title: Prisma.raw('"title"'), brand: Prisma.raw('"brand"'), store: Prisma.raw('"store"'), category: Prisma.raw('"category"'),
+  title: Prisma.raw('"title"'),
+  brand: Prisma.raw('"brand"'),
+  store: Prisma.raw('"store"'),
+  category: Prisma.raw('"category"'),
 }
 
 /** The group's own values for a field, most used then most recent first. */
@@ -46,7 +57,9 @@ async function yours(groupId: string, field: SuggestField, q: string): Promise<s
 let popularCache: { at: number; byField: Record<SuggestField, string[]> } | null = null
 
 /** For tests: forget the cached popular list. */
-export function clearPopularCache(): void { popularCache = null }
+export function clearPopularCache(): void {
+  popularCache = null
+}
 
 /**
  * What's popular across Bestowd: values logged by at least POPULAR_MIN_GROUPS groups recently, most

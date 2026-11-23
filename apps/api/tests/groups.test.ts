@@ -59,7 +59,10 @@ describe('PATCH /groups/:groupId', () => {
   it('rejects a lowercase currency and a negative budget', async () => {
     const lower = await supertest(app.server).patch(`/groups/${a.groupId}`).set('Authorization', a.authHeader).send({ currency: 'cad' })
     expect(lower.status).toBe(400)
-    const negative = await supertest(app.server).patch(`/groups/${a.groupId}`).set('Authorization', a.authHeader).send({ defaultBudgets: { BIRTHDAY: -5 } })
+    const negative = await supertest(app.server)
+      .patch(`/groups/${a.groupId}`)
+      .set('Authorization', a.authHeader)
+      .send({ defaultBudgets: { BIRTHDAY: -5 } })
     expect(negative.status).toBe(400)
   })
 })

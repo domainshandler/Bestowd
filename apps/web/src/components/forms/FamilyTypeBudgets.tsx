@@ -14,7 +14,9 @@ export function typeBudgetText(saved: Partial<Record<FamilyType, number>>): Type
 /** The budgets per family type to save: empty fields are left out (they use the occasion's budget). */
 export function typeBudgetsFrom(text: TypeBudgetText): Partial<Record<FamilyType, number>> {
   return Object.fromEntries(
-    Object.entries(text).filter(([, v]) => v !== undefined && v.trim() !== '').map(([t, v]) => [t, Number(v)]),
+    Object.entries(text)
+      .filter(([, v]) => v !== undefined && v.trim() !== '')
+      .map(([t, v]) => [t, Number(v)]),
   )
 }
 
@@ -27,8 +29,14 @@ export default function FamilyTypeBudgets({ value, onChange }: { value: TypeBudg
         {TYPES.map((t) => (
           <label key={t} className="flex flex-col gap-1 text-sm">
             <span className="text-muted">{FAMILY_TYPE_LABEL[t]}</span>
-            <TextInput type="number" min={0} step="0.01" aria-label={`${FAMILY_TYPE_LABEL[t]} budget`} value={value[t] ?? ''}
-              onChange={(e) => onChange({ ...value, [t]: e.target.value })} />
+            <TextInput
+              type="number"
+              min={0}
+              step="0.01"
+              aria-label={`${FAMILY_TYPE_LABEL[t]} budget`}
+              value={value[t] ?? ''}
+              onChange={(e) => onChange({ ...value, [t]: e.target.value })}
+            />
           </label>
         ))}
       </div>

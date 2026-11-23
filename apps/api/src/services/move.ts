@@ -15,9 +15,15 @@ type Client = Tx | typeof db
 
 /** "The Chen family", "The Chens", "chen  Family" and "Chén" all become "chen". */
 export function normalName(name: string): string {
-  return name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ').trim()
-    .replace(/^the /, '').replace(/ (family|household)$/, '').trim()
+  return name
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/^the /, '')
+    .replace(/ (family|household)$/, '')
+    .trim()
     .replace(/(\w{3,})s$/, '$1')
 }
 
@@ -38,9 +44,18 @@ export interface Choices extends Selection {
 }
 
 /** Something in the receiving group that an incoming item matches. */
-interface Match { id: string; name: string }
+interface Match {
+  id: string
+  name: string
+}
 
-export interface MovableFamily { id: string; name: string; isOwnHousehold: boolean; people: number; gifts: number }
+export interface MovableFamily {
+  id: string
+  name: string
+  isOwnHousehold: boolean
+  people: number
+  gifts: number
+}
 export interface MovableItems {
   groupId: string
   groupName: string
@@ -95,8 +110,18 @@ export async function movableItems(group: { id: string; name: string }): Promise
     rows.push({ id: f.id, name: f.name, isOwnHousehold, people, gifts })
   }
   rows.sort((a, b) => Number(b.isOwnHousehold) - Number(a.isOwnHousehold) || a.name.localeCompare(b.name))
-  const occasions = await db.occasion.findMany({ where: { groupId: group.id, ...GROUP_WIDE }, select: { id: true, name: true }, orderBy: { name: 'asc' } })
-  return { groupId: group.id, groupName: group.name, families: rows, occasions, ideas: await db.idea.count({ where: { groupId: group.id } }) }
+  const occasions = await db.occasion.findMany({
+    where: { groupId: group.id, ...GROUP_WIDE },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+  return {
+    groupId: group.id,
+    groupName: group.name,
+    families: rows,
+    occasions,
+    ideas: await db.idea.count({ where: { groupId: group.id } }),
+  }
 }
 
 /** The ids of a selection that still exist in the source group. */
@@ -120,9 +145,9 @@ async function familyMatches(c: Client, sourceId: string, targetId: string, fami
   ])
   const household = existing.find((f) => f.householdOfGroupId !== null)!
   return incoming.map((f) => {
-    if (f.householdOfGroupId !== null) return { family: f, match: { id: household.id, name: household.name } as Match, isHousehold: true }
+    if (f.householdOfGroupId !== null) return { family: f, match: { id: household.id, name: household.name }, isHousehold: true }
     const twin = existing.find((e) => e.householdOfGroupId === null && normalName(e.name) === normalName(f.name))
-    return { family: f, match: twin ? ({ id: twin.id, name: twin.name } as Match) : null, isHousehold: false }
+    return { family: f, match: twin ? { id: twin.id, name: twin.name } : null, isHousehold: false }
   })
 }
 
@@ -143,17 +168,26 @@ async function personMatches(c: Client, pairs: { from: string; into: string }[])
 }
 
 /** The receiving group's group-wide occasion an incoming one matches: same built-in holiday, or same name. */
-function occasionTwin<T extends { holidayKey: string | null; name: string }>(o: { holidayKey: string | null; name: string }, existing: T[]): T | undefined {
-  return existing.find((e) => (o.holidayKey !== null ? e.holidayKey === o.holidayKey : e.holidayKey === null && normalName(e.name) === normalName(o.name)))
+function occasionTwin<T extends { holidayKey: string | null; name: string }>(
+  o: { holidayKey: string | null; name: string },
+  existing: T[],
+): T | undefined {
+  return existing.find((e) =>
+    o.holidayKey !== null ? e.holidayKey === o.holidayKey : e.holidayKey === null && normalName(e.name) === normalName(o.name),
+  )
 }
 
 const sameBudget = (a: { budget: Prisma.Decimal | null; familyTypeBudgets: Prisma.JsonValue }, b: typeof a) =>
-  String(a.budget ?? '') === String(b.budget ?? '') && JSON.stringify(a.familyTypeBudgets ?? {}) === JSON.stringify(b.familyTypeBudgets ?? {})
+  String(a.budget ?? '') === String(b.budget ?? '') &&
+  JSON.stringify(a.familyTypeBudgets ?? {}) === JSON.stringify(b.familyTypeBudgets ?? {})
 
 /** What the owner sees when reviewing a request: the items, their look-alikes, and differences to decide on. */
 export async function reviewMove(sourceId: string, targetId: string, selection: Selection) {
   const live = await liveSelection(db, sourceId, selection)
-  const [source, target] = await Promise.all([db.group.findUniqueOrThrow({ where: { id: sourceId } }), db.group.findUniqueOrThrow({ where: { id: targetId } })])
+  const [source, target] = await Promise.all([
+    db.group.findUniqueOrThrow({ where: { id: sourceId } }),
+    db.group.findUniqueOrThrow({ where: { id: targetId } }),
+  ])
   const fams = await familyMatches(db, sourceId, targetId, live.familyIds)
   const families = []
   for (const { family, match, isHousehold } of fams) {
@@ -163,14 +197,18 @@ export async function reviewMove(sourceId: string, targetId: string, selection: 
     ])
     families.push({ id: family.id, name: family.name, isOwnHousehold: isHousehold, people, gifts, match: isHousehold ? null : match })
   }
-  const people = await personMatches(db, fams.filter((f) => f.match).map((f) => ({ from: f.family.id, into: f.match!.id })))
+  const people = await personMatches(
+    db,
+    fams.filter((f) => f.match).map((f) => ({ from: f.family.id, into: f.match!.id })),
+  )
 
   const existing = await db.occasion.findMany({ where: { groupId: targetId, ...GROUP_WIDE } })
   const incoming = await db.occasion.findMany({ where: { id: { in: live.occasionIds } }, orderBy: { name: 'asc' } })
   const occasions = incoming.map((o) => {
     const twin = occasionTwin(o, existing)
     return {
-      id: o.id, name: o.name,
+      id: o.id,
+      name: o.name,
       match: twin ? { id: twin.id, name: twin.name } : null,
       budgetDiffers: twin ? !sameBudget(o, twin) : false,
       theirBudget: o.budget === null ? null : Number(o.budget),
@@ -194,14 +232,22 @@ export async function mergePerson(tx: Tx, from: string, into: string): Promise<v
     AND NOT EXISTS (SELECT 1 FROM "GiftCredit" t WHERE t."giftEntryId" = c."giftEntryId" AND t."personId" = ${into})`
   await tx.$executeRaw`UPDATE "IdeaPerson" c SET "personId" = ${into} WHERE c."personId" = ${from}
     AND NOT EXISTS (SELECT 1 FROM "IdeaPerson" t WHERE t."ideaId" = c."ideaId" AND t."personId" = ${into})`
-  const [a, b] = await Promise.all([tx.person.findUniqueOrThrow({ where: { id: from } }), tx.person.findUniqueOrThrow({ where: { id: into } })])
+  const [a, b] = await Promise.all([
+    tx.person.findUniqueOrThrow({ where: { id: from } }),
+    tx.person.findUniqueOrThrow({ where: { id: into } }),
+  ])
   await tx.person.update({
     where: { id: into },
     data: {
       relationship: b.relationship ?? a.relationship,
-      birthMonth: b.birthMonth ?? a.birthMonth, birthDay: b.birthDay ?? a.birthDay, birthYear: b.birthYear ?? a.birthYear,
-      likes: [...new Set([...b.likes, ...a.likes])], avoid: [...new Set([...b.avoid, ...a.avoid])],
-      foodNotes: b.foodNotes ?? a.foodNotes, photoUrl: b.photoUrl ?? a.photoUrl, notes: b.notes ?? a.notes,
+      birthMonth: b.birthMonth ?? a.birthMonth,
+      birthDay: b.birthDay ?? a.birthDay,
+      birthYear: b.birthYear ?? a.birthYear,
+      likes: [...new Set([...b.likes, ...a.likes])],
+      avoid: [...new Set([...b.avoid, ...a.avoid])],
+      foodNotes: b.foodNotes ?? a.foodNotes,
+      photoUrl: b.photoUrl ?? a.photoUrl,
+      notes: b.notes ?? a.notes,
     },
   })
   await tx.person.delete({ where: { id: from } })
@@ -213,7 +259,9 @@ async function mergeFamily(tx: Tx, from: string, into: string, targetId: string,
   for (const p of await tx.person.findMany({ where: { familyId: from } })) {
     const twin = p.userId
       ? await tx.person.findUnique({ where: { groupId_userId: { groupId: targetId, userId: p.userId } } })
-      : keepBothPeople.has(p.id) ? undefined : existing.find((e) => normalName(e.name) === normalName(p.name))
+      : keepBothPeople.has(p.id)
+        ? undefined
+        : existing.find((e) => normalName(e.name) === normalName(p.name))
     if (twin) await mergePerson(tx, p.id, twin.id)
     else await tx.person.update({ where: { id: p.id }, data: { familyId: into, groupId: targetId } })
   }
@@ -225,7 +273,10 @@ async function mergeFamily(tx: Tx, from: string, into: string, targetId: string,
   if (!(await tx.familyConnection.findUnique({ where: { familyId: into } }))) {
     await tx.familyConnection.updateMany({ where: { familyId: from }, data: { familyId: into } })
   }
-  const [a, b] = await Promise.all([tx.family.findUniqueOrThrow({ where: { id: from } }), tx.family.findUniqueOrThrow({ where: { id: into } })])
+  const [a, b] = await Promise.all([
+    tx.family.findUniqueOrThrow({ where: { id: from } }),
+    tx.family.findUniqueOrThrow({ where: { id: into } }),
+  ])
   await tx.family.update({ where: { id: into }, data: { notes: b.notes ?? a.notes, photoUrl: b.photoUrl ?? a.photoUrl } })
   await tx.family.delete({ where: { id: from } })
 }
@@ -247,39 +298,64 @@ export async function applyMove(tx: Tx, sourceId: string, targetId: string, choi
   ])
   const famIds = sel.familyIds
   const personIds = (await tx.person.findMany({ where: { familyId: { in: famIds } }, select: { id: true } })).map((p) => p.id)
-  const giftIds = (await tx.giftEntry.findMany({
-    where: { groupId: sourceId, OR: [{ familyId: { in: famIds } }, { personId: { in: personIds } }] }, select: { id: true },
-  })).map((g) => g.id)
-  const subjectOccIds = (await tx.occasion.findMany({
-    where: { groupId: sourceId, OR: [{ familyId: { in: famIds } }, { personId: { in: personIds } }] }, select: { id: true },
-  })).map((o) => o.id)
+  const giftIds = (
+    await tx.giftEntry.findMany({
+      where: { groupId: sourceId, OR: [{ familyId: { in: famIds } }, { personId: { in: personIds } }] },
+      select: { id: true },
+    })
+  ).map((g) => g.id)
+  const subjectOccIds = (
+    await tx.occasion.findMany({
+      where: { groupId: sourceId, OR: [{ familyId: { in: famIds } }, { personId: { in: personIds } }] },
+      select: { id: true },
+    })
+  ).map((o) => o.id)
   const movingOccIds = [...subjectOccIds, ...sel.occasionIds]
   const ideaIds = sel.ideas ? (await tx.idea.findMany({ where: { groupId: sourceId }, select: { id: true } })).map((i) => i.id) : []
   const staysInSource = { groupId: sourceId }
 
   // Cut links between what moves and what stays.
-  await tx.giftEntry.updateMany({ where: { ...staysInSource, id: { notIn: giftIds }, occasionId: { in: movingOccIds } }, data: { occasionId: null } })
+  await tx.giftEntry.updateMany({
+    where: { ...staysInSource, id: { notIn: giftIds }, occasionId: { in: movingOccIds } },
+    data: { occasionId: null },
+  })
   await tx.giftEntry.updateMany({ where: { ...staysInSource, id: { notIn: giftIds }, ideaId: { in: ideaIds } }, data: { ideaId: null } })
   await tx.giftEntry.updateMany({ where: { id: { in: giftIds }, ideaId: { notIn: ideaIds } }, data: { ideaId: null } })
-  await tx.idea.updateMany({ where: { ...staysInSource, id: { notIn: ideaIds }, occasionId: { in: movingOccIds } }, data: { occasionId: null } })
+  await tx.idea.updateMany({
+    where: { ...staysInSource, id: { notIn: ideaIds }, occasionId: { in: movingOccIds } },
+    data: { occasionId: null },
+  })
   await tx.idea.updateMany({ where: { id: { in: ideaIds }, occasionId: { notIn: movingOccIds } }, data: { occasionId: null } })
   await tx.giftCredit.deleteMany({ where: { giftEntryId: { in: giftIds }, personId: { notIn: personIds } } })
-  await tx.giftCredit.deleteMany({ where: { giftEntry: { ...staysInSource }, giftEntryId: { notIn: giftIds }, personId: { in: personIds } } })
+  await tx.giftCredit.deleteMany({
+    where: { giftEntry: { ...staysInSource }, giftEntryId: { notIn: giftIds }, personId: { in: personIds } },
+  })
   await tx.ideaPerson.deleteMany({ where: { ideaId: { in: ideaIds }, personId: { notIn: personIds } } })
   await tx.ideaPerson.deleteMany({ where: { idea: { ...staysInSource }, ideaId: { notIn: ideaIds }, personId: { in: personIds } } })
   // Holidays that stay no longer cover families that leave; holidays that leave only cover families that come along.
-  await tx.occasionFamily.deleteMany({ where: { occasion: { ...staysInSource }, occasionId: { notIn: movingOccIds }, familyId: { in: famIds.filter((f) => f !== srcHousehold.id) } } })
+  await tx.occasionFamily.deleteMany({
+    where: {
+      occasion: { ...staysInSource },
+      occasionId: { notIn: movingOccIds },
+      familyId: { in: famIds.filter((f) => f !== srcHousehold.id) },
+    },
+  })
   await tx.occasionFamily.deleteMany({ where: { occasionId: { in: sel.occasionIds }, familyId: { notIn: [...famIds, srcHousehold.id] } } })
   await tx.inviteLink.deleteMany({ where: { familyId: { in: famIds } } })
 
   // Moved gifts for a holiday that stays: use the receiving group's same holiday, if it has one.
   const existingWide = await tx.occasion.findMany({ where: { groupId: targetId, ...GROUP_WIDE } })
-  const leftBehind = await tx.occasion.findMany({ where: { ...staysInSource, ...GROUP_WIDE, id: { notIn: movingOccIds }, gifts: { some: { id: { in: giftIds } } } } })
+  const leftBehind = await tx.occasion.findMany({
+    where: { ...staysInSource, ...GROUP_WIDE, id: { notIn: movingOccIds }, gifts: { some: { id: { in: giftIds } } } },
+  })
   for (const o of leftBehind) {
     const twin = occasionTwin(o, existingWide)
     await tx.giftEntry.updateMany({ where: { id: { in: giftIds }, occasionId: o.id }, data: { occasionId: twin?.id ?? null } })
   }
-  await tx.giftEntry.updateMany({ where: { id: { in: giftIds }, occasionId: { notIn: movingOccIds }, occasion: { groupId: sourceId } }, data: { occasionId: null } })
+  await tx.giftEntry.updateMany({
+    where: { id: { in: giftIds }, occasionId: { notIn: movingOccIds }, occasion: { groupId: sourceId } },
+    data: { occasionId: null },
+  })
 
   // Holidays coming over: one occasion per holiday; otherwise they cover the receiving group's families too.
   const existingFamilies = await tx.family.findMany({ where: { groupId: targetId, status: { not: 'ARCHIVED' } }, select: { id: true } })
@@ -288,7 +364,10 @@ export async function applyMove(tx: Tx, sourceId: string, targetId: string, choi
     const mapFamily = (id: string) => (id === srcHousehold.id ? tgtHousehold.id : id)
     if (twin) {
       if (useTheirBudget.has(o.id)) {
-        await tx.occasion.update({ where: { id: twin.id }, data: { budget: o.budget, familyTypeBudgets: o.familyTypeBudgets as Prisma.InputJsonValue } })
+        await tx.occasion.update({
+          where: { id: twin.id },
+          data: { budget: o.budget, familyTypeBudgets: o.familyTypeBudgets as Prisma.InputJsonValue },
+        })
       }
       for (const c of o.coverage) {
         await tx.occasionFamily.upsert({
@@ -304,7 +383,10 @@ export async function applyMove(tx: Tx, sourceId: string, targetId: string, choi
     }
     await tx.$executeRaw`UPDATE "OccasionFamily" c SET "familyId" = ${tgtHousehold.id} WHERE c."occasionId" = ${o.id} AND c."familyId" = ${srcHousehold.id}`
     if (o.includeNewFamilies && existingFamilies.length > 0) {
-      await tx.occasionFamily.createMany({ data: existingFamilies.map((f) => ({ occasionId: o.id, familyId: f.id })), skipDuplicates: true })
+      await tx.occasionFamily.createMany({
+        data: existingFamilies.map((f) => ({ occasionId: o.id, familyId: f.id })),
+        skipDuplicates: true,
+      })
     }
   }
 
@@ -316,7 +398,9 @@ export async function applyMove(tx: Tx, sourceId: string, targetId: string, choi
       for (const p of await tx.person.findMany({ where: { familyId: family.id } })) {
         const twin = p.userId
           ? existing.find((e) => e.userId === p.userId)
-          : keepBothPeople.has(p.id) ? undefined : existing.find((e) => normalName(e.name) === normalName(p.name))
+          : keepBothPeople.has(p.id)
+            ? undefined
+            : existing.find((e) => normalName(e.name) === normalName(p.name))
         if (twin) await mergePerson(tx, p.id, twin.id)
         else await tx.person.update({ where: { id: p.id }, data: { familyId: tgtHousehold.id, groupId: targetId } })
       }
@@ -336,9 +420,15 @@ export async function applyMove(tx: Tx, sourceId: string, targetId: string, choi
   await tx.idea.updateMany({ where: { id: { in: ideaIds } }, data: { groupId: targetId } })
 
   // Families that arrived are covered by the receiving group's holidays that take new families.
-  const covering = await tx.occasion.findMany({ where: { groupId: targetId, ...GROUP_WIDE, includeNewFamilies: true }, select: { id: true } })
+  const covering = await tx.occasion.findMany({
+    where: { groupId: targetId, ...GROUP_WIDE, includeNewFamilies: true },
+    select: { id: true },
+  })
   if (moved.length > 0 && covering.length > 0) {
-    await tx.occasionFamily.createMany({ data: covering.flatMap((o) => moved.map((f) => ({ occasionId: o.id, familyId: f }))), skipDuplicates: true })
+    await tx.occasionFamily.createMany({
+      data: covering.flatMap((o) => moved.map((f) => ({ occasionId: o.id, familyId: f }))),
+      skipDuplicates: true,
+    })
   }
   // Families in one group can't be connected to each other.
   await tx.familyConnection.deleteMany({ where: { family: { groupId: targetId }, sourceFamily: { groupId: targetId } } })

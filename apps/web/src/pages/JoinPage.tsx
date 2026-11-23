@@ -39,7 +39,9 @@ export default function JoinPage() {
     enabled: Boolean(token && preview.data?.kind === 'GROUP'),
     retry: false,
   })
-  useEffect(() => { if (!sourceGroupId && memberships[0]) setSourceGroupId(memberships[0].groupId) }, [memberships, sourceGroupId])
+  useEffect(() => {
+    if (!sourceGroupId && memberships[0]) setSourceGroupId(memberships[0].groupId)
+  }, [memberships, sourceGroupId])
   const families = useQuery({
     queryKey: ['families', sourceGroupId],
     queryFn: () => listFamilies(sourceGroupId),
@@ -51,16 +53,28 @@ export default function JoinPage() {
   }, [families.data])
 
   const accept = useMutation({
-    mutationFn: () => acceptInvite(inviteToken, preview.data?.kind === 'FAMILY' ? { sourceFamilyId, sharedFields: fields } : (bring && !isEmpty(bring) ? { bring } : {})),
+    mutationFn: () =>
+      acceptInvite(
+        inviteToken,
+        preview.data?.kind === 'FAMILY' ? { sourceFamilyId, sharedFields: fields } : bring && !isEmpty(bring) ? { bring } : {},
+      ),
     onSuccess: async (result) => {
       await qc.invalidateQueries()
-      if ('groupId' in result) { setGroupId(result.groupId); navigate('/') }
+      if ('groupId' in result) {
+        setGroupId(result.groupId)
+        navigate('/')
+      }
     },
   })
 
   const bring = movable.data ? (bringChoice ?? selectAll(movable.data)) : null
 
-  if (preview.isLoading) return <Centered><Loading /></Centered>
+  if (preview.isLoading)
+    return (
+      <Centered>
+        <Loading />
+      </Centered>
+    )
   if (preview.isError) {
     const gone = preview.error instanceof ApiError && preview.error.status === 410
     return (
@@ -77,9 +91,7 @@ export default function JoinPage() {
   return (
     <Centered>
       <p className="text-sm text-muted">{p.inviterName} invited you</p>
-      <h1 className="text-2xl font-bold">
-        {isFamily ? `Connect as ${p.familyName} on Bestowd` : `Join ${p.groupName}`}
-      </h1>
+      <h1 className="text-2xl font-bold">{isFamily ? `Connect as ${p.familyName} on Bestowd` : `Join ${p.groupName}`}</h1>
       <p className="text-sm text-muted">
         {isFamily
           ? `${p.inviterName} will see the details you choose below, read-only. Nothing else in your account is shared.`
@@ -87,13 +99,20 @@ export default function JoinPage() {
       </p>
 
       {ON_PHONE && (
-        <a href={`bestowd://join/${inviteToken}`} className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center">
+        <a
+          href={`bestowd://join/${inviteToken}`}
+          className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center"
+        >
           Open in the Bestowd app
         </a>
       )}
 
       {!token ? (
-        <Link to="/login" state={{ from: `/join/${inviteToken}` }} className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center">
+        <Link
+          to="/login"
+          state={{ from: `/join/${inviteToken}` }}
+          className="min-h-[44px] px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center justify-center"
+        >
           Sign in to accept
         </Link>
       ) : accept.isSuccess && isFamily ? (
@@ -103,14 +122,31 @@ export default function JoinPage() {
           <Link to="/">Go to Home</Link>
         </Card>
       ) : (
-        <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); accept.mutate() }}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            accept.mutate()
+          }}
+        >
           {isFamily && (
             <>
               {memberships.length > 1 && (
                 <Field label="From group">
                   {(id) => (
-                    <Select id={id} value={sourceGroupId} onChange={(e) => { setSourceGroupId(e.target.value); setSourceFamilyId('') }}>
-                      {memberships.map((m) => <option key={m.groupId} value={m.groupId}>{m.groupName}</option>)}
+                    <Select
+                      id={id}
+                      value={sourceGroupId}
+                      onChange={(e) => {
+                        setSourceGroupId(e.target.value)
+                        setSourceFamilyId('')
+                      }}
+                    >
+                      {memberships.map((m) => (
+                        <option key={m.groupId} value={m.groupId}>
+                          {m.groupName}
+                        </option>
+                      ))}
                     </Select>
                   )}
                 </Field>
@@ -118,15 +154,24 @@ export default function JoinPage() {
               <Field label="Which of your families is this?">
                 {(id) => (
                   <Select id={id} required value={sourceFamilyId} onChange={(e) => setSourceFamilyId(e.target.value)}>
-                    {families.data?.map((f) => <option key={f.id} value={f.id}>{f.name}{f.isOwnHousehold ? ' (your household)' : ''}</option>)}
+                    {families.data?.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                        {f.isOwnHousehold ? ' (your household)' : ''}
+                      </option>
+                    ))}
                   </Select>
                 )}
               </Field>
               <fieldset className="bg-white border border-line rounded-2xl px-4 py-2">
                 <legend className="text-sm font-medium px-1">Share</legend>
                 {FIELDS.map(({ field, label }) => (
-                  <Checkbox key={field} label={label} checked={fields.includes(field)}
-                    onChange={(on) => setFields((f) => (on ? [...f, field] : f.filter((x) => x !== field)))} />
+                  <Checkbox
+                    key={field}
+                    label={label}
+                    checked={fields.includes(field)}
+                    onChange={(on) => setFields((f) => (on ? [...f, field] : f.filter((x) => x !== field)))}
+                  />
                 ))}
                 <p className="text-xs text-muted pb-2">Names are always shared.</p>
               </fieldset>
@@ -137,8 +182,8 @@ export default function JoinPage() {
               <p className="text-sm font-semibold">Bring your things along?</p>
               <BringChecklist movable={movable.data} value={bring} onChange={setBringChoice} />
               <p className="text-xs text-muted">
-                {p.groupName}'s owner reviews what you bring before it's added. Anything that looks like what they already have, they can combine.
-                {' '}Once everything has moved, {movable.data.groupName} is removed.
+                {p.groupName}'s owner reviews what you bring before it's added. Anything that looks like what they already have, they can
+                combine. Once everything has moved, {movable.data.groupName} is removed.
               </p>
             </div>
           )}

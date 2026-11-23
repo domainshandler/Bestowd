@@ -37,7 +37,9 @@ export default function OccasionRow({ occasion, showGroup = false }: { occasion:
           {details.join(' · ') || o.subjectName}
           {o.effectiveBudget !== null && (
             <span className={o.overBudget ? 'text-danger' : ''}>
-              {' · '}{o.spent > 0 ? `${formatMoney(o.spent, o.currency)} of ` : 'Budget '}{formatMoney(o.effectiveBudget, o.currency)}
+              {' · '}
+              {o.spent > 0 ? `${formatMoney(o.spent, o.currency)} of ` : 'Budget '}
+              {formatMoney(o.effectiveBudget, o.currency)}
             </span>
           )}
         </p>

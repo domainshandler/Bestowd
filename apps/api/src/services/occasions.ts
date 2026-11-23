@@ -24,21 +24,13 @@ export function isGroupWide(o: { personId: string | null; familyId: string | nul
 
 /** Occasions whose family is active and whose person (if any) isn't archived, plus group-wide occasions. */
 export const activeSubjectWhere: Prisma.OccasionWhereInput = {
-  OR: [
-    { family: { is: ACTIVE } },
-    { person: { is: { archivedAt: null, family: { is: ACTIVE } } } },
-    GROUP_WIDE,
-  ],
+  OR: [{ family: { is: ACTIVE } }, { person: { is: { archivedAt: null, family: { is: ACTIVE } } } }, GROUP_WIDE],
 }
 
 /** Occasions about a family: its own, its people's, and group-wide ones that cover it. */
 export function aboutFamilyWhere(familyId: string): Prisma.OccasionWhereInput {
   return {
-    OR: [
-      { familyId },
-      { person: { is: { familyId, archivedAt: null } } },
-      { ...GROUP_WIDE, coverage: { some: { familyId } } },
-    ],
+    OR: [{ familyId }, { person: { is: { familyId, archivedAt: null } } }, { ...GROUP_WIDE, coverage: { some: { familyId } } }],
   }
 }
 
@@ -65,10 +57,20 @@ export interface FamilyShare {
  * a group-wide occasion's budget, spend and status are that family's share (for a family's own pages).
  */
 export async function serialiseOccasions(occasions: OccasionRow[], options: { forFamilyId?: string } = {}) {
-  const gifts = occasions.length === 0 ? [] : await db.giftEntry.findMany({
-    where: { occasionId: { in: occasions.map((o) => o.id) }, direction: 'GIVEN' },
-    select: { occasionId: true, occasionDate: true, amount: true, status: true, familyId: true, person: { select: { familyId: true } } },
-  })
+  const gifts =
+    occasions.length === 0
+      ? []
+      : await db.giftEntry.findMany({
+          where: { occasionId: { in: occasions.map((o) => o.id) }, direction: 'GIVEN' },
+          select: {
+            occasionId: true,
+            occasionDate: true,
+            amount: true,
+            status: true,
+            familyId: true,
+            person: { select: { familyId: true } },
+          },
+        })
   const current = new Map<string, typeof gifts>()
   const byId = new Map(occasions.map((o) => [o.id, o]))
   for (const g of gifts) {
@@ -121,9 +123,12 @@ export async function serialiseOccasions(occasions: OccasionRow[], options: { fo
         const budgets = families.map((f) => f.budget).filter((b): b is number => b !== null)
         budget = budgets.length ? round2(budgets.reduce((sum, b) => sum + b, 0)) : null
         spent = round2(occasionGifts.reduce((sum, g) => sum + amount(g), 0))
-        status = families.length > 0 && families.every((f) => f.given) ? 'GIVEN'
-          : families.length > 0 && families.every((f) => f.covered) ? 'BOUGHT'
-          : 'NOT_STARTED'
+        status =
+          families.length > 0 && families.every((f) => f.given)
+            ? 'GIVEN'
+            : families.length > 0 && families.every((f) => f.covered)
+              ? 'BOUGHT'
+              : 'NOT_STARTED'
         subjectName = `${families.length} ${families.length === 1 ? 'family' : 'families'}`
         subjectFamilyId = null
         subjectFamilyName = null

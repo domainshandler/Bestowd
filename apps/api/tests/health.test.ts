@@ -8,8 +8,12 @@ let app: FastifyInstance
 
 beforeAll(async () => {
   app = await buildApp()
-  app.get('/test-http-error', async () => { throw conflict('Already connected') })
-  app.get('/test-crash', async () => { throw new Error('secret detail') })
+  app.get('/test-http-error', async () => {
+    throw conflict('Already connected')
+  })
+  app.get('/test-crash', async () => {
+    throw new Error('secret detail')
+  })
   await app.ready()
 })
 

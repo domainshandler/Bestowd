@@ -16,7 +16,9 @@ beforeAll(async () => {
   const fam = (await db.family.create({ data: { groupId: me!.groupId, name: 'Smiths' } })).id
   const gift = (brand: string, groupId = me!.groupId, familyId = fam, by = me!.user.id) =>
     db.giftEntry.create({ data: { groupId, familyId, direction: 'GIVEN', title: 'Thing', brand, date: new Date(), createdById: by } })
-  await gift('Garmin'); await gift('garmin'); await gift('Gap')
+  await gift('Garmin')
+  await gift('garmin')
+  await gift('Gap')
   await db.idea.create({ data: { groupId: me!.groupId, title: 'Zygote Zebra plush', brand: 'Gazzle', createdById: me!.user.id } })
   // "Galaxy Toyz" is logged by 5 other groups: popular. "Gamma Goods" by 4: not.
   for (const [i, u] of users.slice(1).entries()) {
@@ -32,7 +34,9 @@ afterAll(async () => {
 })
 
 const get = (field: string, q: string, u = users[0]!) =>
-  api().get(`/groups/${u.groupId}/suggest?field=${field}&q=${encodeURIComponent(q)}`).set('Authorization', u.authHeader)
+  api()
+    .get(`/groups/${u.groupId}/suggest?field=${field}&q=${encodeURIComponent(q)}`)
+    .set('Authorization', u.authHeader)
 
 describe('autofill suggestions', () => {
   it('matches the start of any word, ignoring case and accents', () => {
@@ -47,7 +51,9 @@ describe('autofill suggestions', () => {
     const s = res.body.suggestions as { value: string; source: string }[]
     expect(s.slice(0, 3)).toEqual([
       // Most used first, then most recent.
-      { value: 'Garmin', source: 'yours' }, { value: 'Gazzle', source: 'yours' }, { value: 'Gap', source: 'yours' },
+      { value: 'Garmin', source: 'yours' },
+      { value: 'Gazzle', source: 'yours' },
+      { value: 'Gap', source: 'yours' },
     ])
     expect(s).toContainEqual({ value: 'Galaxy Toyz', source: 'popular' })
     expect(s.map((x) => x.value)).not.toContain('Gamma Goods')
@@ -61,7 +67,9 @@ describe('autofill suggestions', () => {
     // Another group doesn't see the first group's own brand (it's not popular).
     expect((await get('brand', 'gazz', users[1])).body.suggestions).toEqual([])
     expect((await get('brand', '', users[0])).body.suggestions).toEqual([])
-    expect((await api().get(`/groups/${users[0]!.groupId}/suggest?field=brand&q=ga`).set('Authorization', users[1]!.authHeader)).status).toBe(404)
+    expect(
+      (await api().get(`/groups/${users[0]!.groupId}/suggest?field=brand&q=ga`).set('Authorization', users[1]!.authHeader)).status,
+    ).toBe(404)
     expect((await get('colour', 'r')).status).toBe(400)
   })
 })

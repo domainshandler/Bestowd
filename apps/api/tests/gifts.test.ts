@@ -41,7 +41,13 @@ describe('received gifts', () => {
   it('hide their value by default and set a thank-you due date', async () => {
     const res = await post({ direction: 'RECEIVED', title: 'Board game', date: '2026-02-01', familyId: chen, amount: 30 })
     expect(res.status).toBe(201)
-    expect(res.body).toMatchObject({ valueHidden: true, status: null, thankYouSent: false, thankYouDueAt: '2026-02-15T00:00:00.000Z', counterpartyName: 'Chen family' })
+    expect(res.body).toMatchObject({
+      valueHidden: true,
+      status: null,
+      thankYouSent: false,
+      thankYouDueAt: '2026-02-15T00:00:00.000Z',
+      counterpartyName: 'Chen family',
+    })
 
     const before = await list('?year=2026')
     expect(before.body.totals).toMatchObject({ receivedCount: 1, receivedValue: 0, hiddenReceivedCount: 1, thankYouDueCount: 1 })
@@ -59,8 +65,19 @@ describe('received gifts', () => {
 
 describe('given gifts and occasion status', () => {
   it('advance the occasion for its current occurrence: BOUGHT, then GIVEN', async () => {
-    const occ = await db.occasion.create({ data: { groupId: a.groupId, personId: mia, type: 'BIRTHDAY', name: "Mia's birthday", date: inDays(9), nextOccurrence: inDays(9) } })
-    const bought = await post({ direction: 'GIVEN', title: 'Lego', date: '2026-03-01', personId: mia, occasionId: occ.id, status: 'BOUGHT', amount: 35, category: 'Lego' })
+    const occ = await db.occasion.create({
+      data: { groupId: a.groupId, personId: mia, type: 'BIRTHDAY', name: "Mia's birthday", date: inDays(9), nextOccurrence: inDays(9) },
+    })
+    const bought = await post({
+      direction: 'GIVEN',
+      title: 'Lego',
+      date: '2026-03-01',
+      personId: mia,
+      occasionId: occ.id,
+      status: 'BOUGHT',
+      amount: 35,
+      category: 'Lego',
+    })
     expect(bought.status).toBe(201)
     expect(bought.body).toMatchObject({ occasionDate: inDays(9).toISOString(), occasionName: "Mia's birthday", status: 'BOUGHT' })
     expect((await db.occasion.findUniqueOrThrow({ where: { id: occ.id } })).status).toBe('BOUGHT')
@@ -70,7 +87,9 @@ describe('given gifts and occasion status', () => {
   })
 
   it("don't change status when logged against a past year", async () => {
-    const occ = await db.occasion.create({ data: { groupId: a.groupId, personId: leo, type: 'BIRTHDAY', name: "Leo's birthday", date: inDays(20), nextOccurrence: inDays(20) } })
+    const occ = await db.occasion.create({
+      data: { groupId: a.groupId, personId: leo, type: 'BIRTHDAY', name: "Leo's birthday", date: inDays(20), nextOccurrence: inDays(20) },
+    })
     await post({ direction: 'GIVEN', title: 'Old gift', date: '2025-06-01', personId: leo, occasionId: occ.id, occasionDate: '2025-06-01' })
     expect((await db.occasion.findUniqueOrThrow({ where: { id: occ.id } })).status).toBe('NOT_STARTED')
   })
@@ -78,13 +97,23 @@ describe('given gifts and occasion status', () => {
 
 describe('credits and filters', () => {
   it('credit a family gift to members, so it shows for each person', async () => {
-    const res = await post({ direction: 'GIVEN', title: 'Family pass', date: '2026-05-10', familyId: chen, amount: 80, creditPersonIds: [mia, leo] })
+    const res = await post({
+      direction: 'GIVEN',
+      title: 'Family pass',
+      date: '2026-05-10',
+      familyId: chen,
+      amount: 80,
+      creditPersonIds: [mia, leo],
+    })
     expect(res.body.credits.map((c: any) => c.name).sort()).toEqual(['Leo', 'Mia'])
 
     const forLeo = await list(`?personId=${leo}`)
     expect(forLeo.body.gifts.map((g: any) => g.title)).toContain('Family pass')
 
-    const patched = await api().patch(`/gifts/${res.body.id}`).set('Authorization', a.authHeader).send({ creditPersonIds: [mia] })
+    const patched = await api()
+      .patch(`/gifts/${res.body.id}`)
+      .set('Authorization', a.authHeader)
+      .send({ creditPersonIds: [mia] })
     expect(patched.body.credits).toEqual([{ personId: mia, name: 'Mia' }])
   })
 
@@ -119,7 +148,9 @@ describe('GET /groups/:groupId/spend', () => {
 
 describe('access', () => {
   it("404s another group's gifts", async () => {
-    const theirs = await db.giftEntry.create({ data: { groupId: b.groupId, createdById: b.user.id, direction: 'GIVEN', title: 'Secret', date: new Date(), personId: leoB } })
+    const theirs = await db.giftEntry.create({
+      data: { groupId: b.groupId, createdById: b.user.id, direction: 'GIVEN', title: 'Secret', date: new Date(), personId: leoB },
+    })
     expect((await api().get(`/gifts/${theirs.id}`).set('Authorization', a.authHeader)).status).toBe(404)
     expect((await api().patch(`/gifts/${theirs.id}`).set('Authorization', a.authHeader).send({ title: 'x' })).status).toBe(404)
     expect((await api().delete(`/gifts/${theirs.id}`).set('Authorization', a.authHeader)).status).toBe(404)

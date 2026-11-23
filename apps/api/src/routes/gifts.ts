@@ -3,7 +3,13 @@ import type { GiftDirection, GiftStatus, Prisma, Reaction } from '@prisma/client
 import { db } from '../db.js'
 import { assertSubject, loadOr404, requireMember, userIdOf } from '../services/access.js'
 import {
-  advanceForGift, checkDirectionFields, checkGiftRefs, createGiftEntry, giftInclude, toGiftDto, type GiftInput,
+  advanceForGift,
+  checkDirectionFields,
+  checkGiftRefs,
+  createGiftEntry,
+  giftInclude,
+  toGiftDto,
+  type GiftInput,
 } from '../services/gift-log.js'
 import { familyGiftsWhere, giftTotals, personGiftsWhere, round2 } from '../services/gift-totals.js'
 import { id, idList, isoDate, money, nullableId, nullableIsoDate, nullableString, parseDate } from './schemas.js'
@@ -86,98 +92,111 @@ function yearRange(year: number): Prisma.DateTimeFilter {
 export async function giftRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
-  app.post<{ Params: { groupId: string }; Body: GiftBody & { direction: GiftDirection; title: string; date: string } }>('/groups/:groupId/gifts', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['direction', 'title', 'date'],
-        properties: { ...giftProperties, direction: { type: 'string', enum: ['GIVEN', 'RECEIVED'] } },
-      },
-    },
-  }, async (request, reply) => {
-    const { groupId } = request.params
-    const userId = userIdOf(request)
-    await requireMember(userId, groupId)
-    const gift = await db.$transaction(async (tx) => {
-      const created = await createGiftEntry(groupId, userId, parseGiftDates(request.body) as GiftInput, tx)
-      // A given gift logged from an idea marks the idea bought, as "Mark as bought" does.
-      if (created.ideaId && created.direction === 'GIVEN') await tx.idea.update({ where: { id: created.ideaId }, data: { status: 'BOUGHT' } })
-      return created
-    })
-    await advanceForGift(gift)
-    return reply.code(201).send(toGiftDto(gift))
-  })
-
-  app.get<{ Params: { groupId: string }; Querystring: ListQuery }>('/groups/:groupId/gifts', {
-    schema: {
-      querystring: {
-        type: 'object',
-        properties: {
-          year: { type: 'integer', minimum: 1900, maximum: 2200 },
-          direction: { type: 'string', enum: ['GIVEN', 'RECEIVED'] },
-          personId: id,
-          familyId: id,
-          status: { type: 'string', enum: ['BOUGHT', 'GIVEN'] },
+  app.post<{ Params: { groupId: string }; Body: GiftBody & { direction: GiftDirection; title: string; date: string } }>(
+    '/groups/:groupId/gifts',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['direction', 'title', 'date'],
+          properties: { ...giftProperties, direction: { type: 'string', enum: ['GIVEN', 'RECEIVED'] } },
         },
       },
     },
-  }, async (request) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const { year, direction, personId, familyId, status } = request.query
+    async (request, reply) => {
+      const { groupId } = request.params
+      const userId = userIdOf(request)
+      await requireMember(userId, groupId)
+      const gift = await db.$transaction(async (tx) => {
+        const created = await createGiftEntry(groupId, userId, parseGiftDates(request.body) as GiftInput, tx)
+        // A given gift logged from an idea marks the idea bought, as "Mark as bought" does.
+        if (created.ideaId && created.direction === 'GIVEN')
+          await tx.idea.update({ where: { id: created.ideaId }, data: { status: 'BOUGHT' } })
+        return created
+      })
+      await advanceForGift(gift)
+      return reply.code(201).send(toGiftDto(gift))
+    },
+  )
 
-    // Totals use the same filters except direction, so the Given/Received toggle keeps the header stable.
-    const base: Prisma.GiftEntryWhereInput = {
-      groupId,
-      AND: [
-        ...(personId ? [personGiftsWhere(personId)] : []),
-        ...(familyId ? [familyGiftsWhere(familyId)] : []),
-      ],
-      ...(year ? { date: yearRange(year) } : {}),
-    }
-    const [group, gifts, totals] = await Promise.all([
-      db.group.findUniqueOrThrow({ where: { id: groupId } }),
-      db.giftEntry.findMany({
-        where: { ...base, ...(direction ? { direction } : {}), ...(status ? { status } : {}) },
-        include: giftInclude,
-        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-      }),
-      giftTotals(base),
-    ])
-    return { currency: group.currency, gifts: gifts.map(toGiftDto), totals }
-  })
+  app.get<{ Params: { groupId: string }; Querystring: ListQuery }>(
+    '/groups/:groupId/gifts',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            year: { type: 'integer', minimum: 1900, maximum: 2200 },
+            direction: { type: 'string', enum: ['GIVEN', 'RECEIVED'] },
+            personId: id,
+            familyId: id,
+            status: { type: 'string', enum: ['BOUGHT', 'GIVEN'] },
+          },
+        },
+      },
+    },
+    async (request) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const { year, direction, personId, familyId, status } = request.query
+
+      // Totals use the same filters except direction, so the Given/Received toggle keeps the header stable.
+      const base: Prisma.GiftEntryWhereInput = {
+        groupId,
+        AND: [...(personId ? [personGiftsWhere(personId)] : []), ...(familyId ? [familyGiftsWhere(familyId)] : [])],
+        ...(year ? { date: yearRange(year) } : {}),
+      }
+      const [group, gifts, totals] = await Promise.all([
+        db.group.findUniqueOrThrow({ where: { id: groupId } }),
+        db.giftEntry.findMany({
+          where: { ...base, ...(direction ? { direction } : {}), ...(status ? { status } : {}) },
+          include: giftInclude,
+          orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        }),
+        giftTotals(base),
+      ])
+      return { currency: group.currency, gifts: gifts.map(toGiftDto), totals }
+    },
+  )
 
   app.get<{ Params: { id: string } }>('/gifts/:id', async (request) => {
-    const gift = await loadOr404(userIdOf(request), await db.giftEntry.findUnique({ where: { id: request.params.id }, include: giftInclude }))
+    const gift = await loadOr404(
+      userIdOf(request),
+      await db.giftEntry.findUnique({ where: { id: request.params.id }, include: giftInclude }),
+    )
     return toGiftDto(gift)
   })
 
-  app.patch<{ Params: { id: string }; Body: GiftBody }>('/gifts/:id', {
-    schema: { body: { type: 'object', additionalProperties: false, properties: giftProperties } },
-  }, async (request) => {
-    const existing = await loadOr404(userIdOf(request), await db.giftEntry.findUnique({ where: { id: request.params.id } }))
-    const { creditPersonIds, personId, familyId, ...rest } = parseGiftDates(request.body)
-    checkDirectionFields(existing.direction, request.body)
-    await checkGiftRefs(existing.groupId, { ...rest, creditPersonIds })
+  app.patch<{ Params: { id: string }; Body: GiftBody }>(
+    '/gifts/:id',
+    {
+      schema: { body: { type: 'object', additionalProperties: false, properties: giftProperties } },
+    },
+    async (request) => {
+      const existing = await loadOr404(userIdOf(request), await db.giftEntry.findUnique({ where: { id: request.params.id } }))
+      const { creditPersonIds, personId, familyId, ...rest } = parseGiftDates(request.body)
+      checkDirectionFields(existing.direction, request.body)
+      await checkGiftRefs(existing.groupId, { ...rest, creditPersonIds })
 
-    const subjectChange = personId || familyId ? { personId: personId ?? null, familyId: familyId ?? null } : {}
-    if (personId || familyId) await assertSubject(existing.groupId, subjectChange)
+      const subjectChange = personId || familyId ? { personId: personId ?? null, familyId: familyId ?? null } : {}
+      if (personId || familyId) await assertSubject(existing.groupId, subjectChange)
 
-    const gift = await db.$transaction(async (tx) => {
-      if (creditPersonIds) {
-        await tx.giftCredit.deleteMany({ where: { giftEntryId: existing.id } })
-        await tx.giftCredit.createMany({ data: [...new Set(creditPersonIds)].map((p) => ({ giftEntryId: existing.id, personId: p })) })
-      }
-      return tx.giftEntry.update({
-        where: { id: existing.id },
-        data: { ...rest, ...subjectChange } as Prisma.GiftEntryUncheckedUpdateInput,
-        include: giftInclude,
+      const gift = await db.$transaction(async (tx) => {
+        if (creditPersonIds) {
+          await tx.giftCredit.deleteMany({ where: { giftEntryId: existing.id } })
+          await tx.giftCredit.createMany({ data: [...new Set(creditPersonIds)].map((p) => ({ giftEntryId: existing.id, personId: p })) })
+        }
+        return tx.giftEntry.update({
+          where: { id: existing.id },
+          data: { ...rest, ...subjectChange },
+          include: giftInclude,
+        })
       })
-    })
-    await advanceForGift(gift)
-    return toGiftDto(gift)
-  })
+      await advanceForGift(gift)
+      return toGiftDto(gift)
+    },
+  )
 
   app.delete<{ Params: { id: string } }>('/gifts/:id', async (request, reply) => {
     const gift = await loadOr404(userIdOf(request), await db.giftEntry.findUnique({ where: { id: request.params.id } }))
@@ -185,45 +204,51 @@ export async function giftRoutes(app: FastifyInstance) {
     return reply.code(204).send()
   })
 
-  app.get<{ Params: { groupId: string }; Querystring: { year?: number } }>('/groups/:groupId/spend', {
-    schema: { querystring: { type: 'object', properties: { year: { type: 'integer', minimum: 1900, maximum: 2200 } } } },
-  }, async (request) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const year = request.query.year ?? new Date().getUTCFullYear()
+  app.get<{ Params: { groupId: string }; Querystring: { year?: number } }>(
+    '/groups/:groupId/spend',
+    {
+      schema: { querystring: { type: 'object', properties: { year: { type: 'integer', minimum: 1900, maximum: 2200 } } } },
+    },
+    async (request) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const year = request.query.year ?? new Date().getUTCFullYear()
 
-    const [group, gifts] = await Promise.all([
-      db.group.findUniqueOrThrow({ where: { id: groupId } }),
-      db.giftEntry.findMany({
-        where: { groupId, direction: 'GIVEN', date: yearRange(year) },
-        select: {
-          date: true, amount: true, familyId: true,
-          family: { select: { name: true } },
-          person: { select: { familyId: true, family: { select: { name: true } } } },
-        },
-      }),
-    ])
+      const [group, gifts] = await Promise.all([
+        db.group.findUniqueOrThrow({ where: { id: groupId } }),
+        db.giftEntry.findMany({
+          where: { groupId, direction: 'GIVEN', date: yearRange(year) },
+          select: {
+            date: true,
+            amount: true,
+            familyId: true,
+            family: { select: { name: true } },
+            person: { select: { familyId: true, family: { select: { name: true } } } },
+          },
+        }),
+      ])
 
-    const byMonth = Array<number>(12).fill(0)
-    const byFamily = new Map<string, { familyId: string; familyName: string; total: number }>()
-    let total = 0
-    for (const g of gifts) {
-      const amount = g.amount === null ? 0 : Number(g.amount)
-      total += amount
-      byMonth[g.date.getUTCMonth()]! += amount
-      const famId = g.familyId ?? g.person!.familyId
-      const famName = g.family?.name ?? g.person!.family.name
-      const row = byFamily.get(famId) ?? { familyId: famId, familyName: famName, total: 0 }
-      row.total += amount
-      byFamily.set(famId, row)
-    }
+      const byMonth = Array<number>(12).fill(0)
+      const byFamily = new Map<string, { familyId: string; familyName: string; total: number }>()
+      let total = 0
+      for (const g of gifts) {
+        const amount = g.amount === null ? 0 : Number(g.amount)
+        total += amount
+        byMonth[g.date.getUTCMonth()] += amount
+        const famId = g.familyId ?? g.person!.familyId
+        const famName = g.family?.name ?? g.person!.family.name
+        const row = byFamily.get(famId) ?? { familyId: famId, familyName: famName, total: 0 }
+        row.total += amount
+        byFamily.set(famId, row)
+      }
 
-    return {
-      currency: group.currency,
-      year,
-      total: round2(total),
-      byMonth: byMonth.map(round2),
-      byFamily: [...byFamily.values()].map((r) => ({ ...r, total: round2(r.total) })).sort((x, y) => y.total - x.total),
-    }
-  })
+      return {
+        currency: group.currency,
+        year,
+        total: round2(total),
+        byMonth: byMonth.map(round2),
+        byFamily: [...byFamily.values()].map((r) => ({ ...r, total: round2(r.total) })).sort((x, y) => y.total - x.total),
+      }
+    },
+  )
 }

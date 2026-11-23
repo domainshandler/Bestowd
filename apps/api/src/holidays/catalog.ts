@@ -33,27 +33,41 @@ const SUNDAY = 0
 export const HOLIDAYS: readonly Holiday[] = [
   { key: 'christmas', name: 'Christmas', rule: { kind: 'fixed', month: 12, day: 25 } },
   { key: 'valentines', name: "Valentine's Day", rule: { kind: 'fixed', month: 2, day: 14 } },
-  { key: 'mothers-day', name: "Mother's Day", rule: { kind: 'nthWeekday', month: 5, weekday: SUNDAY, n: 2 }, note: 'Second Sunday of May (Canada, US)' },
+  {
+    key: 'mothers-day',
+    name: "Mother's Day",
+    rule: { kind: 'nthWeekday', month: 5, weekday: SUNDAY, n: 2 },
+    note: 'Second Sunday of May (Canada, US)',
+  },
   { key: 'fathers-day', name: "Father's Day", rule: { kind: 'nthWeekday', month: 6, weekday: SUNDAY, n: 3 }, note: 'Third Sunday of June' },
   { key: 'easter', name: 'Easter', rule: { kind: 'easter' } },
   {
-    key: 'diwali', name: 'Diwali', note: 'Lakshmi Puja day',
+    key: 'diwali',
+    name: 'Diwali',
+    note: 'Lakshmi Puja day',
     rule: { kind: 'dates', dates: ['2026-11-08', '2027-10-29', '2028-10-17', '2029-11-05', '2030-10-26', '2031-11-14'] },
   },
   {
-    key: 'eid-al-fitr', name: 'Eid al-Fitr', note: 'May differ by a day with moon sighting',
+    key: 'eid-al-fitr',
+    name: 'Eid al-Fitr',
+    note: 'May differ by a day with moon sighting',
     rule: { kind: 'dates', dates: ['2026-03-20', '2027-03-10', '2028-02-27', '2029-02-15', '2030-02-05', '2031-01-25'] },
   },
   {
-    key: 'eid-al-adha', name: 'Eid al-Adha', note: 'May differ by a day with moon sighting',
+    key: 'eid-al-adha',
+    name: 'Eid al-Adha',
+    note: 'May differ by a day with moon sighting',
     rule: { kind: 'dates', dates: ['2026-05-27', '2027-05-17', '2028-05-05', '2029-04-24', '2030-04-14', '2031-04-03'] },
   },
   {
-    key: 'hanukkah', name: 'Hanukkah', note: 'First day (the first candle is lit the evening before)',
+    key: 'hanukkah',
+    name: 'Hanukkah',
+    note: 'First day (the first candle is lit the evening before)',
     rule: { kind: 'dates', dates: ['2026-12-05', '2027-12-25', '2028-12-13', '2029-12-02', '2030-12-21', '2031-12-10'] },
   },
   {
-    key: 'lunar-new-year', name: 'Lunar New Year',
+    key: 'lunar-new-year',
+    name: 'Lunar New Year',
     rule: { kind: 'dates', dates: ['2026-02-17', '2027-02-06', '2028-01-26', '2029-02-13', '2030-02-03', '2031-01-23'] },
   },
 ]

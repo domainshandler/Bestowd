@@ -34,21 +34,31 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-sm text-muted">{greeting()}, {user?.name.split(' ')[0]}</p>
+        <p className="text-sm text-muted">
+          {greeting()}, {user?.name.split(' ')[0]}
+        </p>
         <h1 className="text-3xl font-bold tracking-tight">Coming up</h1>
       </div>
 
       <section aria-label="Summary" className="bg-brand text-white rounded-[20px] p-5 flex flex-col gap-3">
         <div className="flex justify-between items-center">
           <p className="text-[13px] font-medium text-brand-faint">Next 30 days</p>
-          {needGifts > 0 && <span className="bg-amber text-ink text-xs font-semibold px-2.5 py-1 rounded-full">{needGifts} need {needGifts === 1 ? 'a gift' : 'gifts'}</span>}
+          {needGifts > 0 && (
+            <span className="bg-amber text-ink text-xs font-semibold px-2.5 py-1 rounded-full">
+              {needGifts} need {needGifts === 1 ? 'a gift' : 'gifts'}
+            </span>
+          )}
         </div>
         <p className="font-display text-[22px] font-bold leading-tight">
           {isLoading ? '…' : `${occasions.length} ${occasions.length === 1 ? 'occasion' : 'occasions'} in the next 30 days`}
         </p>
         {data && data.plannedSpend.some((p) => p.amount > 0) && (
           <p className="text-[13px] text-brand-faint">
-            {data.plannedSpend.filter((p) => p.amount > 0).map((p) => formatMoney(p.amount, p.currency)).join(' + ')} planned
+            {data.plannedSpend
+              .filter((p) => p.amount > 0)
+              .map((p) => formatMoney(p.amount, p.currency))
+              .join(' + ')}{' '}
+            planned
           </p>
         )}
       </section>
@@ -58,12 +68,17 @@ export default function HomePage() {
       {groupId && <PendingMoves groupId={groupId} />}
       {groupId && <HolidaySuggestions groupId={groupId} />}
 
-      <Chips label="Occasion type" value={filter} onChange={setFilter} options={[
-        { value: 'ALL', label: 'All' },
-        { value: 'BIRTHDAY', label: 'Birthdays' },
-        { value: 'HOLIDAY', label: 'Holidays' },
-        { value: 'ONE_OFF', label: 'Events' },
-      ]} />
+      <Chips
+        label="Occasion type"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: 'ALL', label: 'All' },
+          { value: 'BIRTHDAY', label: 'Birthdays' },
+          { value: 'HOLIDAY', label: 'Holidays' },
+          { value: 'ONE_OFF', label: 'Events' },
+        ]}
+      />
 
       <section className="flex flex-col gap-2.5" aria-label="Upcoming occasions">
         {isLoading && <Loading />}
@@ -71,7 +86,9 @@ export default function HomePage() {
         {!isLoading && !isError && occasions.length === 0 && (
           <EmptyState>Nothing in the next 30 days. Add people and their birthdays under People.</EmptyState>
         )}
-        {occasions.map((o) => <OccasionRow key={o.id} occasion={o} showGroup={data?.multipleGroups ?? false} />)}
+        {occasions.map((o) => (
+          <OccasionRow key={o.id} occasion={o} showGroup={data?.multipleGroups ?? false} />
+        ))}
       </section>
 
       {groupId && (

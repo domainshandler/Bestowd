@@ -11,7 +11,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "pnpm -r exec tsc --noEmit -p .",
+    "typecheck": "pnpm -r --if-present typecheck",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck"
   },
   "devDependencies": {

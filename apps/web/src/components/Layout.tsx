@@ -16,14 +16,22 @@ export default function Layout() {
   return (
     <div className="min-h-screen md:flex">
       {/* Wide screens: sidebar */}
-      <nav aria-label="Main" className="hidden md:flex w-60 shrink-0 flex-col gap-1 p-4 border-r border-line bg-white sticky top-0 h-screen">
+      <nav
+        aria-label="Main"
+        className="hidden md:flex w-60 shrink-0 flex-col gap-1 p-4 border-r border-line bg-white sticky top-0 h-screen"
+      >
         <p className="font-display text-2xl font-bold text-brand px-3 mb-6">Bestowd</p>
         {TABS.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end}
-            className={({ isActive }) => cx('flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-[15px]', isActive ? 'bg-brand-light text-brand font-semibold' : 'text-muted hover:bg-ground font-medium')}
+            className={({ isActive }) =>
+              cx(
+                'flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-[15px]',
+                isActive ? 'bg-brand-light text-brand font-semibold' : 'text-muted hover:bg-ground font-medium',
+              )
+            }
           >
             <Icon name={t.icon} size={22} />
             {t.label}
@@ -33,7 +41,12 @@ export default function Layout() {
           <GroupSwitcher className="px-3" />
           <NavLink
             to="/account"
-            className={({ isActive }) => cx('flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-[15px]', isActive ? 'bg-brand-light text-brand font-semibold' : 'text-muted hover:bg-ground font-medium')}
+            className={({ isActive }) =>
+              cx(
+                'flex items-center gap-3 px-3 min-h-[44px] rounded-xl text-[15px]',
+                isActive ? 'bg-brand-light text-brand font-semibold' : 'text-muted hover:bg-ground font-medium',
+              )
+            }
           >
             <Avatar name={user?.name ?? '?'} photoUrl={user?.avatarUrl} size={28} />
             Settings
@@ -58,9 +71,17 @@ export default function Layout() {
       </div>
 
       {/* Phones: bottom tab bar */}
-      <nav aria-label="Tabs" className="md:hidden fixed bottom-0 inset-x-0 h-[84px] bg-white border-t border-line grid grid-cols-4 px-2 pt-2 pb-5 z-40">
+      <nav
+        aria-label="Tabs"
+        className="md:hidden fixed bottom-0 inset-x-0 h-[84px] bg-white border-t border-line grid grid-cols-4 px-2 pt-2 pb-5 z-40"
+      >
         {TABS.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex flex-col items-center justify-center gap-1', isActive ? 'text-brand' : 'text-muted')}>
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.end}
+            className={({ isActive }) => cx('flex flex-col items-center justify-center gap-1', isActive ? 'text-brand' : 'text-muted')}
+          >
             {({ isActive }) => (
               <>
                 <span className={cx('w-14 h-[30px] rounded-[15px] flex items-center justify-center', isActive && 'bg-brand-light')}>

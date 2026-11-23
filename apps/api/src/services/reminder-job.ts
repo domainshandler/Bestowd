@@ -37,7 +37,11 @@ function inDays(n: number): string {
  * planned; a separate buy reminder goes out a week before only if that day isn't already a reminder day.
  */
 export function occasionReminderKinds(o: {
-  daysUntil: number; reminderDays: number[]; status: OccasionStatus; needsCard: boolean; cardDone: boolean
+  daysUntil: number
+  reminderDays: number[]
+  status: OccasionStatus
+  needsCard: boolean
+  cardDone: boolean
 }): ReminderKind[] {
   const kinds: ReminderKind[] = []
   if (o.reminderDays.includes(o.daysUntil)) kinds.push('OCCASION')
@@ -98,7 +102,10 @@ export async function runReminderScan(now: Date = new Date()): Promise<DueRemind
     include: { group: { include: members } },
   })
   // Group-wide occasions: progress comes from per-family coverage (status = all families covered or not).
-  const groupWideRows = await db.occasion.findMany({ where: { id: { in: occasions.map((o) => o.id) }, ...GROUP_WIDE }, include: occasionInclude })
+  const groupWideRows = await db.occasion.findMany({
+    where: { id: { in: occasions.map((o) => o.id) }, ...GROUP_WIDE },
+    include: occasionInclude,
+  })
   const groupWide = new Map((await serialiseOccasions(groupWideRows)).map((dto) => [dto.id, dto]))
 
   for (const occasion of occasions) {
@@ -110,10 +117,25 @@ export async function runReminderScan(now: Date = new Date()): Promise<DueRemind
     if (shared && coverage?.familyCount === 0) continue
     for (const kind of occasionReminderKinds({ ...occasion, status, daysUntil, reminderDays })) {
       const message = occasionMessage(kind, { ...occasion, status, daysUntil, coverage })
-      const subject: Record<string, string> = occasion.personId ? { personId: occasion.personId } : occasion.familyId ? { familyId: occasion.familyId } : { scope: 'GROUP' }
+      const subject: Record<string, string> = occasion.personId
+        ? { personId: occasion.personId }
+        : occasion.familyId
+          ? { familyId: occasion.familyId }
+          : { scope: 'GROUP' }
       const data = { kind, occasionId: occasion.id, ...subject }
       for (const m of occasion.group.memberships) {
-        due.push({ kind, userId: m.userId, email: m.user.email, groupId: occasion.groupId, occasionId: occasion.id, giftEntryId: null, occasionName: occasion.name, daysUntil, ...message, data })
+        due.push({
+          kind,
+          userId: m.userId,
+          email: m.user.email,
+          groupId: occasion.groupId,
+          occasionId: occasion.id,
+          giftEntryId: null,
+          occasionName: occasion.name,
+          daysUntil,
+          ...message,
+          data,
+        })
       }
     }
   }
@@ -132,9 +154,17 @@ export async function runReminderScan(now: Date = new Date()): Promise<DueRemind
     const data = { kind: 'THANK_YOU', giftEntryId: g.id, ...(g.personId ? { personId: g.personId } : { familyId: g.familyId! }) }
     for (const m of g.group.memberships) {
       due.push({
-        kind: 'THANK_YOU', userId: m.userId, email: m.user.email, groupId: g.groupId, occasionId: g.occasionId, giftEntryId: g.id,
-        occasionName: g.occasion?.name ?? '', daysUntil: 0,
-        title: 'Thank-you due', body: `Send a thank-you to ${from} for the ${g.title}.`, data,
+        kind: 'THANK_YOU',
+        userId: m.userId,
+        email: m.user.email,
+        groupId: g.groupId,
+        occasionId: g.occasionId,
+        giftEntryId: g.id,
+        occasionName: g.occasion?.name ?? '',
+        daysUntil: 0,
+        title: 'Thank-you due',
+        body: `Send a thank-you to ${from} for the ${g.title}.`,
+        data,
       })
     }
   }

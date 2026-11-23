@@ -13,8 +13,8 @@ export function encrypt(text: string): string {
 
 export function decrypt(ciphertext: string): string {
   const [ivHex, encHex] = ciphertext.split(':')
-  const iv = Buffer.from(ivHex!, 'hex')
-  const encrypted = Buffer.from(encHex!, 'hex')
+  const iv = Buffer.from(ivHex, 'hex')
+  const encrypted = Buffer.from(encHex, 'hex')
   const decipher = createDecipheriv(ALGORITHM, KEY, iv)
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
 }

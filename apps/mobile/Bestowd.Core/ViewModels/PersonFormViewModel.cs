@@ -12,7 +12,7 @@ public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, 
     private Dictionary<string, string> _otherSizes = [];
     [ObservableProperty] public partial string FamilyId { get; private set; } = "";
     [ObservableProperty] public partial string? PersonId { get; private set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string Relationship { get; set; } = "";
     /// <summary>0 = unknown, else 1–12.</summary>
     [ObservableProperty] public partial int BirthMonth { get; set; }
@@ -73,8 +73,16 @@ public sealed partial class PersonFormViewModel(BestowdApi api, INavigator nav, 
         await SaveAndCloseAsync(() => PersonId is null
             ? api.CreatePersonAsync(FamilyId, new PersonBody
             {
-                Name = Name.Trim(), Relationship = Text(Relationship), BirthMonth = month, BirthDay = day, BirthYear = year,
-                Likes = Format.SplitList(Likes), Avoid = Format.SplitList(Avoid), Sizes = Sizes(), FoodNotes = Text(FoodNotes), Notes = Text(Notes),
+                Name = Name.Trim(),
+                Relationship = Text(Relationship),
+                BirthMonth = month,
+                BirthDay = day,
+                BirthYear = year,
+                Likes = Format.SplitList(Likes),
+                Avoid = Format.SplitList(Avoid),
+                Sizes = Sizes(),
+                FoodNotes = Text(FoodNotes),
+                Notes = Text(Notes),
             })
             : api.UpdatePersonAsync(PersonId, new Patch()
                 .Set("name", Name.Trim()).Set("relationship", Text(Relationship))

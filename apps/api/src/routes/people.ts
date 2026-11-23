@@ -43,40 +43,53 @@ function checkBirth(p: { birthMonth?: number | null; birthDay?: number | null; b
 
 function toData(body: PersonBody): Prisma.PersonUncheckedUpdateInput {
   const { sizes, ...rest } = body
-  return { ...rest, ...(sizes ? { sizes: sizes as Prisma.InputJsonObject } : {}) }
+  return { ...rest, ...(sizes ? { sizes: sizes } : {}) }
 }
 
 export async function personRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
   // Everyone in the group (not archived, in active families unless asked), for the People "Everyone" view and pickers.
-  app.get<{ Params: { groupId: string }; Querystring: { includeArchived?: boolean } }>('/groups/:groupId/people', {
-    schema: { querystring: { type: 'object', properties: { includeArchived: { type: 'boolean' } } } },
-  }, async (request) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const people = await db.person.findMany({
-      where: {
-        groupId,
-        ...(request.query.includeArchived ? {} : { archivedAt: null, family: { status: { not: 'ARCHIVED' } } }),
-      },
-      include: { family: { select: { name: true } } },
-      orderBy: { name: 'asc' },
-    })
-    const today = new Date()
-    return people.map(({ family, ...p }) => ({ ...toPersonDto(p), age: ageOn(p, today), familyName: family.name }))
-  })
+  app.get<{ Params: { groupId: string }; Querystring: { includeArchived?: boolean } }>(
+    '/groups/:groupId/people',
+    {
+      schema: { querystring: { type: 'object', properties: { includeArchived: { type: 'boolean' } } } },
+    },
+    async (request) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const people = await db.person.findMany({
+        where: {
+          groupId,
+          ...(request.query.includeArchived ? {} : { archivedAt: null, family: { status: { not: 'ARCHIVED' } } }),
+        },
+        include: { family: { select: { name: true } } },
+        orderBy: { name: 'asc' },
+      })
+      const today = new Date()
+      return people.map(({ family, ...p }) => ({ ...toPersonDto(p), age: ageOn(p, today), familyName: family.name }))
+    },
+  )
 
-  app.post<{ Params: { id: string }; Body: PersonBody & { name: string } }>('/families/:id/people', {
-    schema: { body: { type: 'object', additionalProperties: false, required: ['name'], properties: personProperties } },
-  }, async (request, reply) => {
-    const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))
-    checkBirth(request.body)
-    const person = await db.person.create({
-      data: { ...(toData(request.body) as Prisma.PersonUncheckedCreateInput), name: request.body.name, familyId: family.id, groupId: family.groupId },
-    })
-    return reply.code(201).send(toPersonDto(person))
-  })
+  app.post<{ Params: { id: string }; Body: PersonBody & { name: string } }>(
+    '/families/:id/people',
+    {
+      schema: { body: { type: 'object', additionalProperties: false, required: ['name'], properties: personProperties } },
+    },
+    async (request, reply) => {
+      const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))
+      checkBirth(request.body)
+      const person = await db.person.create({
+        data: {
+          ...(toData(request.body) as Prisma.PersonUncheckedCreateInput),
+          name: request.body.name,
+          familyId: family.id,
+          groupId: family.groupId,
+        },
+      })
+      return reply.code(201).send(toPersonDto(person))
+    },
+  )
 
   app.get<{ Params: { id: string } }>('/people/:id', async (request) => {
     const person = await loadOr404(
@@ -98,34 +111,38 @@ export async function personRoutes(app: FastifyInstance) {
     }
   })
 
-  app.patch<{ Params: { id: string }; Body: PersonBody & { archived?: boolean; familyId?: string } }>('/people/:id', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        properties: { ...personProperties, archived: { type: 'boolean' }, familyId: id },
+  app.patch<{ Params: { id: string }; Body: PersonBody & { archived?: boolean; familyId?: string } }>(
+    '/people/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { ...personProperties, archived: { type: 'boolean' }, familyId: id },
+        },
       },
     },
-  }, async (request) => {
-    const person = await loadOr404(userIdOf(request), await db.person.findUnique({ where: { id: request.params.id } }))
-    const { archived, familyId, ...body } = request.body
-    checkBirth({ birthMonth: person.birthMonth, birthDay: person.birthDay, birthYear: person.birthYear, ...body })
+    async (request) => {
+      const person = await loadOr404(userIdOf(request), await db.person.findUnique({ where: { id: request.params.id } }))
+      const { archived, familyId, ...body } = request.body
+      checkBirth({ birthMonth: person.birthMonth, birthDay: person.birthDay, birthYear: person.birthYear, ...body })
 
-    if (familyId && familyId !== person.familyId) {
-      const target = await db.family.findUnique({ where: { id: familyId } })
-      if (!target || target.groupId !== person.groupId) throw badRequest('Family not in this group')
-    }
+      if (familyId && familyId !== person.familyId) {
+        const target = await db.family.findUnique({ where: { id: familyId } })
+        if (!target || target.groupId !== person.groupId) throw badRequest('Family not in this group')
+      }
 
-    const updated = await db.person.update({
-      where: { id: person.id },
-      data: {
-        ...toData(body),
-        ...(familyId ? { familyId } : {}),
-        ...(archived === undefined ? {} : { archivedAt: archived ? (person.archivedAt ?? new Date()) : null }),
-      },
-    })
-    return toPersonDto(updated)
-  })
+      const updated = await db.person.update({
+        where: { id: person.id },
+        data: {
+          ...toData(body),
+          ...(familyId ? { familyId } : {}),
+          ...(archived === undefined ? {} : { archivedAt: archived ? (person.archivedAt ?? new Date()) : null }),
+        },
+      })
+      return toPersonDto(updated)
+    },
+  )
 
   app.delete<{ Params: { id: string } }>('/people/:id', async (request, reply) => {
     const person = await loadOr404(userIdOf(request), await db.person.findUnique({ where: { id: request.params.id } }))

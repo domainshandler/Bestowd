@@ -174,11 +174,11 @@ public sealed partial class AccountViewModel(BestowdApi api, Session session, Gr
         if (groups.GroupId is not { } g || AiProvider is null) return;
         AiSettings? saved = null;
         if (await RunAsync(async () => saved = await api.SaveAiSettingsAsync(g, new SaveAiSettingsBody
-            {
-                Provider = AiProvider.Value,
-                Model = AiModel.Trim() is { Length: > 0 } m ? m : null,
-                ApiKey = AiKey.Trim() is { Length: > 0 } k ? k : null,
-            })))
+        {
+            Provider = AiProvider.Value,
+            Model = AiModel.Trim() is { Length: > 0 } m ? m : null,
+            ApiKey = AiKey.Trim() is { Length: > 0 } k ? k : null,
+        })))
             SetAi(saved!);
     }
 

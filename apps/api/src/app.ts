@@ -19,12 +19,15 @@ import { captureRoutes } from './routes/capture.js'
 
 export async function buildApp() {
   const app = Fastify({
-    logger: process.env['NODE_ENV'] === 'test' ? false : {
-      serializers: {
-        // Which app build made the request (the mobile app sends X-Bestowd-Client, e.g. "android/2611230412").
-        req: (req) => ({ method: req.method, url: req.url, remoteAddress: req.ip, client: req.headers['x-bestowd-client'] }),
-      },
-    },
+    logger:
+      process.env['NODE_ENV'] === 'test'
+        ? false
+        : {
+            serializers: {
+              // Which app build made the request (the mobile app sends X-Bestowd-Client, e.g. "android/2611230412").
+              req: (req) => ({ method: req.method, url: req.url, remoteAddress: req.ip, client: req.headers['x-bestowd-client'] }),
+            },
+          },
   })
 
   app.setErrorHandler((err, _request, reply) => {

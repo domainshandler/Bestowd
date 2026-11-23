@@ -21,10 +21,7 @@ afterAll(async () => {
 
 describe('PATCH /users/me', () => {
   it('updates user name', async () => {
-    const res = await supertest(app.server)
-      .patch('/users/me')
-      .set('Authorization', authHeader)
-      .send({ name: 'Updated Name' })
+    const res = await supertest(app.server).patch('/users/me').set('Authorization', authHeader).send({ name: 'Updated Name' })
 
     expect(res.status).toBe(200)
     expect(res.body.name).toBe('Updated Name')

@@ -6,12 +6,23 @@ import HolidaySuggestions, { suggestedHolidays } from './HolidaySuggestions.tsx'
 import { me, membership, occasion, renderApp } from '../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', () => ({
-  getMe: vi.fn(), listHolidays: vi.fn(), chooseHolidays: vi.fn(), dismissHoliday: vi.fn(), createGroupOccasion: vi.fn(),
+  getMe: vi.fn(),
+  listHolidays: vi.fn(),
+  chooseHolidays: vi.fn(),
+  dismissHoliday: vi.fn(),
+  createGroupOccasion: vi.fn(),
 }))
 
 const now = new Date('2026-11-23T12:00:00Z')
-const h = (key: string, name: string, nextDate: string | null, over: Partial<Holiday> = {}): Holiday =>
-  ({ key, name, note: null, nextDate, occasionId: null, dismissed: false, ...over })
+const h = (key: string, name: string, nextDate: string | null, over: Partial<Holiday> = {}): Holiday => ({
+  key,
+  name,
+  note: null,
+  nextDate,
+  occasionId: null,
+  dismissed: false,
+  ...over,
+})
 
 describe('suggestedHolidays', () => {
   it('suggests upcoming holidays the group has neither added nor dismissed', () => {
@@ -28,10 +39,13 @@ describe('suggestedHolidays', () => {
 describe('HolidaySuggestions', () => {
   it('asks which holidays the group celebrates until it has answered', async () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Mine')]))
-    vi.mocked(listHolidays).mockResolvedValue({ chosen: false, holidays: [
-      h('christmas', 'Christmas', '2026-12-25T00:00:00.000Z'),
-      h('diwali', 'Diwali', '2027-10-29T00:00:00.000Z', { note: 'Lakshmi Puja day' }),
-    ] })
+    vi.mocked(listHolidays).mockResolvedValue({
+      chosen: false,
+      holidays: [
+        h('christmas', 'Christmas', '2026-12-25T00:00:00.000Z'),
+        h('diwali', 'Diwali', '2027-10-29T00:00:00.000Z', { note: 'Lakshmi Puja day' }),
+      ],
+    })
     vi.mocked(chooseHolidays).mockResolvedValue({ chosen: true, holidays: [] })
     renderApp(<HolidaySuggestions groupId="g1" />)
     fireEvent.click(await screen.findByRole('button', { name: 'Choose' }))
@@ -49,9 +63,9 @@ describe('HolidaySuggestions', () => {
     renderApp(<HolidaySuggestions groupId="g1" />)
 
     const tracks = await screen.findAllByRole('button', { name: 'Track it' })
-    fireEvent.click(tracks[0]!)
+    fireEvent.click(tracks[0])
     await waitFor(() => expect(createGroupOccasion).toHaveBeenCalledWith('g1', { groupWide: true, holidayKey: 'christmas' }))
-    fireEvent.click(screen.getAllByRole('button', { name: 'Not for us' })[1]!)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Not for us' })[1])
     await waitFor(() => expect(dismissHoliday).toHaveBeenCalledWith('g1', 'easter'))
   })
 })

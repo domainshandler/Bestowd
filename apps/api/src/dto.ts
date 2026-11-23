@@ -12,8 +12,13 @@ export function iso(value: Date | null): string | null {
 }
 
 export function toUserDto(user: {
-  id: string; email: string; name: string; avatarUrl: string | null
-  identitySource: string; emailVerified: boolean; createdAt: Date
+  id: string
+  email: string
+  name: string
+  avatarUrl: string | null
+  identitySource: string
+  emailVerified: boolean
+  createdAt: Date
 }) {
   return {
     id: user.id,
@@ -27,8 +32,13 @@ export function toUserDto(user: {
 }
 
 export function toGroupDto(group: {
-  id: string; name: string; currency: string; defaultBudgets: Prisma.JsonValue
-  defaultReminderDays: number[]; createdAt: Date; updatedAt: Date
+  id: string
+  name: string
+  currency: string
+  defaultBudgets: Prisma.JsonValue
+  defaultReminderDays: number[]
+  createdAt: Date
+  updatedAt: Date
 }) {
   return {
     id: group.id,
@@ -42,8 +52,16 @@ export function toGroupDto(group: {
 }
 
 export function toFamilyDto(family: {
-  id: string; groupId: string; householdOfGroupId: string | null; name: string; type: string; status: string
-  photoUrl: string | null; notes: string | null; createdAt: Date; updatedAt: Date
+  id: string
+  groupId: string
+  householdOfGroupId: string | null
+  name: string
+  type: string
+  status: string
+  photoUrl: string | null
+  notes: string | null
+  createdAt: Date
+  updatedAt: Date
 }) {
   return {
     id: family.id,
@@ -60,10 +78,24 @@ export function toFamilyDto(family: {
 }
 
 export function toPersonDto(person: {
-  id: string; groupId: string; familyId: string; userId?: string | null; name: string; relationship: string | null
-  birthMonth: number | null; birthDay: number | null; birthYear: number | null
-  likes: string[]; avoid: string[]; sizes: Prisma.JsonValue; foodNotes: string | null
-  photoUrl: string | null; notes: string | null; archivedAt: Date | null; createdAt: Date; updatedAt: Date
+  id: string
+  groupId: string
+  familyId: string
+  userId?: string | null
+  name: string
+  relationship: string | null
+  birthMonth: number | null
+  birthDay: number | null
+  birthYear: number | null
+  likes: string[]
+  avoid: string[]
+  sizes: Prisma.JsonValue
+  foodNotes: string | null
+  photoUrl: string | null
+  notes: string | null
+  archivedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
 }) {
   return {
     id: person.id,

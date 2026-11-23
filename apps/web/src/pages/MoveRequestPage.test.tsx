@@ -6,13 +6,34 @@ import { me, membership, renderApp } from '../test-utils.tsx'
 import type { MoveRequestDetail } from '@bestowd/types'
 
 vi.mock('@bestowd/api-client', async () => {
-  class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
-  return { ApiError, getMe: vi.fn(), getGroup: vi.fn(), getMoveRequest: vi.fn(), approveMove: vi.fn(), declineMove: vi.fn(), cancelMove: vi.fn() }
+  class ApiError extends Error {
+    constructor(
+      public status: number,
+      message: string,
+    ) {
+      super(message)
+    }
+  }
+  return {
+    ApiError,
+    getMe: vi.fn(),
+    getGroup: vi.fn(),
+    getMoveRequest: vi.fn(),
+    approveMove: vi.fn(),
+    declineMove: vi.fn(),
+    cancelMove: vi.fn(),
+  }
 })
 
 const request = (over: Partial<MoveRequestDetail> = {}): MoveRequestDetail => ({
-  id: 'm1', groupId: 'g1', fromGroupName: "Sheldon's group", requestedBy: { userId: 'u2', name: 'Sheldon' }, status: 'PENDING',
-  createdAt: '2026-11-23T00:00:00.000Z', counts: { families: 2, people: 3, gifts: 2, occasions: 1, ideas: 0 }, canDecide: true,
+  id: 'm1',
+  groupId: 'g1',
+  fromGroupName: "Sheldon's group",
+  requestedBy: { userId: 'u2', name: 'Sheldon' },
+  status: 'PENDING',
+  createdAt: '2026-11-23T00:00:00.000Z',
+  counts: { families: 2, people: 3, gifts: 2, occasions: 1, ideas: 0 },
+  canDecide: true,
   review: {
     currency: { from: 'USD', to: 'CAD' },
     families: [
@@ -20,7 +41,9 @@ const request = (over: Partial<MoveRequestDetail> = {}): MoveRequestDetail => ({
       { id: 'f1', name: 'The Mirandas', isOwnHousehold: false, people: 2, gifts: 1, match: { id: 'x1', name: 'Miranda family' } },
     ],
     people: [{ id: 'p1', name: 'grandma', familyId: 'f1', match: { id: 'x2', name: 'Grandma' } }],
-    occasions: [{ id: 'o1', name: 'Christmas', match: { id: 'x3', name: 'Christmas' }, budgetDiffers: true, theirBudget: 80, ourBudget: 50 }],
+    occasions: [
+      { id: 'o1', name: 'Christmas', match: { id: 'x3', name: 'Christmas' }, budgetDiffers: true, theirBudget: 80, ourBudget: 50 },
+    ],
     ideas: 0,
   },
   ...over,
@@ -30,7 +53,12 @@ describe('MoveRequestPage', () => {
   it('builds the approval from the choices', () => {
     const c = initialChoices(request().review!)
     expect(approveBody({ ...c, families: { f1: 'KEEP_BOTH' }, budgets: { o1: 'THEIRS' } })).toEqual({
-      familyIds: ['hh', 'f1'], occasionIds: ['o1'], ideas: false, keepBothFamilies: ['f1'], keepBothPeople: [], useTheirBudget: ['o1'],
+      familyIds: ['hh', 'f1'],
+      occasionIds: ['o1'],
+      ideas: false,
+      keepBothFamilies: ['f1'],
+      keepBothPeople: [],
+      useTheirBudget: ['o1'],
     })
   })
 
@@ -46,9 +74,16 @@ describe('MoveRequestPage', () => {
     fireEvent.click(within('grandma and Grandma', 'Different: keep both'))
     fireEvent.click(within('Christmas budget', /Theirs/))
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
-    await waitFor(() => expect(approveMove).toHaveBeenCalledWith('m1', {
-      familyIds: ['hh', 'f1'], occasionIds: ['o1'], ideas: false, keepBothFamilies: [], keepBothPeople: ['p1'], useTheirBudget: ['o1'],
-    }))
+    await waitFor(() =>
+      expect(approveMove).toHaveBeenCalledWith('m1', {
+        familyIds: ['hh', 'f1'],
+        occasionIds: ['o1'],
+        ideas: false,
+        keepBothFamilies: [],
+        keepBothPeople: ['p1'],
+        useTheirBudget: ['o1'],
+      }),
+    )
   })
 
   it('shows the person who asked that it is waiting, and lets them withdraw it', async () => {
@@ -65,5 +100,7 @@ describe('MoveRequestPage', () => {
 
 function within(group: string, name: string | RegExp) {
   const el = screen.getByRole('group', { name: group })
-  return [...el.querySelectorAll('button')].find((b) => (typeof name === 'string' ? b.textContent === name : name.test(b.textContent ?? '')))!
+  return [...el.querySelectorAll('button')].find((b) =>
+    typeof name === 'string' ? b.textContent === name : name.test(b.textContent ?? ''),
+  )!
 }

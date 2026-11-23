@@ -25,7 +25,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     /// <summary>Set when editing a saved idea.</summary>
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ScreenTitle))] public partial string? IdeaId { get; private set; }
     public string ScreenTitle => IdeaId is null ? "Add an idea" : "Edit idea";
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Brand { get; set; } = "";
     [ObservableProperty] public partial string Store { get; set; } = "";
     [ObservableProperty] public partial string Category { get; set; } = "";
@@ -105,9 +105,17 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
         string? Text(string s) => s.Trim() is { Length: > 0 } t ? t : null;
         return new CreateIdeaBody
         {
-            Title = Title.Trim(), Brand = Text(Brand), Store = Text(Store), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
+            Title = Title.Trim(),
+            Brand = Text(Brand),
+            Store = Text(Store),
+            Category = Text(Category),
+            Price = price,
+            Url = Text(Url),
+            Notes = Text(Notes),
             ImageUrl = Product.Photo.Url,
-            AgeMin = min, AgeMax = max, OccasionId = _occasionId,
+            AgeMin = min,
+            AgeMax = max,
+            OccasionId = _occasionId,
             PersonIds = People.ChosenPersonIds.ToList(),
         };
     }

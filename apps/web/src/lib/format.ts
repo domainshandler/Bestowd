@@ -7,7 +7,7 @@ export function formatDate(iso: string | null | undefined, opts: Intl.DateTimeFo
 }
 
 export function monthShort(iso: string): string {
-  return MONTHS[new Date(iso).getUTCMonth()]!.toUpperCase()
+  return MONTHS[new Date(iso).getUTCMonth()].toUpperCase()
 }
 
 export function dayOfMonth(iso: string): number {
@@ -38,7 +38,7 @@ export function inDaysLabel(iso: string, now = new Date()): string {
 
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1]![0] : '')).toUpperCase() || '?'
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
 }
 
 /** Birthday as "Mar 9", from month/day parts. */
@@ -53,20 +53,48 @@ export function todayInput(now = new Date()): string {
 }
 
 export const OCCASION_TYPE_LABEL = { BIRTHDAY: 'Birthday', HOLIDAY: 'Holiday', ONE_OFF: 'Event' } as const
-export const FAMILY_TYPE_LABEL = { FAMILY: 'Family', FRIENDS: 'Friends', SCHOOL: 'School', NEIGHBOURS: 'Neighbours', OTHER: 'Other' } as const
-export const REACTION_LABEL = { LOVED_IT: 'Loved it', LIKED_IT: 'Liked it', ALREADY_HAD_IT: 'Already had it', NOT_A_HIT: 'Not a hit' } as const
+export const FAMILY_TYPE_LABEL = {
+  FAMILY: 'Family',
+  FRIENDS: 'Friends',
+  SCHOOL: 'School',
+  NEIGHBOURS: 'Neighbours',
+  OTHER: 'Other',
+} as const
+export const REACTION_LABEL = {
+  LOVED_IT: 'Loved it',
+  LIKED_IT: 'Liked it',
+  ALREADY_HAD_IT: 'Already had it',
+  NOT_A_HIT: 'Not a hit',
+} as const
 
 /** Currencies offered in settings (ISO 4217). Keep in step with the mobile app's Currencies list. */
 export const CURRENCIES: { code: string; name: string }[] = [
-  { code: 'CAD', name: 'Canadian dollar' }, { code: 'USD', name: 'US dollar' }, { code: 'EUR', name: 'Euro' },
-  { code: 'GBP', name: 'British pound' }, { code: 'AUD', name: 'Australian dollar' }, { code: 'NZD', name: 'New Zealand dollar' },
-  { code: 'INR', name: 'Indian rupee' }, { code: 'PKR', name: 'Pakistani rupee' }, { code: 'PHP', name: 'Philippine peso' },
-  { code: 'MXN', name: 'Mexican peso' }, { code: 'BRL', name: 'Brazilian real' }, { code: 'JPY', name: 'Japanese yen' },
-  { code: 'CNY', name: 'Chinese yuan' }, { code: 'HKD', name: 'Hong Kong dollar' }, { code: 'SGD', name: 'Singapore dollar' },
-  { code: 'KRW', name: 'South Korean won' }, { code: 'AED', name: 'UAE dirham' }, { code: 'SAR', name: 'Saudi riyal' },
-  { code: 'ZAR', name: 'South African rand' }, { code: 'NGN', name: 'Nigerian naira' }, { code: 'KES', name: 'Kenyan shilling' },
-  { code: 'CHF', name: 'Swiss franc' }, { code: 'SEK', name: 'Swedish krona' }, { code: 'NOK', name: 'Norwegian krone' },
-  { code: 'DKK', name: 'Danish krone' }, { code: 'PLN', name: 'Polish złoty' },
+  { code: 'CAD', name: 'Canadian dollar' },
+  { code: 'USD', name: 'US dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British pound' },
+  { code: 'AUD', name: 'Australian dollar' },
+  { code: 'NZD', name: 'New Zealand dollar' },
+  { code: 'INR', name: 'Indian rupee' },
+  { code: 'PKR', name: 'Pakistani rupee' },
+  { code: 'PHP', name: 'Philippine peso' },
+  { code: 'MXN', name: 'Mexican peso' },
+  { code: 'BRL', name: 'Brazilian real' },
+  { code: 'JPY', name: 'Japanese yen' },
+  { code: 'CNY', name: 'Chinese yuan' },
+  { code: 'HKD', name: 'Hong Kong dollar' },
+  { code: 'SGD', name: 'Singapore dollar' },
+  { code: 'KRW', name: 'South Korean won' },
+  { code: 'AED', name: 'UAE dirham' },
+  { code: 'SAR', name: 'Saudi riyal' },
+  { code: 'ZAR', name: 'South African rand' },
+  { code: 'NGN', name: 'Nigerian naira' },
+  { code: 'KES', name: 'Kenyan shilling' },
+  { code: 'CHF', name: 'Swiss franc' },
+  { code: 'SEK', name: 'Swedish krona' },
+  { code: 'NOK', name: 'Norwegian krone' },
+  { code: 'DKK', name: 'Danish krone' },
+  { code: 'PLN', name: 'Polish złoty' },
 ]
 
 /** The currency options, plus the current one if it isn't listed (so it still shows). */

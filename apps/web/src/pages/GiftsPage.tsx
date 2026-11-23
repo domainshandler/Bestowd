@@ -50,14 +50,25 @@ export default function GiftsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center gap-3">
         <h1 className="text-3xl font-bold tracking-tight">Gifts</h1>
-        <Select aria-label="Year" className="w-auto min-h-[40px] font-medium" value={year} onChange={(e) => setYear(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}>
-          {Array.from({ length: 6 }, (_, i) => thisYear - i).map((y) => <option key={y} value={y}>{y}</option>)}
+        <Select
+          aria-label="Year"
+          className="w-auto min-h-[40px] font-medium"
+          value={year}
+          onChange={(e) => setYear(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+        >
+          {Array.from({ length: 6 }, (_, i) => thisYear - i).map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
           <option value="ALL">All years</option>
         </Select>
       </div>
 
       {(params.get('familyId') || params.get('personId')) && (
-        <p className="text-sm text-muted">Showing one {params.get('familyId') ? 'family' : 'person'}. <Link to="/gifts">Show everyone</Link></p>
+        <p className="text-sm text-muted">
+          Showing one {params.get('familyId') ? 'family' : 'person'}. <Link to="/gifts">Show everyone</Link>
+        </p>
       )}
 
       <div className="grid grid-cols-3 gap-2">
@@ -66,15 +77,22 @@ export default function GiftsPage() {
         <Stat value={t ? compact(t.spent, currency) || '0' : '–'} label="Spent" />
       </div>
       {t && t.thankYouDueCount > 0 && (
-        <p className="text-[13px] text-amber-ink bg-amber-soft rounded-xl px-3 py-2">{t.thankYouDueCount} thank-you{t.thankYouDueCount === 1 ? '' : 's'} due</p>
+        <p className="text-[13px] text-amber-ink bg-amber-soft rounded-xl px-3 py-2">
+          {t.thankYouDueCount} thank-you{t.thankYouDueCount === 1 ? '' : 's'} due
+        </p>
       )}
 
-      <Chips label="Filter" value={filter} onChange={setFilter} options={[
-        { value: 'ALL', label: 'All' },
-        { value: 'GIVEN', label: 'Given' },
-        { value: 'RECEIVED', label: 'Received' },
-        { value: 'PLANNED', label: 'Planned' },
-      ]} />
+      <Chips
+        label="Filter"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: 'ALL', label: 'All' },
+          { value: 'GIVEN', label: 'Given' },
+          { value: 'RECEIVED', label: 'Received' },
+          { value: 'PLANNED', label: 'Planned' },
+        ]}
+      />
 
       {(gifts.isLoading || !groupId) && <Loading />}
       {gifts.isError && <LoadError what="gifts" />}
@@ -85,17 +103,25 @@ export default function GiftsPage() {
         <section key={s.title} className="flex flex-col gap-2">
           <h2 className="font-sans text-[13px] font-semibold text-muted tracking-wide uppercase mt-1">{s.title}</h2>
           <Card className="divide-y divide-divider">
-            {s.gifts.map((g) => <GiftRow key={g.id} gift={g} currency={currency} showYear={false} />)}
+            {s.gifts.map((g) => (
+              <GiftRow key={g.id} gift={g} currency={currency} showYear={false} />
+            ))}
           </Card>
         </section>
       ))}
 
       {groupId && (
         <>
-          <Button variant="dashed" className="h-[52px]" onClick={() => setLogging(true)}><Icon name="plus" size={18} /> Log a gift</Button>
+          <Button variant="dashed" className="h-[52px]" onClick={() => setLogging(true)}>
+            <Icon name="plus" size={18} /> Log a gift
+          </Button>
           {logging && (
-            <GiftForm open onClose={() => setLogging(false)} groupId={groupId}
-              defaults={{ personId: params.get('personId'), familyId: params.get('familyId') }} />
+            <GiftForm
+              open
+              onClose={() => setLogging(false)}
+              groupId={groupId}
+              defaults={{ personId: params.get('personId'), familyId: params.get('familyId') }}
+            />
           )}
         </>
       )}

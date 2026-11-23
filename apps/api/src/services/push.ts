@@ -56,7 +56,10 @@ export const loggingSender: PushSender = {
 }
 
 /** Sends each reminder to every device of its user and drops tokens FCM rejects. */
-export async function deliverReminders(reminders: DueReminder[], sender: PushSender): Promise<{ sent: number; removed: number; failed: number }> {
+export async function deliverReminders(
+  reminders: DueReminder[],
+  sender: PushSender,
+): Promise<{ sent: number; removed: number; failed: number }> {
   const userIds = [...new Set(reminders.map((r) => r.userId))]
   const devices = userIds.length ? await db.device.findMany({ where: { userId: { in: userIds } } }) : []
   const stats = { sent: 0, removed: 0, failed: 0 }

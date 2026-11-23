@@ -14,7 +14,7 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
     [ObservableProperty] public partial IReadOnlyList<SubjectOption> Subjects { get; private set; } = [];
     [ObservableProperty] public partial SubjectOption? Subject { get; set; }
     [ObservableProperty] public partial OccasionType Type { get; set; } = OccasionType.Birthday;
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial DateTime Date { get; set; } = DateTime.Today;
     [ObservableProperty] public partial bool RecursAnnually { get; set; } = true;
     [ObservableProperty] public partial string Budget { get; set; } = "";
@@ -56,10 +56,16 @@ public sealed partial class OccasionFormViewModel(BestowdApi api, INavigator nav
         string? Text(string s) => s.Trim() is { Length: > 0 } t ? t : null;
         return new CreateOccasionBody
         {
-            Type = Type, Name = Name.Trim(), Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            PersonId = personId, FamilyId = personId is null ? familyId : null,
-            RecursAnnually = RecursAnnually, Budget = budget, NeedsCard = NeedsCard,
-            Location = Text(Location), HostGiftRequest = Text(HostGiftRequest),
+            Type = Type,
+            Name = Name.Trim(),
+            Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            PersonId = personId,
+            FamilyId = personId is null ? familyId : null,
+            RecursAnnually = RecursAnnually,
+            Budget = budget,
+            NeedsCard = NeedsCard,
+            Location = Text(Location),
+            HostGiftRequest = Text(HostGiftRequest),
         };
     }
 

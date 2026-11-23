@@ -7,14 +7,21 @@ function Tags({ items, tone }: { items: string[]; tone: 'brand' | 'danger' }) {
   const cls = tone === 'brand' ? 'text-brand-dark bg-brand-light' : 'text-danger bg-danger-soft'
   return (
     <div className="flex flex-wrap gap-1.5">
-      {items.map((t) => <span key={t} className={`text-[13px] font-medium px-2.5 py-1.5 rounded-full ${cls}`}>{t}</span>)}
+      {items.map((t) => (
+        <span key={t} className={`text-[13px] font-medium px-2.5 py-1.5 rounded-full ${cls}`}>
+          {t}
+        </span>
+      ))}
     </div>
   )
 }
 
 export function NotesCard({ person, onEdit }: { person: Person; onEdit?: () => void }) {
   const p = person
-  const facts = [...Object.entries(p.sizes).map(([k, v]) => [`${k} size`, v] as const), ...(p.foodNotes ? [['Food note', p.foodNotes] as const] : [])]
+  const facts = [
+    ...Object.entries(p.sizes).map(([k, v]) => [`${k} size`, v] as const),
+    ...(p.foodNotes ? [['Food note', p.foodNotes] as const] : []),
+  ]
   const empty = !p.likes.length && !p.avoid.length && !facts.length && !p.notes
   return (
     <Card className="p-4 flex flex-col gap-3.5">
@@ -42,7 +49,11 @@ export function NotesCard({ person, onEdit }: { person: Person; onEdit?: () => v
         </div>
       )}
       {p.notes && <p className="text-sm text-chip-ink whitespace-pre-line">{p.notes}</p>}
-      {onEdit && <Button variant="secondary" onClick={onEdit}>{empty ? 'Add notes' : 'Edit notes'}</Button>}
+      {onEdit && (
+        <Button variant="secondary" onClick={onEdit}>
+          {empty ? 'Add notes' : 'Edit notes'}
+        </Button>
+      )}
     </Card>
   )
 }

@@ -13,8 +13,15 @@ export type AiProvider = (typeof AI_PROVIDERS)[number]
 /** Model used when the owner leaves the model blank. OpenAI and Google need one named in Settings. */
 export const DEFAULT_MODEL: Partial<Record<AiProvider, string>> = { anthropic: 'claude-opus-5-5' }
 
-export interface AiSettings { provider: AiProvider; model: string | null; apiKey: string }
-export interface Photo { base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }
+export interface AiSettings {
+  provider: AiProvider
+  model: string | null
+  apiKey: string
+}
+export interface Photo {
+  base64: string
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp'
+}
 
 /** The provider turned the request down: the key, the model name, or a limit. Shown to the user. */
 export class AiError extends Error {}
@@ -29,8 +36,11 @@ const JSON_SCHEMA = {
   additionalProperties: false,
   required: ['title', 'brand', 'price', 'currency', 'store'],
   properties: {
-    title: { type: ['string', 'null'] }, brand: { type: ['string', 'null'] }, price: { type: ['number', 'null'] },
-    currency: { type: ['string', 'null'] }, store: { type: ['string', 'null'] },
+    title: { type: ['string', 'null'] },
+    brand: { type: ['string', 'null'] },
+    price: { type: ['number', 'null'] },
+    currency: { type: ['string', 'null'] },
+    store: { type: ['string', 'null'] },
   },
 } as const
 
@@ -51,20 +61,24 @@ async function readWithClaude(photo: Photo, s: AiSettings): Promise<ProductReadi
       // If the model declines, the API retries on a suitable fallback model in the same call.
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: photo.mediaType, data: photo.base64 } },
-          { type: 'text', text: PROMPT },
-        ],
-      }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: photo.mediaType, data: photo.base64 } },
+            { type: 'text', text: PROMPT },
+          ],
+        },
+      ],
     })
     if (response.stop_reason === 'refusal' || !response.parsed_output) throw new AiError("The AI couldn't read this photo")
     return response.parsed_output
   } catch (err) {
     if (err instanceof AiError) throw err
-    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) throw new AiError('The Anthropic API key was rejected. Check it in Settings.')
-    if (err instanceof Anthropic.NotFoundError || err instanceof Anthropic.BadRequestError) throw new AiError(`Anthropic didn't accept the request: ${err.message}`)
+    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError)
+      throw new AiError('The Anthropic API key was rejected. Check it in Settings.')
+    if (err instanceof Anthropic.NotFoundError || err instanceof Anthropic.BadRequestError)
+      throw new AiError(`Anthropic didn't accept the request: ${err.message}`)
     if (err instanceof Anthropic.RateLimitError) throw new AiError('The Anthropic account is over its limit. Try again later.')
     if (err instanceof Anthropic.APIError) throw new AiError(`Anthropic had a problem (${err.status ?? 'network'}). Try again.`)
     throw err
@@ -72,7 +86,12 @@ async function readWithClaude(photo: Photo, s: AiSettings): Promise<ProductReadi
 }
 
 async function postJson(url: string, headers: Record<string, string>, body: unknown, provider: string): Promise<any> {
-  const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body), signal: AbortSignal.timeout(60_000) })
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(60_000),
+  })
   if (res.status === 401 || res.status === 403) throw new AiError(`The ${provider} API key was rejected. Check it in Settings.`)
   if (res.status === 429) throw new AiError(`The ${provider} account is over its limit. Try again later.`)
   if (!res.ok) throw new AiError(`${provider} didn't accept the request (${res.status}). Check the model name in Settings.`)
@@ -88,40 +107,60 @@ const parseReading = (text: unknown): ProductReading => {
 }
 
 async function readWithOpenAi(photo: Photo, s: AiSettings): Promise<ProductReading> {
-  const body = await postJson('https://api.openai.com/v1/chat/completions', { authorization: `Bearer ${s.apiKey}` }, {
-    model: modelFor(s),
-    response_format: { type: 'json_schema', json_schema: { name: 'product', strict: true, schema: JSON_SCHEMA } },
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: PROMPT },
-        { type: 'image_url', image_url: { url: `data:${photo.mediaType};base64,${photo.base64}` } },
+  const body = await postJson(
+    'https://api.openai.com/v1/chat/completions',
+    { authorization: `Bearer ${s.apiKey}` },
+    {
+      model: modelFor(s),
+      response_format: { type: 'json_schema', json_schema: { name: 'product', strict: true, schema: JSON_SCHEMA } },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: PROMPT },
+            { type: 'image_url', image_url: { url: `data:${photo.mediaType};base64,${photo.base64}` } },
+          ],
+        },
       ],
-    }],
-  }, 'OpenAI')
+    },
+    'OpenAI',
+  )
   return parseReading(body?.choices?.[0]?.message?.content)
 }
 
 async function readWithGemini(photo: Photo, s: AiSettings): Promise<ProductReading> {
   const model = encodeURIComponent(modelFor(s))
-  const body = await postJson(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { 'x-goog-api-key': s.apiKey }, {
-    contents: [{ parts: [{ inline_data: { mime_type: photo.mediaType, data: photo.base64 } }, { text: PROMPT }] }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: 'OBJECT',
-        properties: Object.fromEntries(Object.entries(JSON_SCHEMA.properties).map(([k, v]) => [k, { type: v.type[0] === 'number' ? 'NUMBER' : 'STRING', nullable: true }])),
+  const body = await postJson(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    { 'x-goog-api-key': s.apiKey },
+    {
+      contents: [{ parts: [{ inline_data: { mime_type: photo.mediaType, data: photo.base64 } }, { text: PROMPT }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: Object.fromEntries(
+            Object.entries(JSON_SCHEMA.properties).map(([k, v]) => [
+              k,
+              { type: v.type[0] === 'number' ? 'NUMBER' : 'STRING', nullable: true },
+            ]),
+          ),
+        },
       },
     },
-  }, 'Google')
+    'Google',
+  )
   return parseReading(body?.candidates?.[0]?.content?.parts?.[0]?.text)
 }
 
 /** Reads name, brand, price, currency and store from a photo. Throws AiError with a message for the user. */
 export async function readProductPhoto(photo: Photo, settings: AiSettings): Promise<ProductReading> {
   switch (settings.provider) {
-    case 'anthropic': return readWithClaude(photo, settings)
-    case 'openai': return readWithOpenAi(photo, settings)
-    case 'google': return readWithGemini(photo, settings)
+    case 'anthropic':
+      return readWithClaude(photo, settings)
+    case 'openai':
+      return readWithOpenAi(photo, settings)
+    case 'google':
+      return readWithGemini(photo, settings)
   }
 }

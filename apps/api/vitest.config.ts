@@ -7,11 +7,11 @@ function loadEnv(filePath: string): Record<string, string> {
     return Object.fromEntries(
       readFileSync(filePath, 'utf8')
         .split('\n')
-        .filter(line => line.trim() && !line.startsWith('#'))
-        .map(line => {
+        .filter((line) => line.trim() && !line.startsWith('#'))
+        .map((line) => {
           const idx = line.indexOf('=')
           return [line.slice(0, idx).trim(), line.slice(idx + 1).trim()]
-        })
+        }),
     )
   } catch {
     return {}
@@ -27,8 +27,8 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     fileParallelism: false,
     poolOptions: {
-      forks: { singleFork: true }
+      forks: { singleFork: true },
     },
     env: envVars,
-  }
+  },
 })

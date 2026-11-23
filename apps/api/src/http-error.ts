@@ -1,6 +1,9 @@
 /** An error with an HTTP status. The app's error handler sends `{ error: message }` with this status. */
 export class HttpError extends Error {
-  constructor(public statusCode: number, message: string) {
+  constructor(
+    public statusCode: number,
+    message: string,
+  ) {
     super(message)
   }
 }

@@ -40,13 +40,30 @@ describe('POST /groups/:groupId/occasions', () => {
     const res = await post({ type: 'BIRTHDAY', name: "Mia's birthday", date: dateOnly(inDays(10)), personId: mia })
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({
-      recursAnnually: true, nextOccurrence: inDays(10).toISOString(), budget: null, effectiveBudget: 40, currency: 'CAD', groupName: "Test's group",
-      spent: 0, overBudget: false, status: 'NOT_STARTED', subjectName: 'Mia', subjectFamilyId: a.householdId, rsvp: 'NONE',
+      recursAnnually: true,
+      nextOccurrence: inDays(10).toISOString(),
+      budget: null,
+      effectiveBudget: 40,
+      currency: 'CAD',
+      groupName: "Test's group",
+      spent: 0,
+      overBudget: false,
+      status: 'NOT_STARTED',
+      subjectName: 'Mia',
+      subjectFamilyId: a.householdId,
+      rsvp: 'NONE',
     })
   })
 
   it('defaults a ONE_OFF to not recurring', async () => {
-    const res = await post({ type: 'ONE_OFF', name: 'Party', date: dateOnly(inDays(3)), familyId: a.householdId, partyAt: inDays(3).toISOString(), location: 'Park' })
+    const res = await post({
+      type: 'ONE_OFF',
+      name: 'Party',
+      date: dateOnly(inDays(3)),
+      familyId: a.householdId,
+      partyAt: inDays(3).toISOString(),
+      location: 'Park',
+    })
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({ recursAnnually: false, effectiveBudget: null, location: 'Park' })
   })
@@ -63,7 +80,9 @@ describe('POST /groups/:groupId/occasions', () => {
   })
 
   it("404s for a group you aren't in", async () => {
-    const res = await api().post(`/groups/${b.groupId}/occasions`).set('Authorization', a.authHeader)
+    const res = await api()
+      .post(`/groups/${b.groupId}/occasions`)
+      .set('Authorization', a.authHeader)
       .send({ type: 'BIRTHDAY', name: 'x', date: '2026-12-01', personId: leo })
     expect(res.status).toBe(404)
   })
@@ -84,20 +103,42 @@ describe('GET /groups/:groupId/occasions', () => {
 
   it('leaves out occasions beyond the window and in paused families', async () => {
     const paused = await db.family.create({ data: { groupId: a.groupId, name: 'Paused', status: 'PAUSED' } })
-    await db.occasion.create({ data: { groupId: a.groupId, familyId: paused.id, type: 'HOLIDAY', name: 'Paused holiday', date: inDays(5), nextOccurrence: inDays(5) } })
-    await db.occasion.create({ data: { groupId: a.groupId, personId: mia, type: 'HOLIDAY', name: 'Far away', date: inDays(60), nextOccurrence: inDays(60) } })
+    await db.occasion.create({
+      data: {
+        groupId: a.groupId,
+        familyId: paused.id,
+        type: 'HOLIDAY',
+        name: 'Paused holiday',
+        date: inDays(5),
+        nextOccurrence: inDays(5),
+      },
+    })
+    await db.occasion.create({
+      data: { groupId: a.groupId, personId: mia, type: 'HOLIDAY', name: 'Far away', date: inDays(60), nextOccurrence: inDays(60) },
+    })
     const res = await api().get(`/groups/${a.groupId}/occasions`).set('Authorization', a.authHeader)
     const names = res.body.occasions.map((o: any) => o.name)
     expect(names).not.toContain('Paused holiday')
     expect(names).not.toContain('Far away')
 
-    const wide = await api().get(`/groups/${a.groupId}/occasions?to=${inDays(90).toISOString()}`).set('Authorization', a.authHeader)
+    const wide = await api()
+      .get(`/groups/${a.groupId}/occasions?to=${inDays(90).toISOString()}`)
+      .set('Authorization', a.authHeader)
     expect(wide.body.occasions.map((o: any) => o.name)).toContain('Far away')
   })
 
   it('counts spend only for gifts on the current occurrence and flags over budget', async () => {
-    const occ = await db.occasion.create({ data: { groupId: a.groupId, personId: mia, type: 'BIRTHDAY', name: 'Spendy', date: inDays(7), nextOccurrence: inDays(7), budget: 20 } })
-    const base = { groupId: a.groupId, createdById: a.user.id, direction: 'GIVEN' as const, personId: mia, occasionId: occ.id, date: new Date() }
+    const occ = await db.occasion.create({
+      data: { groupId: a.groupId, personId: mia, type: 'BIRTHDAY', name: 'Spendy', date: inDays(7), nextOccurrence: inDays(7), budget: 20 },
+    })
+    const base = {
+      groupId: a.groupId,
+      createdById: a.user.id,
+      direction: 'GIVEN' as const,
+      personId: mia,
+      occasionId: occ.id,
+      date: new Date(),
+    }
     await db.giftEntry.create({ data: { ...base, title: 'Now', amount: 25, occasionDate: inDays(7) } })
     await db.giftEntry.create({ data: { ...base, title: 'Last year', amount: 99, occasionDate: new Date('2025-01-01') } })
     const res = await api().get(`/occasions/${occ.id}`).set('Authorization', a.authHeader)
@@ -107,15 +148,29 @@ describe('GET /groups/:groupId/occasions', () => {
 
 describe('PATCH and DELETE /occasions/:id', () => {
   it('recomputes nextOccurrence when the date changes and allows any manual status', async () => {
-    const occ = await db.occasion.create({ data: { groupId: a.groupId, personId: mia, type: 'BIRTHDAY', name: 'Move me', date: inDays(4), nextOccurrence: inDays(4), status: 'GIVEN' } })
-    const res = await api().patch(`/occasions/${occ.id}`).set('Authorization', a.authHeader)
+    const occ = await db.occasion.create({
+      data: {
+        groupId: a.groupId,
+        personId: mia,
+        type: 'BIRTHDAY',
+        name: 'Move me',
+        date: inDays(4),
+        nextOccurrence: inDays(4),
+        status: 'GIVEN',
+      },
+    })
+    const res = await api()
+      .patch(`/occasions/${occ.id}`)
+      .set('Authorization', a.authHeader)
       .send({ date: dateOnly(inDays(12)), status: 'NOT_STARTED', cardDone: true })
     expect(res.status).toBe(200)
     expect(res.body).toMatchObject({ nextOccurrence: inDays(12).toISOString(), status: 'NOT_STARTED', cardDone: true })
   })
 
   it('switches the subject from a person to a family', async () => {
-    const occ = await db.occasion.create({ data: { groupId: a.groupId, personId: mia, type: 'HOLIDAY', name: 'Switch', date: inDays(4), nextOccurrence: inDays(4) } })
+    const occ = await db.occasion.create({
+      data: { groupId: a.groupId, personId: mia, type: 'HOLIDAY', name: 'Switch', date: inDays(4), nextOccurrence: inDays(4) },
+    })
     const res = await api().patch(`/occasions/${occ.id}`).set('Authorization', a.authHeader).send({ familyId: a.householdId })
     expect(res.body).toMatchObject({ personId: null, familyId: a.householdId })
     const bad = await api().patch(`/occasions/${occ.id}`).set('Authorization', a.authHeader).send({ personId: leo })
@@ -123,7 +178,9 @@ describe('PATCH and DELETE /occasions/:id', () => {
   })
 
   it("404s another group's occasion and deletes your own", async () => {
-    const theirs = await db.occasion.create({ data: { groupId: b.groupId, personId: leo, type: 'BIRTHDAY', name: 'Theirs', date: inDays(4) } })
+    const theirs = await db.occasion.create({
+      data: { groupId: b.groupId, personId: leo, type: 'BIRTHDAY', name: 'Theirs', date: inDays(4) },
+    })
     expect((await api().patch(`/occasions/${theirs.id}`).set('Authorization', a.authHeader).send({ name: 'x' })).status).toBe(404)
     expect((await api().delete(`/occasions/${theirs.id}`).set('Authorization', a.authHeader)).status).toBe(404)
 

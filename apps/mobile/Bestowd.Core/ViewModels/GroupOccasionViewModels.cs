@@ -64,7 +64,9 @@ public sealed partial class GroupOccasionViewModel(BestowdApi api, INavigator na
     [RelayCommand]
     public Task LogGiftAsync(FamilyShareRow row) => Occasion is null ? Task.CompletedTask : nav.GoToAsync(Routes.LogGift, new Dictionary<string, object>
     {
-        [Params.GroupId] = Occasion.GroupId, [Params.FamilyId] = row.Share.FamilyId, [Params.OccasionId] = Occasion.Id,
+        [Params.GroupId] = Occasion.GroupId,
+        [Params.FamilyId] = row.Share.FamilyId,
+        [Params.OccasionId] = Occasion.Id,
     });
 
     [RelayCommand]
@@ -73,7 +75,8 @@ public sealed partial class GroupOccasionViewModel(BestowdApi api, INavigator na
     [RelayCommand]
     public Task EditAsync() => Occasion is null ? Task.CompletedTask : nav.GoToAsync(Routes.GroupOccasionForm, new Dictionary<string, object>
     {
-        [Params.GroupId] = Occasion.GroupId, [Params.Id] = Occasion.Id,
+        [Params.GroupId] = Occasion.GroupId,
+        [Params.Id] = Occasion.Id,
     });
 
     [RelayCommand]
@@ -116,9 +119,11 @@ public sealed partial class GroupOccasionFormViewModel(BestowdApi api, GroupStat
 
     [ObservableProperty] public partial string? OccasionId { get; private set; }
     [ObservableProperty] public partial IReadOnlyList<HolidayOption> Holidays { get; private set; } = [new(null, "Your own occasion", null)];
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsCustom), nameof(HolidayNote))] [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustom), nameof(HolidayNote))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     public partial HolidayOption? Holiday { get; set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial DateTime Date { get; set; } = DateTime.Today;
     [ObservableProperty] public partial bool RecursAnnually { get; set; } = true;
     [ObservableProperty] public partial string Budget { get; set; } = "";
@@ -210,8 +215,14 @@ public sealed partial class GroupOccasionFormViewModel(BestowdApi api, GroupStat
                 ? new CreateGroupOccasionBody { HolidayKey = key, Budget = shared.Budget, FamilyTypeBudgets = shared.Types, IncludeNewFamilies = IncludeNewFamilies, FamilyIds = shared.FamilyIds }
                 : new CreateGroupOccasionBody
                 {
-                    Type = OccasionType.Holiday, Name = Name.Trim(), Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    RecursAnnually = RecursAnnually, Budget = shared.Budget, FamilyTypeBudgets = shared.Types, IncludeNewFamilies = IncludeNewFamilies, FamilyIds = shared.FamilyIds,
+                    Type = OccasionType.Holiday,
+                    Name = Name.Trim(),
+                    Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    RecursAnnually = RecursAnnually,
+                    Budget = shared.Budget,
+                    FamilyTypeBudgets = shared.Types,
+                    IncludeNewFamilies = IncludeNewFamilies,
+                    FamilyIds = shared.FamilyIds,
                 };
         });
         return body;

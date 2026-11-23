@@ -7,7 +7,10 @@ export function getAiSettings(groupId: string): Promise<AiSettings> {
 }
 
 /** Owner only. Leave apiKey empty to keep the saved key. */
-export function saveAiSettings(groupId: string, body: { provider: AiProvider; model?: string | null; apiKey?: string | null }): Promise<AiSettings> {
+export function saveAiSettings(
+  groupId: string,
+  body: { provider: AiProvider; model?: string | null; apiKey?: string | null },
+): Promise<AiSettings> {
   return apiFetch(`/groups/${groupId}/ai`, { method: 'PUT', body: json(body) })
 }
 

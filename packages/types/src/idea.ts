@@ -79,7 +79,10 @@ export interface BuyIdeaResult {
 
 export type SuggestField = 'title' | 'brand' | 'store' | 'category'
 /** yours = logged in your group before; popular = across Bestowd lately; common = a built-in list. */
-export interface Suggestion { value: string; source: 'yours' | 'popular' | 'common' }
+export interface Suggestion {
+  value: string
+  source: 'yours' | 'popular' | 'common'
+}
 
 /** What capture (a store link or a photo) fills into the idea or gift form. */
 export interface ProductDraft {

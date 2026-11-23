@@ -19,10 +19,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (token && !user) {
-      getAuthMe().then(setUser).catch(() => {
-        localStorage.removeItem(TOKEN_KEY)
-        setToken(null)
-      })
+      getAuthMe()
+        .then(setUser)
+        .catch(() => {
+          localStorage.removeItem(TOKEN_KEY)
+          setToken(null)
+        })
     }
   }, [token, user])
 
@@ -39,11 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={{ user, token, login, logout }}>{children}</AuthContext.Provider>
 }
 
 export { AuthContext }

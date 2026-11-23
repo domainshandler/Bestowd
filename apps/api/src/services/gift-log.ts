@@ -35,7 +35,10 @@ export interface GiftInput {
 const RECEIVED_ONLY = ['valueHidden', 'hasGiftReceipt', 'returnBy', 'thankYouSent', 'thankYouDueAt'] as const
 
 /** Direction-specific fields: status is for GIVEN gifts; receipt, thank-you and hidden value are for RECEIVED. */
-export function checkDirectionFields(direction: GiftDirection, input: { status?: unknown } & Partial<Record<(typeof RECEIVED_ONLY)[number], unknown>>): void {
+export function checkDirectionFields(
+  direction: GiftDirection,
+  input: { status?: unknown } & Partial<Record<(typeof RECEIVED_ONLY)[number], unknown>>,
+): void {
   if (direction === 'RECEIVED' && input.status !== undefined) throw badRequest('status is only for given gifts')
   if (direction === 'GIVEN') {
     const wrong = RECEIVED_ONLY.filter((k) => input[k] !== undefined)
@@ -95,7 +98,12 @@ export async function checkGiftRefs(groupId: string, input: Partial<GiftInput>):
 }
 
 /** A given gift logged against an occasion's current occurrence moves its status forward. */
-export async function advanceForGift(gift: { direction: GiftDirection; status: GiftStatus | null; occasionId: string | null; occasionDate: Date | null }) {
+export async function advanceForGift(gift: {
+  direction: GiftDirection
+  status: GiftStatus | null
+  occasionId: string | null
+  occasionDate: Date | null
+}) {
   if (gift.direction !== 'GIVEN' || !gift.occasionId || !gift.occasionDate || !gift.status) return
   const occasion = await db.occasion.findUnique({ where: { id: gift.occasionId } })
   // Group-wide occasions track progress per family from their gifts, not with the occasion's own status.

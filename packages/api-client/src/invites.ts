@@ -1,8 +1,16 @@
 import { apiFetch } from './client.js'
 import { json } from './query.js'
 import type {
-  AcceptInviteBody, AcceptInviteResult, ApproveMoveBody, CreateInviteBody, InviteLink, InvitePreview, MovableItems,
-  MoveRequestDetail, MoveRequestSummary, MoveSelection,
+  AcceptInviteBody,
+  AcceptInviteResult,
+  ApproveMoveBody,
+  CreateInviteBody,
+  InviteLink,
+  InvitePreview,
+  MovableItems,
+  MoveRequestDetail,
+  MoveRequestSummary,
+  MoveSelection,
 } from '@bestowd/types'
 
 export function createInvite(groupId: string, body: CreateInviteBody): Promise<InviteLink> {

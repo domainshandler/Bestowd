@@ -7,20 +7,37 @@ import RecipientPicker, { findRecipients, type Recipient } from './RecipientPick
 import { me, membership, renderApp } from '../../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', async () => {
-  class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
+  class ApiError extends Error {
+    constructor(
+      public status: number,
+      message: string,
+    ) {
+      super(message)
+    }
+  }
   return { ApiError, getMe: vi.fn(), listPeople: vi.fn(), listFamilies: vi.fn(), createFamily: vi.fn(), createPerson: vi.fn() }
 })
 
 const p = (id: string, name: string, familyName: string) => ({ id, name, familyName }) as PersonListItem
 const f = (id: string, name: string, isOwnHousehold = false) => ({ id, name, isOwnHousehold }) as FamilyListItem
-const people = [p('1', 'Mia', 'Smiths'), p('2', 'Amelia', 'Chen family'), p('3', 'Leo', 'Smiths'), p('4', 'Zoë', 'Park'), p('5', 'Liam', 'Park')]
+const people = [
+  p('1', 'Mia', 'Smiths'),
+  p('2', 'Amelia', 'Chen family'),
+  p('3', 'Leo', 'Smiths'),
+  p('4', 'Zoë', 'Park'),
+  p('5', 'Liam', 'Park'),
+]
 const families = [f('h', 'Our household', true), f('s', 'Smiths'), f('k', 'Park')]
 
 describe('findRecipients', () => {
   it('matches the start of a word, ignoring case and accents, with families when asked', () => {
     expect(findRecipients(people, families, 'mi', [], 'people').map((x) => x.name)).toEqual(['Mia'])
     expect(findRecipients(people, families, 'zoe', [], 'people').map((x) => x.name)).toEqual(['Zoë'])
-    expect(findRecipients(people, families, 'smith', [], 'both').map((x) => `${x.kind}:${x.name}`)).toEqual(['family:Smiths', 'person:Leo', 'person:Mia'])
+    expect(findRecipients(people, families, 'smith', [], 'both').map((x) => `${x.kind}:${x.name}`)).toEqual([
+      'family:Smiths',
+      'person:Leo',
+      'person:Mia',
+    ])
     expect(findRecipients(people, families, 'park', [{ kind: 'person', id: '4' }], 'people').map((x) => x.name)).toEqual(['Liam'])
     expect(findRecipients(people, families, '  ', [], 'both')).toEqual([])
   })

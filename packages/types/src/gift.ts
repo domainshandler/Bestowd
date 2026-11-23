@@ -102,7 +102,6 @@ export interface ReceivedOnlyFields {
 }
 
 export type CreateGiftBody =
-  | (GiftFields & { direction: 'GIVEN'; status?: GiftStatus })
-  | (GiftFields & ReceivedOnlyFields & { direction: 'RECEIVED' })
+  (GiftFields & { direction: 'GIVEN'; status?: GiftStatus }) | (GiftFields & ReceivedOnlyFields & { direction: 'RECEIVED' })
 
 export type UpdateGiftBody = Partial<GiftFields> & ReceivedOnlyFields & { status?: GiftStatus }

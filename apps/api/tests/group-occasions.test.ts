@@ -56,8 +56,14 @@ describe('built-in holidays', () => {
     const res = await create({ groupWide: true, holidayKey: 'christmas' })
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({
-      scope: 'GROUP', holidayKey: 'christmas', type: 'HOLIDAY', name: 'Christmas', recursAnnually: true,
-      personId: null, familyId: null, includeNewFamilies: true,
+      scope: 'GROUP',
+      holidayKey: 'christmas',
+      type: 'HOLIDAY',
+      name: 'Christmas',
+      recursAnnually: true,
+      personId: null,
+      familyId: null,
+      includeNewFamilies: true,
     })
     expect(res.body.nextOccurrence).toBe(nextHolidayDate(findHoliday('christmas')!.rule, new Date())!.toISOString())
     const ids = res.body.coverage.families.map((f: { familyId: string }) => f.familyId).sort()
@@ -88,7 +94,14 @@ describe('custom group-wide occasions', () => {
   let id: string
 
   it('creates one for chosen families', async () => {
-    const res = await create({ groupWide: true, type: 'HOLIDAY', name: 'Teacher appreciation', date: '2027-05-04', familyIds: [teacher, smiths], budget: 15 })
+    const res = await create({
+      groupWide: true,
+      type: 'HOLIDAY',
+      name: 'Teacher appreciation',
+      date: '2027-05-04',
+      familyIds: [teacher, smiths],
+      budget: 15,
+    })
     expect(res.status).toBe(201)
     id = res.body.id
     expect(res.body).toMatchObject({ scope: 'GROUP', holidayKey: null, subjectName: '2 families', effectiveBudget: 30 })
@@ -127,7 +140,9 @@ describe('budgets for a group-wide occasion', () => {
   it('rejects unknown family types and duplicate families', async () => {
     const occ = await db.occasion.findFirstOrThrow({ where: { groupId: a.groupId, holidayKey: 'christmas' } })
     expect((await auth(api().patch(`/occasions/${occ.id}`)).send({ familyTypeBudgets: { COWORKERS: 5 } })).status).toBe(400)
-    expect((await auth(api().put(`/occasions/${occ.id}/families`)).send({ families: [{ familyId: smiths }, { familyId: smiths }] })).status).toBe(400)
+    expect(
+      (await auth(api().put(`/occasions/${occ.id}/families`)).send({ families: [{ familyId: smiths }, { familyId: smiths }] })).status,
+    ).toBe(400)
   })
 
   it('only group-wide occasions cover families', async () => {
@@ -139,7 +154,8 @@ describe('budgets for a group-wide occasion', () => {
 describe('progress', () => {
   it('counts a family as covered once a gift for them (or one of their people) is bought or given', async () => {
     const occ = await db.occasion.findFirstOrThrow({ where: { groupId: a.groupId, holidayKey: 'christmas' } })
-    const gift = (body: object) => auth(api().post(`/groups/${a.groupId}/gifts`)).send({ direction: 'GIVEN', date: '2026-12-01', occasionId: occ.id, ...body })
+    const gift = (body: object) =>
+      auth(api().post(`/groups/${a.groupId}/gifts`)).send({ direction: 'GIVEN', date: '2026-12-01', occasionId: occ.id, ...body })
     expect((await gift({ title: 'Lego', personId: mia, status: 'BOUGHT', amount: 40 })).status).toBe(201)
     expect((await gift({ title: 'Card', familyId: teacher, status: 'GIVEN', amount: 5 })).status).toBe(201)
 
@@ -155,12 +171,22 @@ describe('progress', () => {
   it("shows a family's share on its profile and in its occasion list", async () => {
     const profile = await auth(api().get(`/families/${smiths}`))
     const christmas = profile.body.occasions.find((o: { holidayKey: string }) => o.holidayKey === 'christmas')
-    expect(christmas).toMatchObject({ scope: 'GROUP', effectiveBudget: 120, spent: 40, status: 'BOUGHT', needsGift: false, subjectName: 'Smiths' })
+    expect(christmas).toMatchObject({
+      scope: 'GROUP',
+      effectiveBudget: 120,
+      spent: 40,
+      status: 'BOUGHT',
+      needsGift: false,
+      subjectName: 'Smiths',
+    })
 
     const to = new Date(Date.now() + 400 * 86_400_000).toISOString().slice(0, 10)
     const list = await auth(api().get(`/groups/${a.groupId}/occasions?familyId=${neighbours}&to=${to}`))
-    expect(list.body.occasions.find((o: { holidayKey: string }) => o.holidayKey === 'christmas'))
-      .toMatchObject({ effectiveBudget: 10, needsGift: true, subjectFamilyId: neighbours })
+    expect(list.body.occasions.find((o: { holidayKey: string }) => o.holidayKey === 'christmas')).toMatchObject({
+      effectiveBudget: 10,
+      needsGift: true,
+      subjectFamilyId: neighbours,
+    })
     const forMia = await auth(api().get(`/groups/${a.groupId}/occasions?personId=${mia}&to=${to}`))
     expect(forMia.body.occasions.some((o: { holidayKey: string }) => o.holidayKey === 'christmas')).toBe(true)
   })
@@ -178,7 +204,10 @@ describe('new families', () => {
     await auth(api().patch(`/occasions/${custom.id}`)).send({ includeNewFamilies: false })
     const res = await auth(api().post(`/groups/${a.groupId}/families`)).send({ name: 'New cousins' })
     expect(res.status).toBe(201)
-    const christmas = await db.occasion.findFirstOrThrow({ where: { groupId: a.groupId, holidayKey: 'christmas' }, include: { coverage: true } })
+    const christmas = await db.occasion.findFirstOrThrow({
+      where: { groupId: a.groupId, holidayKey: 'christmas' },
+      include: { coverage: true },
+    })
     expect(christmas.coverage.map((c) => c.familyId)).toContain(res.body.id)
     const after = await db.occasion.findUniqueOrThrow({ where: { id: custom.id }, include: { coverage: true } })
     expect(after.coverage.map((c) => c.familyId)).not.toContain(res.body.id)
@@ -190,7 +219,11 @@ describe('reminders', () => {
     const day = (offset: number) => new Date(Date.UTC(2026, 10, 18 + offset))
     const occ = await db.occasion.create({
       data: {
-        groupId: a.groupId, type: 'HOLIDAY', name: 'Lantern night', date: day(14), nextOccurrence: day(14),
+        groupId: a.groupId,
+        type: 'HOLIDAY',
+        name: 'Lantern night',
+        date: day(14),
+        nextOccurrence: day(14),
         coverage: { create: [{ familyId: smiths }, { familyId: teacher }] },
       },
     })
@@ -203,8 +236,12 @@ describe('reminders', () => {
 
 describe('choosing holidays', () => {
   let c: Awaited<ReturnType<typeof createTestUser>>
-  beforeAll(async () => { c = await createTestUser(app) })
-  afterAll(async () => { await cleanupUser(c.user.id) })
+  beforeAll(async () => {
+    c = await createTestUser(app)
+  })
+  afterAll(async () => {
+    await cleanupUser(c.user.id)
+  })
   const holidays = () => auth(api().get(`/groups/${c.groupId}/holidays`), c)
   const byKey = (body: { holidays: { key: string }[] }, key: string) => body.holidays.find((h) => h.key === key) as Record<string, unknown>
 
@@ -216,14 +253,23 @@ describe('choosing holidays', () => {
     expect(byKey(res.body, 'mothers-day').occasionId).toEqual(expect.any(String))
     expect(byKey(res.body, 'diwali')).toMatchObject({ dismissed: true, occasionId: null })
 
-    const christmas = await db.occasion.findFirstOrThrow({ where: { groupId: c.groupId, holidayKey: 'christmas' }, include: { coverage: true } })
+    const christmas = await db.occasion.findFirstOrThrow({
+      where: { groupId: c.groupId, holidayKey: 'christmas' },
+      include: { coverage: true },
+    })
     expect(christmas.coverage.map((f) => f.familyId)).toEqual([c.householdId])
     expect(christmas.nextOccurrence).toEqual(nextHolidayDate(findHoliday('christmas')!.rule, new Date()))
   })
 
   it('changing the answer adds new picks and removes unticked ones, keeping their gifts', async () => {
     const mothers = await db.occasion.findFirstOrThrow({ where: { groupId: c.groupId, holidayKey: 'mothers-day' } })
-    const gift = await auth(api().post(`/groups/${c.groupId}/gifts`), c).send({ direction: 'GIVEN', title: 'Flowers', date: '2026-05-10', familyId: c.householdId, occasionId: mothers.id })
+    const gift = await auth(api().post(`/groups/${c.groupId}/gifts`), c).send({
+      direction: 'GIVEN',
+      title: 'Flowers',
+      date: '2026-05-10',
+      familyId: c.householdId,
+      occasionId: mothers.id,
+    })
     expect(gift.status).toBe(201)
 
     const res = await auth(api().post(`/groups/${c.groupId}/holidays/choose`), c).send({ keys: ['christmas', 'easter'] })

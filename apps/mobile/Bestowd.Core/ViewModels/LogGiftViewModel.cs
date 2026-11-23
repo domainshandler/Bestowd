@@ -44,9 +44,9 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
     [ObservableProperty] public partial string? GiftId { get; private set; }
     [ObservableProperty] public partial bool IsReceived { get; set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<SubjectOption> Subjects { get; private set; } = [];
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial SubjectOption? Subject { get; set; }
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial SubjectOption? Subject { get; set; }
     [ObservableProperty] public partial IReadOnlyList<Occasion> Occasions { get; private set; } = [];
     [ObservableProperty] public partial Occasion? Occasion { get; set; }
     [ObservableProperty] public partial DateTime Date { get; set; } = DateTime.Today;
@@ -190,9 +190,16 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             Direction = IsReceived ? GiftDirection.Received : GiftDirection.Given,
             Title = Title.Trim(),
             Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            PersonId = Subject.PersonId, FamilyId = Subject.FamilyId,
-            OccasionId = Occasion?.Id, Amount = amount, Category = Text(Category), Notes = Text(Notes),
-            Brand = Text(Brand), Store = IsReceived ? null : Text(Store), Url = Text(Url), PhotoUrl = Product.Photo.Url,
+            PersonId = Subject.PersonId,
+            FamilyId = Subject.FamilyId,
+            OccasionId = Occasion?.Id,
+            Amount = amount,
+            Category = Text(Category),
+            Notes = Text(Notes),
+            Brand = Text(Brand),
+            Store = IsReceived ? null : Text(Store),
+            Url = Text(Url),
+            PhotoUrl = Product.Photo.Url,
             Status = IsReceived ? null : BoughtNotGiven ? GiftStatus.Bought : GiftStatus.Given,
             ValueHidden = IsReceived ? ValueHidden : null,
             HasGiftReceipt = IsReceived ? HasGiftReceipt : null,

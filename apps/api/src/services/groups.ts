@@ -46,12 +46,16 @@ export async function addAccountHolder(tx: Tx, groupId: string, user: { id: stri
   if (await tx.person.findUnique({ where: { groupId_userId: { groupId, userId: user.id } } })) return
   // Someone who left and came back gets their old household entry back.
   const key = (n: string) => n.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase()
-  const previous = (await tx.person.findMany({ where: { familyId: household.id, userId: null } })).find((p) => key(p.name) === key(user.name))
-  if (previous) { await tx.person.update({ where: { id: previous.id }, data: { userId: user.id } }); return }
+  const previous = (await tx.person.findMany({ where: { familyId: household.id, userId: null } })).find(
+    (p) => key(p.name) === key(user.name),
+  )
+  if (previous) {
+    await tx.person.update({ where: { id: previous.id }, data: { userId: user.id } })
+    return
+  }
   await tx.person.upsert({
     where: { groupId_userId: { groupId, userId: user.id } },
     create: { groupId, familyId: household.id, userId: user.id, name: user.name },
     update: {},
   })
 }
-

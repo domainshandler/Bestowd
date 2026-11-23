@@ -15,13 +15,25 @@ public class GroupOccasionTests
 
     private static Occasion Christmas() => new()
     {
-        Id = "xmas", GroupId = "g1", Name = "Christmas", Scope = OccasionScope.Group, HolidayKey = "christmas", Type = OccasionType.Holiday,
-        Currency = "CAD", RecursAnnually = true, NextOccurrence = new DateTime(2026, 12, 25, 0, 0, 0, DateTimeKind.Utc),
-        Budget = 50, FamilyTypeBudgets = new() { ["SCHOOL"] = 20 }, IncludeNewFamilies = true,
-        SubjectName = "2 families", EffectiveBudget = 70, Spent = 40,
+        Id = "xmas",
+        GroupId = "g1",
+        Name = "Christmas",
+        Scope = OccasionScope.Group,
+        HolidayKey = "christmas",
+        Type = OccasionType.Holiday,
+        Currency = "CAD",
+        RecursAnnually = true,
+        NextOccurrence = new DateTime(2026, 12, 25, 0, 0, 0, DateTimeKind.Utc),
+        Budget = 50,
+        FamilyTypeBudgets = new() { ["SCHOOL"] = 20 },
+        IncludeNewFamilies = true,
+        SubjectName = "2 families",
+        EffectiveBudget = 70,
+        Spent = 40,
         Coverage = new OccasionCoverage
         {
-            FamilyCount = 2, CoveredCount = 1,
+            FamilyCount = 2,
+            CoveredCount = 1,
             Families =
             [
                 new FamilyShare { FamilyId = "f1", Name = "Chen family", Type = FamilyType.Family, Budget = 50, Spent = 40, Covered = true },

@@ -8,7 +8,9 @@ import { firstName, provisionPersonalGroup, type Tx } from '../services/groups.j
 import { copyFamilies } from '../services/copy.js'
 import { idList } from './schemas.js'
 
-interface GroupParams { groupId: string }
+interface GroupParams {
+  groupId: string
+}
 interface LeaveBody {
   newOwnerId?: string
   deleteGroup?: boolean
@@ -28,7 +30,9 @@ export function leaveNotice(name: string, copiedFamilies: number, newOwnerName: 
 /** A new group owned by the user, with their household and them in it, opened next. */
 async function createOwnGroup(tx: Tx, user: { id: string; name: string }, name?: string): Promise<string> {
   const first = firstName(user.name)
-  const group = await tx.group.create({ data: { name: name?.trim() || `${first}'s group`, memberships: { create: { userId: user.id, role: 'OWNER' } } } })
+  const group = await tx.group.create({
+    data: { name: name?.trim() || `${first}'s group`, memberships: { create: { userId: user.id, role: 'OWNER' } } },
+  })
   const household = await tx.family.create({ data: { groupId: group.id, householdOfGroupId: group.id, name: `${first}'s household` } })
   await tx.person.create({ data: { groupId: group.id, familyId: household.id, userId: user.id, name: user.name } })
   await tx.user.update({ where: { id: user.id }, data: { primaryGroupId: group.id } })
@@ -52,13 +56,19 @@ export async function groupRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
   // Start a new group from scratch, with your own household. It becomes the one the app opens to.
-  app.post<{ Body: { name?: string } }>('/groups', {
-    schema: { body: { type: 'object', additionalProperties: false, properties: { name: { type: 'string', minLength: 1, maxLength: 100 } } } },
-  }, async (request, reply) => {
-    const user = await db.user.findUniqueOrThrow({ where: { id: userIdOf(request) } })
-    const groupId = await db.$transaction((tx) => createOwnGroup(tx, user, request.body.name))
-    return reply.code(201).send(await groupWithMembers(groupId))
-  })
+  app.post<{ Body: { name?: string } }>(
+    '/groups',
+    {
+      schema: {
+        body: { type: 'object', additionalProperties: false, properties: { name: { type: 'string', minLength: 1, maxLength: 100 } } },
+      },
+    },
+    async (request, reply) => {
+      const user = await db.user.findUniqueOrThrow({ where: { id: userIdOf(request) } })
+      const groupId = await db.$transaction((tx) => createOwnGroup(tx, user, request.body.name))
+      return reply.code(201).send(await groupWithMembers(groupId))
+    },
+  )
 
   // Before leaving: the families you could take a copy of, and the other groups you could put them in.
   app.get<{ Params: GroupParams }>('/groups/:groupId/leave-options', async (request) => {
@@ -77,7 +87,11 @@ export async function groupRoutes(app: FastifyInstance) {
       rows.push({ id: f.id, name: f.name, isOwnHousehold, people, gifts })
     }
     rows.sort((a, b) => Number(b.isOwnHousehold) - Number(a.isOwnHousehold) || a.name.localeCompare(b.name))
-    const memberships = await db.groupMembership.findMany({ where: { userId, groupId: { not: groupId } }, include: { group: true }, orderBy: { createdAt: 'asc' } })
+    const memberships = await db.groupMembership.findMany({
+      where: { userId, groupId: { not: groupId } },
+      include: { group: true },
+      orderBy: { createdAt: 'asc' },
+    })
     const ideas = await db.idea.count({ where: { groupId, tags: { some: {} } } })
     return { families: rows, ideas, destinations: memberships.map((m) => ({ groupId: m.groupId, groupName: m.group.name })) }
   })
@@ -89,87 +103,113 @@ export async function groupRoutes(app: FastifyInstance) {
    * group to another member first; an owner on their own deletes the group instead. Leaving your
    * last group starts you a fresh one.
    */
-  app.post<{ Params: GroupParams; Body: LeaveBody }>('/groups/:groupId/leave', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          newOwnerId: { type: 'string', minLength: 1, maxLength: 64 },
-          deleteGroup: { type: 'boolean' },
-          forgetMe: { type: 'boolean' },
-          copy: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['familyIds'],
-            properties: { familyIds: idList, ideas: { type: 'boolean' }, toGroupId: { type: 'string', minLength: 1, maxLength: 64 }, toNewGroup: { type: 'boolean' } },
+  app.post<{ Params: GroupParams; Body: LeaveBody }>(
+    '/groups/:groupId/leave',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            newOwnerId: { type: 'string', minLength: 1, maxLength: 64 },
+            deleteGroup: { type: 'boolean' },
+            forgetMe: { type: 'boolean' },
+            copy: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['familyIds'],
+              properties: {
+                familyIds: idList,
+                ideas: { type: 'boolean' },
+                toGroupId: { type: 'string', minLength: 1, maxLength: 64 },
+                toNewGroup: { type: 'boolean' },
+              },
+            },
           },
         },
       },
     },
-  }, async (request) => {
-    const { groupId } = request.params
-    const userId = userIdOf(request)
-    const role = await requireMember(userId, groupId)
-    const others = await db.groupMembership.findMany({ where: { groupId, userId: { not: userId } } })
-    const { newOwnerId, deleteGroup, forgetMe, copy } = request.body ?? {}
+    async (request) => {
+      const { groupId } = request.params
+      const userId = userIdOf(request)
+      const role = await requireMember(userId, groupId)
+      const others = await db.groupMembership.findMany({ where: { groupId, userId: { not: userId } } })
+      const { newOwnerId, deleteGroup, forgetMe, copy } = request.body ?? {}
 
-    if (role === 'OWNER' && others.length === 0 && !deleteGroup) {
-      throw conflict("You're the only one in this group. Leaving deletes it and everything in it.")
-    }
-    if (role === 'OWNER' && others.length > 0 && !others.some((m) => m.userId === newOwnerId)) {
-      throw conflict('Choose who looks after the group when you leave')
-    }
-    if (copy?.toGroupId) {
-      if (copy.toGroupId === groupId) throw badRequest("Choose a group other than the one you're leaving")
-      await requireMember(userId, copy.toGroupId)
-    }
-    const user = await db.user.findUniqueOrThrow({ where: { id: userId } })
-
-    const result = await db.$transaction(async (tx) => {
-      let copied = { families: 0, gifts: 0, ideas: 0 }
-      let destination: string | null = null
-      if (copy && copy.familyIds.length > 0) {
-        destination = copy.toGroupId ?? (copy.toNewGroup ? null : await otherGroup(tx, user, groupId)) ?? await createOwnGroup(tx, user)
-        copied = await copyFamilies(tx, groupId, destination, copy.familyIds, user, copy.ideas ?? false)
+      if (role === 'OWNER' && others.length === 0 && !deleteGroup) {
+        throw conflict("You're the only one in this group. Leaving deletes it and everything in it.")
       }
-      await tx.moveRequest.updateMany({
-        where: { status: 'PENDING', OR: [{ groupId, requestedById: userId }, { fromGroupId: groupId }] },
-        data: { status: 'CANCELLED', decidedAt: new Date() },
-      })
-      if (role === 'OWNER' && others.length === 0) {
-        await tx.group.delete({ where: { id: groupId } })
-      } else {
-        if (role === 'OWNER') {
-          await tx.groupMembership.update({ where: { groupId_userId: { groupId, userId: newOwnerId! } }, data: { role: 'OWNER' } })
-        }
-        const me = await tx.person.findUnique({ where: { groupId_userId: { groupId, userId } } })
-        if (me && forgetMe) {
-          // Keep the name so past gifts still say who they were for or from; drop everything personal.
-          await tx.occasion.deleteMany({ where: { personId: me.id } })
-          await tx.person.update({
-            where: { id: me.id },
-            data: { relationship: null, birthMonth: null, birthDay: null, birthYear: null, likes: [], avoid: [], sizes: {}, foodNotes: null, photoUrl: null, notes: null },
+      if (role === 'OWNER' && others.length > 0 && !others.some((m) => m.userId === newOwnerId)) {
+        throw conflict('Choose who looks after the group when you leave')
+      }
+      if (copy?.toGroupId) {
+        if (copy.toGroupId === groupId) throw badRequest("Choose a group other than the one you're leaving")
+        await requireMember(userId, copy.toGroupId)
+      }
+      const user = await db.user.findUniqueOrThrow({ where: { id: userId } })
+
+      const result = await db.$transaction(
+        async (tx) => {
+          let copied = { families: 0, gifts: 0, ideas: 0 }
+          let destination: string | null = null
+          if (copy && copy.familyIds.length > 0) {
+            destination =
+              copy.toGroupId ?? (copy.toNewGroup ? null : await otherGroup(tx, user, groupId)) ?? (await createOwnGroup(tx, user))
+            copied = await copyFamilies(tx, groupId, destination, copy.familyIds, user, copy.ideas ?? false)
+          }
+          await tx.moveRequest.updateMany({
+            where: { status: 'PENDING', OR: [{ groupId, requestedById: userId }, { fromGroupId: groupId }] },
+            data: { status: 'CANCELLED', decidedAt: new Date() },
           })
-        }
-        await tx.person.updateMany({ where: { groupId, userId }, data: { userId: null } })
-        await tx.groupMembership.delete({ where: { groupId_userId: { groupId, userId } } })
-        const newOwner = role === 'OWNER' ? await tx.user.findUnique({ where: { id: newOwnerId! } }) : null
-        await tx.groupNotice.create({ data: { groupId, text: leaveNotice(firstName(user.name), copied.families, newOwner ? firstName(newOwner.name) : null) } })
-      }
-      // The app opens to where the copies went.
-      if (destination) await tx.user.update({ where: { id: userId }, data: { primaryGroupId: destination } })
-      return { copied }
-    }, { timeout: 60_000 })
+          if (role === 'OWNER' && others.length === 0) {
+            await tx.group.delete({ where: { id: groupId } })
+          } else {
+            if (role === 'OWNER') {
+              await tx.groupMembership.update({ where: { groupId_userId: { groupId, userId: newOwnerId! } }, data: { role: 'OWNER' } })
+            }
+            const me = await tx.person.findUnique({ where: { groupId_userId: { groupId, userId } } })
+            if (me && forgetMe) {
+              // Keep the name so past gifts still say who they were for or from; drop everything personal.
+              await tx.occasion.deleteMany({ where: { personId: me.id } })
+              await tx.person.update({
+                where: { id: me.id },
+                data: {
+                  relationship: null,
+                  birthMonth: null,
+                  birthDay: null,
+                  birthYear: null,
+                  likes: [],
+                  avoid: [],
+                  sizes: {},
+                  foodNotes: null,
+                  photoUrl: null,
+                  notes: null,
+                },
+              })
+            }
+            await tx.person.updateMany({ where: { groupId, userId }, data: { userId: null } })
+            await tx.groupMembership.delete({ where: { groupId_userId: { groupId, userId } } })
+            const newOwner = role === 'OWNER' ? await tx.user.findUnique({ where: { id: newOwnerId! } }) : null
+            await tx.groupNotice.create({
+              data: { groupId, text: leaveNotice(firstName(user.name), copied.families, newOwner ? firstName(newOwner.name) : null) },
+            })
+          }
+          // The app opens to where the copies went.
+          if (destination) await tx.user.update({ where: { id: userId }, data: { primaryGroupId: destination } })
+          return { copied }
+        },
+        { timeout: 60_000 },
+      )
 
-    const after = await db.user.findUniqueOrThrow({ where: { id: userId } })
-    if (after.primaryGroupId === null || after.primaryGroupId === groupId) {
-      const next = await db.groupMembership.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' } })
-      await db.user.update({ where: { id: userId }, data: { primaryGroupId: next?.groupId ?? null } })
-    }
-    const primaryGroupId = await provisionPersonalGroup(await db.user.findUniqueOrThrow({ where: { id: userId } }))
-    return { primaryGroupId, copied: result.copied }
-  })
+      const after = await db.user.findUniqueOrThrow({ where: { id: userId } })
+      if (after.primaryGroupId === null || after.primaryGroupId === groupId) {
+        const next = await db.groupMembership.findFirst({ where: { userId }, orderBy: { createdAt: 'asc' } })
+        await db.user.update({ where: { id: userId }, data: { primaryGroupId: next?.groupId ?? null } })
+      }
+      const primaryGroupId = await provisionPersonalGroup(await db.user.findUniqueOrThrow({ where: { id: userId } }))
+      return { primaryGroupId, copied: result.copied }
+    },
+  )
 
   // Notices for the group from the last 30 days that you haven't closed.
   app.get<{ Params: GroupParams }>('/groups/:groupId/notices', async (request) => {
@@ -201,41 +241,45 @@ export async function groupRoutes(app: FastifyInstance) {
     return groupWithMembers(groupId)
   })
 
-  app.patch<{ Params: GroupParams; Body: UpdateGroupBody }>('/groups/:groupId', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          name: { type: 'string', minLength: 1, maxLength: 100 },
-          currency: { type: 'string', pattern: '^[A-Z]{3}$' },
-          defaultBudgets: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              BIRTHDAY: { type: 'number', minimum: 0 },
-              HOLIDAY: { type: 'number', minimum: 0 },
-              ONE_OFF: { type: 'number', minimum: 0 },
+  app.patch<{ Params: GroupParams; Body: UpdateGroupBody }>(
+    '/groups/:groupId',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 100 },
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+            defaultBudgets: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                BIRTHDAY: { type: 'number', minimum: 0 },
+                HOLIDAY: { type: 'number', minimum: 0 },
+                ONE_OFF: { type: 'number', minimum: 0 },
+              },
             },
-          },
-          defaultReminderDays: {
-            type: 'array',
-            maxItems: 5,
-            items: { type: 'integer', minimum: 0, maximum: 365 },
+            defaultReminderDays: {
+              type: 'array',
+              maxItems: 5,
+              items: { type: 'integer', minimum: 0, maximum: 365 },
+            },
           },
         },
       },
     },
-  }, async (request) => {
-    const { groupId } = request.params
-    await requireOwner(userIdOf(request), groupId)
-    const { defaultBudgets, ...rest } = request.body
-    await db.group.update({
-      where: { id: groupId },
-      data: { ...rest, ...(defaultBudgets ? { defaultBudgets: defaultBudgets as Prisma.InputJsonObject } : {}) },
-    })
-    return groupWithMembers(groupId)
-  })
+    async (request) => {
+      const { groupId } = request.params
+      await requireOwner(userIdOf(request), groupId)
+      const { defaultBudgets, ...rest } = request.body
+      await db.group.update({
+        where: { id: groupId },
+        data: { ...rest, ...(defaultBudgets ? { defaultBudgets: defaultBudgets } : {}) },
+      })
+      return groupWithMembers(groupId)
+    },
+  )
 }
 
 async function groupWithMembers(groupId: string) {

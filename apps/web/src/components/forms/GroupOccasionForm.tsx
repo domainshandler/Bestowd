@@ -26,49 +26,88 @@ export default function GroupOccasionForm({ open, onClose, groupId }: { open: bo
   const [includeNew, setIncludeNew] = useState(true)
 
   // Every family is ticked until the user changes the selection.
-  useEffect(() => { if (families.data && picked === null) setPicked(new Set(families.data.map((f) => f.id))) }, [families.data, picked])
+  useEffect(() => {
+    if (families.data && picked === null) setPicked(new Set(families.data.map((f) => f.id)))
+  }, [families.data, picked])
 
   const available = holidays.data?.holidays.filter((h) => h.occasionId === null && h.nextDate !== null) ?? []
   // Start on the first holiday the group hasn't added yet (else your own occasion).
   const [touched, setTouched] = useState(false)
-  useEffect(() => { if (!touched && available[0]) setHolidayKey(available[0].key) }, [touched, available[0]?.key])
+  useEffect(() => {
+    if (!touched && available[0]) setHolidayKey(available[0].key)
+  }, [touched, available[0]?.key])
   const chosen = holidays.data?.holidays.find((h) => h.key === holidayKey)
   const custom = holidayKey === CUSTOM
 
-  const save = useSave(() => {
-    const shared = {
-      budget: numberOrNull(budget),
-      familyTypeBudgets: typeBudgetsFrom(typeBudgets),
-      includeNewFamilies: includeNew,
-      familyIds: [...(picked ?? [])],
-    }
-    return custom
-      ? createGroupOccasion(groupId, { groupWide: true, type: 'HOLIDAY', name: name.trim(), date, recursAnnually: recurs, ...shared })
-      : createGroupOccasion(groupId, { groupWide: true, holidayKey, ...shared })
-  }, (created) => { onClose(); navigate(`/occasions/${created.id}`) })
-  const submit = (e: FormEvent) => { e.preventDefault(); save.mutate(undefined) }
+  const save = useSave(
+    () => {
+      const shared = {
+        budget: numberOrNull(budget),
+        familyTypeBudgets: typeBudgetsFrom(typeBudgets),
+        includeNewFamilies: includeNew,
+        familyIds: [...(picked ?? [])],
+      }
+      return custom
+        ? createGroupOccasion(groupId, { groupWide: true, type: 'HOLIDAY', name: name.trim(), date, recursAnnually: recurs, ...shared })
+        : createGroupOccasion(groupId, { groupWide: true, holidayKey, ...shared })
+    },
+    (created) => {
+      onClose()
+      navigate(`/occasions/${created.id}`)
+    },
+  )
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    save.mutate(undefined)
+  }
 
-  const toggle = (id: string, on: boolean) => setPicked((s) => {
-    const next = new Set(s)
-    if (on) next.add(id); else next.delete(id)
-    return next
-  })
+  const toggle = (id: string, on: boolean) =>
+    setPicked((s) => {
+      const next = new Set(s)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
 
   return (
     <Modal open={open} onClose={onClose} title="Add a group occasion">
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Field label="Occasion" hint={chosen?.note ?? undefined}>
           {(id) => (
-            <Select id={id} value={holidayKey} onChange={(e) => { setTouched(true); setHolidayKey(e.target.value) }}>
-              {available.map((h) => <option key={h.key} value={h.key}>{h.name} · {formatDate(h.nextDate!)}</option>)}
+            <Select
+              id={id}
+              value={holidayKey}
+              onChange={(e) => {
+                setTouched(true)
+                setHolidayKey(e.target.value)
+              }}
+            >
+              {available.map((h) => (
+                <option key={h.key} value={h.key}>
+                  {h.name} · {formatDate(h.nextDate)}
+                </option>
+              ))}
               <option value={CUSTOM}>Your own occasion…</option>
             </Select>
           )}
         </Field>
         {custom && (
           <>
-            <Field label="Name">{(id) => <TextInput id={id} required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Teacher appreciation" />}</Field>
-            <Field label="Date">{(id) => <TextInput id={id} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+            <Field label="Name">
+              {(id) => (
+                <TextInput
+                  id={id}
+                  required
+                  maxLength={120}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Teacher appreciation"
+                />
+              )}
+            </Field>
+            <Field label="Date">
+              {(id) => <TextInput id={id} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />}
+            </Field>
             <Checkbox label="Every year" checked={recurs} onChange={setRecurs} />
           </>
         )}
@@ -81,8 +120,13 @@ export default function GroupOccasionForm({ open, onClose, groupId }: { open: bo
         <fieldset className="bg-white border border-line rounded-2xl px-4 py-2">
           <legend className="text-sm font-medium px-1">Families</legend>
           {families.data?.map((f) => (
-            <Checkbox key={f.id} label={f.name} hint={f.isOwnHousehold ? 'Your household' : FAMILY_TYPE_LABEL[f.type as FamilyType]}
-              checked={picked?.has(f.id) ?? true} onChange={(on) => toggle(f.id, on)} />
+            <Checkbox
+              key={f.id}
+              label={f.name}
+              hint={f.isOwnHousehold ? 'Your household' : FAMILY_TYPE_LABEL[f.type]}
+              checked={picked?.has(f.id) ?? true}
+              onChange={(on) => toggle(f.id, on)}
+            />
           ))}
           <Checkbox label="Include families added later" checked={includeNew} onChange={setIncludeNew} />
         </fieldset>

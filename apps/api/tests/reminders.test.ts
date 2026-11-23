@@ -51,15 +51,25 @@ describe('runReminderScan', () => {
 
   it('skips paused families and archived people', async () => {
     const paused = await db.family.create({ data: { groupId: a.groupId, name: 'Paused', status: 'PAUSED' } })
-    const famOcc = await db.occasion.create({ data: { groupId: a.groupId, familyId: paused.id, type: 'HOLIDAY', name: 'Paused', date: day(3), nextOccurrence: day(3) } })
+    const famOcc = await db.occasion.create({
+      data: { groupId: a.groupId, familyId: paused.id, type: 'HOLIDAY', name: 'Paused', date: day(3), nextOccurrence: day(3) },
+    })
     const gone = await db.person.create({ data: { groupId: a.groupId, familyId: a.householdId, name: 'Gone', archivedAt: new Date() } })
-    const personOcc = await db.occasion.create({ data: { groupId: a.groupId, personId: gone.id, type: 'BIRTHDAY', name: 'Archived', date: day(3), nextOccurrence: day(3) } })
+    const personOcc = await db.occasion.create({
+      data: { groupId: a.groupId, personId: gone.id, type: 'BIRTHDAY', name: 'Archived', date: day(3), nextOccurrence: day(3) },
+    })
     expect(await remindersFor(famOcc.id)).toHaveLength(0)
     expect(await remindersFor(personOcc.id)).toHaveLength(0)
   })
 
   it('rolls a passed recurring occasion to next year and resets its status and card', async () => {
-    const occ = await occasion('Yesterday', { date: new Date('2019-11-17'), nextOccurrence: day(-1), status: 'GIVEN', needsCard: true, cardDone: true })
+    const occ = await occasion('Yesterday', {
+      date: new Date('2019-11-17'),
+      nextOccurrence: day(-1),
+      status: 'GIVEN',
+      needsCard: true,
+      cardDone: true,
+    })
     await runReminderScan(now)
     const after = await db.occasion.findUniqueOrThrow({ where: { id: occ.id } })
     expect(after.nextOccurrence).toEqual(new Date('2027-11-17T00:00:00Z'))
@@ -67,7 +77,13 @@ describe('runReminderScan', () => {
   })
 
   it('clears nextOccurrence of a passed one-off and keeps its status', async () => {
-    const occ = await occasion('Done party', { type: 'ONE_OFF', recursAnnually: false, date: day(-2), nextOccurrence: day(-2), status: 'GIVEN' })
+    const occ = await occasion('Done party', {
+      type: 'ONE_OFF',
+      recursAnnually: false,
+      date: day(-2),
+      nextOccurrence: day(-2),
+      status: 'GIVEN',
+    })
     await runReminderScan(now)
     const after = await db.occasion.findUniqueOrThrow({ where: { id: occ.id } })
     expect(after.nextOccurrence).toBeNull()
@@ -109,10 +125,27 @@ describe('buy, card and thank-you reminders', () => {
 
   it('reminds every member to send a thank-you on the due date', async () => {
     const g = await db.giftEntry.create({
-      data: { groupId: a.groupId, createdById: a.user.id, direction: 'RECEIVED', title: 'cookie tin', date: day(-14), personId: mia, thankYouDueAt: day(0) },
+      data: {
+        groupId: a.groupId,
+        createdById: a.user.id,
+        direction: 'RECEIVED',
+        title: 'cookie tin',
+        date: day(-14),
+        personId: mia,
+        thankYouDueAt: day(0),
+      },
     })
     await db.giftEntry.create({
-      data: { groupId: a.groupId, createdById: a.user.id, direction: 'RECEIVED', title: 'already thanked', date: day(-14), personId: mia, thankYouDueAt: day(0), thankYouSent: true },
+      data: {
+        groupId: a.groupId,
+        createdById: a.user.id,
+        direction: 'RECEIVED',
+        title: 'already thanked',
+        date: day(-14),
+        personId: mia,
+        thankYouDueAt: day(0),
+        thankYouSent: true,
+      },
     })
     const due = (await runReminderScan(now)).filter((r) => r.kind === 'THANK_YOU' && r.groupId === a.groupId)
     expect(due).toHaveLength(2)
@@ -126,9 +159,24 @@ describe('deliverReminders', () => {
     await db.device.create({ data: { userId: a.user.id, platform: 'IOS', token: 'stale-token' } })
     const sent: string[] = []
     const sender: PushSender = {
-      async send(token) { sent.push(token); return token === 'stale-token' ? 'invalid-token' : 'sent' },
+      async send(token) {
+        sent.push(token)
+        return token === 'stale-token' ? 'invalid-token' : 'sent'
+      },
     }
-    const reminder = { kind: 'OCCASION' as const, userId: a.user.id, email: '', groupId: a.groupId, occasionId: null, giftEntryId: null, occasionName: 'x', daysUntil: 3, title: 't', body: 'b', data: {} }
+    const reminder = {
+      kind: 'OCCASION' as const,
+      userId: a.user.id,
+      email: '',
+      groupId: a.groupId,
+      occasionId: null,
+      giftEntryId: null,
+      occasionName: 'x',
+      daysUntil: 3,
+      title: 't',
+      body: 'b',
+      data: {},
+    }
     const stats = await deliverReminders([reminder, reminder], sender)
     expect(stats).toEqual({ sent: 2, removed: 1, failed: 0 })
     expect(sent.filter((t) => t === 'stale-token')).toHaveLength(1)

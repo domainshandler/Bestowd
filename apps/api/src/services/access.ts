@@ -27,15 +27,10 @@ export async function loadOr404<T extends { groupId: string }>(userId: string, r
 }
 
 /** Exactly one of personId / familyId, and it must belong to groupId. */
-export async function assertSubject(
-  groupId: string,
-  subject: { personId?: string | null; familyId?: string | null },
-): Promise<void> {
+export async function assertSubject(groupId: string, subject: { personId?: string | null; familyId?: string | null }): Promise<void> {
   const { personId, familyId } = subject
   if (!personId === !familyId) throw badRequest('Provide exactly one of personId or familyId')
-  const row = personId
-    ? await db.person.findUnique({ where: { id: personId } })
-    : await db.family.findUnique({ where: { id: familyId! } })
+  const row = personId ? await db.person.findUnique({ where: { id: personId } }) : await db.family.findUnique({ where: { id: familyId! } })
   if (!row || row.groupId !== groupId) throw badRequest('Person or family not in this group')
 }
 

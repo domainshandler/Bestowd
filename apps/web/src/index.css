@@ -6,7 +6,9 @@
   body {
     @apply bg-ground text-ink font-sans antialiased;
   }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     @apply font-display;
   }
   dialog::backdrop {

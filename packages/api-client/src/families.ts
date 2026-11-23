@@ -1,8 +1,17 @@
 import { apiFetch } from './client.js'
 import { json, toQuery } from './query.js'
 import type {
-  CreateFamilyBody, CreatePersonBody, Family, FamilyListItem, FamilyProfile, FamilyStatus, Person, PersonDetail, PersonListItem,
-  UpdateFamilyBody, UpdatePersonBody,
+  CreateFamilyBody,
+  CreatePersonBody,
+  Family,
+  FamilyListItem,
+  FamilyProfile,
+  FamilyStatus,
+  Person,
+  PersonDetail,
+  PersonListItem,
+  UpdateFamilyBody,
+  UpdatePersonBody,
 } from '@bestowd/types'
 
 export function listFamilies(groupId: string, query: { status?: FamilyStatus } = {}): Promise<FamilyListItem[]> {

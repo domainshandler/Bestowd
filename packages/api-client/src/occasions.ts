@@ -1,7 +1,14 @@
 import { apiFetch } from './client.js'
 import { json, toQuery } from './query.js'
 import type {
-  CreateGroupOccasionBody, CreateOccasionBody, GroupOccasions, HolidayChoices, HomeOccasions, Occasion, OccasionQuery, UpdateOccasionBody,
+  CreateGroupOccasionBody,
+  CreateOccasionBody,
+  GroupOccasions,
+  HolidayChoices,
+  HomeOccasions,
+  Occasion,
+  OccasionQuery,
+  UpdateOccasionBody,
 } from '@bestowd/types'
 
 /** Home: upcoming occasions across all of the user's groups (default: next 30 days). */
@@ -9,7 +16,10 @@ export function listHomeOccasions(query: OccasionQuery = {}): Promise<HomeOccasi
   return apiFetch(`/me/occasions${toQuery(query)}`)
 }
 
-export function listOccasions(groupId: string, query: OccasionQuery & { personId?: string; familyId?: string } = {}): Promise<GroupOccasions> {
+export function listOccasions(
+  groupId: string,
+  query: OccasionQuery & { personId?: string; familyId?: string } = {},
+): Promise<GroupOccasions> {
   return apiFetch(`/groups/${groupId}/occasions${toQuery(query)}`)
 }
 

@@ -8,7 +8,10 @@ vi.mock('@bestowd/api-client', () => ({ suggest: vi.fn() }))
 
 describe('AutoText', () => {
   it('offers suggestions for what is typed, after a short pause', async () => {
-    vi.mocked(suggest).mockResolvedValue([{ value: 'Garmin', source: 'yours' }, { value: 'Gap', source: 'common' }])
+    vi.mocked(suggest).mockResolvedValue([
+      { value: 'Garmin', source: 'yours' },
+      { value: 'Gap', source: 'common' },
+    ])
     function Harness() {
       const [v, setV] = useState('')
       return <AutoText aria-label="Brand" groupId="g1" field="brand" value={v} onChange={setV} />

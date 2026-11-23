@@ -22,7 +22,11 @@ afterAll(async () => {
 
 describe('photos', () => {
   it('stores a photo and serves it only with its signed link', async () => {
-    const res = await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'image/jpeg').send(jpeg)
+    const res = await api()
+      .post(`/groups/${a.groupId}/photos`)
+      .set('Authorization', a.authHeader)
+      .set('Content-Type', 'image/jpeg')
+      .send(jpeg)
     expect(res.status).toBe(201)
     expect(res.body.url).toMatch(new RegExp(`^/files/${a.groupId}/[0-9a-f-]{36}\\.jpg\\?sig=`))
 
@@ -37,14 +41,30 @@ describe('photos', () => {
   })
 
   it('refuses non-members, files that are not images, and the wrong type', async () => {
-    expect((await api().post(`/groups/${a.groupId}/photos`).set('Authorization', b.authHeader).set('Content-Type', 'image/jpeg').send(jpeg)).status).toBe(404)
-    expect((await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'image/png').send(jpeg)).status).toBe(400)
-    expect((await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'text/plain').send('hello')).status).toBe(400)
+    expect(
+      (await api().post(`/groups/${a.groupId}/photos`).set('Authorization', b.authHeader).set('Content-Type', 'image/jpeg').send(jpeg))
+        .status,
+    ).toBe(404)
+    expect(
+      (await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'image/png').send(jpeg))
+        .status,
+    ).toBe(400)
+    expect(
+      (await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'text/plain').send('hello'))
+        .status,
+    ).toBe(400)
   })
 
   it('lets an idea use an uploaded photo', async () => {
-    const up = await api().post(`/groups/${a.groupId}/photos`).set('Authorization', a.authHeader).set('Content-Type', 'image/jpeg').send(jpeg)
-    const idea = await api().post(`/groups/${a.groupId}/ideas`).set('Authorization', a.authHeader).send({ title: 'Lamp', imageUrl: up.body.url })
+    const up = await api()
+      .post(`/groups/${a.groupId}/photos`)
+      .set('Authorization', a.authHeader)
+      .set('Content-Type', 'image/jpeg')
+      .send(jpeg)
+    const idea = await api()
+      .post(`/groups/${a.groupId}/ideas`)
+      .set('Authorization', a.authHeader)
+      .send({ title: 'Lamp', imageUrl: up.body.url })
     expect(idea.status).toBe(201)
     expect(idea.body.imageUrl).toBe(up.body.url)
   })

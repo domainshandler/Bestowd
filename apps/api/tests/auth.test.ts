@@ -30,9 +30,7 @@ afterAll(async () => {
 
 describe('POST /auth/google', () => {
   it('creates a user and returns a JWT token', async () => {
-    const res = await supertest(app.server)
-      .post('/auth/google')
-      .send({ idToken: 'fake-google-token' })
+    const res = await supertest(app.server).post('/auth/google').send({ idToken: 'fake-google-token' })
 
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('token')
@@ -78,14 +76,10 @@ describe('first sign-in provisioning', () => {
 
 describe('GET /auth/me', () => {
   it('returns the authenticated user', async () => {
-    const loginRes = await supertest(app.server)
-      .post('/auth/google')
-      .send({ idToken: 'fake-google-token' })
+    const loginRes = await supertest(app.server).post('/auth/google').send({ idToken: 'fake-google-token' })
     const token: string = loginRes.body.token
 
-    const res = await supertest(app.server)
-      .get('/auth/me')
-      .set('Authorization', `Bearer ${token}`)
+    const res = await supertest(app.server).get('/auth/me').set('Authorization', `Bearer ${token}`)
 
     expect(res.status).toBe(200)
     expect(res.body.email).toBe('alice@example.com')

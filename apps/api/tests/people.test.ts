@@ -37,10 +37,20 @@ describe('ageOn', () => {
 
 describe('people', () => {
   it('adds a person to a family and returns them with age and family name', async () => {
-    const created = await api().post(`/families/${a.householdId}/people`).set('Authorization', a.authHeader).send({
-      name: 'Mia', relationship: 'Daughter', birthMonth: 3, birthDay: 9, birthYear: 2019,
-      likes: ['Lego', 'Unicorns'], avoid: ['Slime'], sizes: { Shirt: '6T' }, foodNotes: 'No nuts',
-    })
+    const created = await api()
+      .post(`/families/${a.householdId}/people`)
+      .set('Authorization', a.authHeader)
+      .send({
+        name: 'Mia',
+        relationship: 'Daughter',
+        birthMonth: 3,
+        birthDay: 9,
+        birthYear: 2019,
+        likes: ['Lego', 'Unicorns'],
+        avoid: ['Slime'],
+        sizes: { Shirt: '6T' },
+        foodNotes: 'No nuts',
+      })
     expect(created.status).toBe(201)
     expect(created.body).toMatchObject({ groupId: a.groupId, familyId: a.householdId, likes: ['Lego', 'Unicorns'], sizes: { Shirt: '6T' } })
 
@@ -52,7 +62,11 @@ describe('people', () => {
   })
 
   it('rejects a birthDay without birthMonth, a bad month, and a future birth year', async () => {
-    for (const body of [{ name: 'X', birthDay: 4 }, { name: 'X', birthMonth: 13 }, { name: 'X', birthYear: 2999 }]) {
+    for (const body of [
+      { name: 'X', birthDay: 4 },
+      { name: 'X', birthMonth: 13 },
+      { name: 'X', birthYear: 2999 },
+    ]) {
       const res = await api().post(`/families/${a.householdId}/people`).set('Authorization', a.authHeader).send(body)
       expect(res.status).toBe(400)
     }
@@ -86,7 +100,15 @@ describe('people', () => {
     const person = await db.person.create({ data: { groupId: a.groupId, familyId: a.householdId, name: 'Nora' } })
     const fam = await db.family.create({ data: { groupId: a.groupId, name: 'Givers' } })
     const credited = await db.giftEntry.create({
-      data: { groupId: a.groupId, createdById: a.user.id, direction: 'RECEIVED', title: 'Kite', date: new Date('2026-06-01'), familyId: fam.id, credits: { create: { personId: person.id } } },
+      data: {
+        groupId: a.groupId,
+        createdById: a.user.id,
+        direction: 'RECEIVED',
+        title: 'Kite',
+        date: new Date('2026-06-01'),
+        familyId: fam.id,
+        credits: { create: { personId: person.id } },
+      },
     })
     const res = await api().get(`/people/${person.id}`).set('Authorization', a.authHeader)
     expect(res.body.history.map((h: any) => h.id)).toEqual([credited.id])

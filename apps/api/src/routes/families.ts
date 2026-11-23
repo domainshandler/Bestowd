@@ -29,92 +29,103 @@ const familyProperties = {
 export async function familyRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
-  app.get<{ Params: { groupId: string }; Querystring: { status?: FamilyStatus } }>('/groups/:groupId/families', {
-    schema: {
-      querystring: {
-        type: 'object',
-        properties: { status: { type: 'string', enum: ['ACTIVE', 'PAUSED', 'ARCHIVED'] } },
+  app.get<{ Params: { groupId: string }; Querystring: { status?: FamilyStatus } }>(
+    '/groups/:groupId/families',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: { status: { type: 'string', enum: ['ACTIVE', 'PAUSED', 'ARCHIVED'] } },
+        },
       },
     },
-  }, async (request) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const { status } = request.query
+    async (request) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const { status } = request.query
 
-    const families = await db.family.findMany({
-      where: { groupId, ...(status ? { status } : { status: { not: 'ARCHIVED' } }) },
-      include: {
-        _count: { select: { people: { where: { archivedAt: null } } } },
-        connection: { select: { id: true } },
-      },
-    })
-    families.sort((x, y) =>
-      Number(y.householdOfGroupId !== null) - Number(x.householdOfGroupId !== null) || x.name.localeCompare(y.name))
+      const families = await db.family.findMany({
+        where: { groupId, ...(status ? { status } : { status: { not: 'ARCHIVED' } }) },
+        include: {
+          _count: { select: { people: { where: { archivedAt: null } } } },
+          connection: { select: { id: true } },
+        },
+      })
+      families.sort((x, y) => Number(y.householdOfGroupId !== null) - Number(x.householdOfGroupId !== null) || x.name.localeCompare(y.name))
 
-    const ids = families.map((f) => f.id)
-    const upcoming = await db.occasion.findMany({
-      where: {
-        groupId,
-        nextOccurrence: { gte: startOfUtcDay(new Date()) },
-        OR: [
-          { familyId: { in: ids } },
-          { person: { is: { familyId: { in: ids }, archivedAt: null } } },
-          { ...GROUP_WIDE, coverage: { some: { familyId: { in: ids } } } },
-        ],
-      },
-      include: { person: { select: { name: true, familyId: true } }, coverage: { select: { familyId: true } } },
-      orderBy: { nextOccurrence: 'asc' },
-    })
-    const nextByFamily = new Map<string, (typeof upcoming)[number]>()
-    for (const o of upcoming) {
-      // A group-wide occasion is next for every family it covers.
-      const familyIds = o.familyId ? [o.familyId] : o.person ? [o.person.familyId] : o.coverage.map((c) => c.familyId)
-      for (const familyId of familyIds) if (!nextByFamily.has(familyId)) nextByFamily.set(familyId, o)
-    }
-
-    return families.map((f) => {
-      const next = nextByFamily.get(f.id)
-      return {
-        ...toFamilyDto(f),
-        memberCount: f._count.people,
-        onBestowd: f.connection !== null,
-        nextOccasion: next
-          ? { id: next.id, name: next.name, nextOccurrence: next.nextOccurrence!.toISOString(), personName: next.person?.name ?? null }
-          : null,
+      const ids = families.map((f) => f.id)
+      const upcoming = await db.occasion.findMany({
+        where: {
+          groupId,
+          nextOccurrence: { gte: startOfUtcDay(new Date()) },
+          OR: [
+            { familyId: { in: ids } },
+            { person: { is: { familyId: { in: ids }, archivedAt: null } } },
+            { ...GROUP_WIDE, coverage: { some: { familyId: { in: ids } } } },
+          ],
+        },
+        include: { person: { select: { name: true, familyId: true } }, coverage: { select: { familyId: true } } },
+        orderBy: { nextOccurrence: 'asc' },
+      })
+      const nextByFamily = new Map<string, (typeof upcoming)[number]>()
+      for (const o of upcoming) {
+        // A group-wide occasion is next for every family it covers.
+        const familyIds = o.familyId ? [o.familyId] : o.person ? [o.person.familyId] : o.coverage.map((c) => c.familyId)
+        for (const familyId of familyIds) if (!nextByFamily.has(familyId)) nextByFamily.set(familyId, o)
       }
-    })
-  })
 
-  app.post<{ Params: { groupId: string }; Body: FamilyBody & { name: string } }>('/groups/:groupId/families', {
-    schema: { body: { type: 'object', additionalProperties: false, required: ['name'], properties: familyProperties } },
-  }, async (request, reply) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const family = await db.family.create({ data: { ...request.body, groupId } })
-    // Group-wide occasions that take new families (e.g. Christmas) cover this one too.
-    const groupWide = await db.occasion.findMany({ where: { groupId, ...GROUP_WIDE, includeNewFamilies: true }, select: { id: true } })
-    if (groupWide.length) await db.occasionFamily.createMany({ data: groupWide.map((o) => ({ occasionId: o.id, familyId: family.id })) })
-    return reply.code(201).send(toFamilyDto(family))
-  })
+      return families.map((f) => {
+        const next = nextByFamily.get(f.id)
+        return {
+          ...toFamilyDto(f),
+          memberCount: f._count.people,
+          onBestowd: f.connection !== null,
+          nextOccasion: next
+            ? { id: next.id, name: next.name, nextOccurrence: next.nextOccurrence!.toISOString(), personName: next.person?.name ?? null }
+            : null,
+        }
+      })
+    },
+  )
+
+  app.post<{ Params: { groupId: string }; Body: FamilyBody & { name: string } }>(
+    '/groups/:groupId/families',
+    {
+      schema: { body: { type: 'object', additionalProperties: false, required: ['name'], properties: familyProperties } },
+    },
+    async (request, reply) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const family = await db.family.create({ data: { ...request.body, groupId } })
+      // Group-wide occasions that take new families (e.g. Christmas) cover this one too.
+      const groupWide = await db.occasion.findMany({ where: { groupId, ...GROUP_WIDE, includeNewFamilies: true }, select: { id: true } })
+      if (groupWide.length) await db.occasionFamily.createMany({ data: groupWide.map((o) => ({ occasionId: o.id, familyId: family.id })) })
+      return reply.code(201).send(toFamilyDto(family))
+    },
+  )
 
   app.get<{ Params: { id: string } }>('/families/:id', async (request) => {
     const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))
     return familyProfile(family.id)
   })
 
-  app.patch<{ Params: { id: string }; Body: FamilyBody }>('/families/:id', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        properties: { ...familyProperties, status: { type: 'string', enum: ['ACTIVE', 'PAUSED', 'ARCHIVED'] } },
+  app.patch<{ Params: { id: string }; Body: FamilyBody }>(
+    '/families/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { ...familyProperties, status: { type: 'string', enum: ['ACTIVE', 'PAUSED', 'ARCHIVED'] } },
+        },
       },
     },
-  }, async (request) => {
-    const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))
-    const updated = await db.family.update({ where: { id: family.id }, data: request.body })
-    return toFamilyDto(updated)
-  })
+    async (request) => {
+      const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))
+      const updated = await db.family.update({ where: { id: family.id }, data: request.body })
+      return toFamilyDto(updated)
+    },
+  )
 
   app.delete<{ Params: { id: string } }>('/families/:id', async (request, reply) => {
     const family = await loadOr404(userIdOf(request), await db.family.findUnique({ where: { id: request.params.id } }))

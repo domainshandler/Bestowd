@@ -13,7 +13,10 @@ export function useSave<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, o
 }
 
 export function splitList(text: string): string[] {
-  return text.split(',').map((s) => s.trim()).filter(Boolean)
+  return text
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 export const numberOrNull = (s: string): number | null => (s.trim() === '' ? null : Number(s))

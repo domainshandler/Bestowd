@@ -5,7 +5,14 @@ import { iso } from '../dto.js'
 import { badRequest, conflict, forbidden, notFound } from '../http-error.js'
 import { requireMember, userIdOf } from '../services/access.js'
 import {
-  applyMove, isEmptySelection, liveSelection, movableItems, reviewMove, sourceGroupFor, type Choices, type Selection,
+  applyMove,
+  isEmptySelection,
+  liveSelection,
+  movableItems,
+  reviewMove,
+  sourceGroupFor,
+  type Choices,
+  type Selection,
 } from '../services/move.js'
 import { idList } from './schemas.js'
 
@@ -22,7 +29,9 @@ const choicesSchema = {
   required: ['familyIds', 'occasionIds', 'ideas'],
   properties: {
     ...selectionSchema.properties,
-    keepBothFamilies: idList, keepBothPeople: idList, useTheirBudget: idList,
+    keepBothFamilies: idList,
+    keepBothPeople: idList,
+    useTheirBudget: idList,
   },
 } as const
 
@@ -30,13 +39,27 @@ const choicesSchema = {
  * Asks to bring `selection` from the user's own group into `groupId`. Null when there's nothing to
  * bring; with `strict`, that and an existing pending request are errors instead.
  */
-export async function createMoveRequest(userId: string, groupId: string, selection: Selection, strict = false): Promise<MoveRequest | null> {
+export async function createMoveRequest(
+  userId: string,
+  groupId: string,
+  selection: Selection,
+  strict = false,
+): Promise<MoveRequest | null> {
   const source = await sourceGroupFor(userId, groupId)
-  if (!source) { if (strict) throw badRequest('You have nothing of your own to bring'); return null }
+  if (!source) {
+    if (strict) throw badRequest('You have nothing of your own to bring')
+    return null
+  }
   const live = await liveSelection(db, source.id, selection)
-  if (isEmptySelection(live)) { if (strict) throw badRequest('Choose something to bring'); return null }
+  if (isEmptySelection(live)) {
+    if (strict) throw badRequest('Choose something to bring')
+    return null
+  }
   const pending = await db.moveRequest.findFirst({ where: { fromGroupId: source.id, status: 'PENDING' } })
-  if (pending) { if (strict) throw conflict('You already asked to bring things from this group'); return null }
+  if (pending) {
+    if (strict) throw conflict('You already asked to bring things from this group')
+    return null
+  }
   try {
     return await db.moveRequest.create({
       data: { groupId, fromGroupId: source.id, fromGroupName: source.name, requestedById: userId, ...live },
@@ -59,7 +82,9 @@ async function summarise(r: RequestRow) {
     ? await Promise.all([
         db.family.count({ where: { id: { in: live.familyIds }, householdOfGroupId: null } }),
         db.person.count({ where: { familyId: { in: live.familyIds }, userId: null } }),
-        db.giftEntry.count({ where: { groupId: r.fromGroupId, OR: [{ familyId: { in: live.familyIds } }, { person: { familyId: { in: live.familyIds } } }] } }),
+        db.giftEntry.count({
+          where: { groupId: r.fromGroupId, OR: [{ familyId: { in: live.familyIds } }, { person: { familyId: { in: live.familyIds } } }] },
+        }),
         live.ideas ? db.idea.count({ where: { groupId: r.fromGroupId } }) : 0,
       ])
     : [0, 0, 0, 0]
@@ -105,14 +130,22 @@ export async function moveRoutes(app: FastifyInstance) {
     return { movable: await movableItems(source), pending }
   })
 
-  app.post<{ Params: { groupId: string }; Body: Selection }>('/groups/:groupId/move-requests', {
-    schema: { body: selectionSchema },
-  }, async (request, reply) => {
-    const userId = userIdOf(request)
-    await requireMember(userId, request.params.groupId)
-    const created = (await createMoveRequest(userId, request.params.groupId, request.body, true))!
-    return reply.code(201).send(await summarise({ ...created, requestedBy: await db.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true } }) }))
-  })
+  app.post<{ Params: { groupId: string }; Body: Selection }>(
+    '/groups/:groupId/move-requests',
+    {
+      schema: { body: selectionSchema },
+    },
+    async (request, reply) => {
+      const userId = userIdOf(request)
+      await requireMember(userId, request.params.groupId)
+      const created = (await createMoveRequest(userId, request.params.groupId, request.body, true))!
+      return reply
+        .code(201)
+        .send(
+          await summarise({ ...created, requestedBy: await db.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true } }) }),
+        )
+    },
+  )
 
   // Pending requests into this group: the owner reviews them; the person who asked sees theirs.
   app.get<{ Params: { groupId: string } }>('/groups/:groupId/move-requests', async (request) => {
@@ -134,32 +167,39 @@ export async function moveRoutes(app: FastifyInstance) {
     return { ...(await summarise(r)), canDecide: isOwner && r.status === 'PENDING', review }
   })
 
-  app.post<{ Params: { id: string }; Body: Choices }>('/move-requests/:id/approve', {
-    schema: { body: choicesSchema },
-  }, async (request) => {
-    const userId = userIdOf(request)
-    const { r, isOwner } = await loadRequest(userId, request.params.id)
-    if (!isOwner) throw forbidden()
-    await requirePending(r)
-    const b = request.body
-    const choices: Choices = {
-      familyIds: within(r.familyIds, b.familyIds),
-      occasionIds: within(r.occasionIds, b.occasionIds),
-      ideas: r.ideas && b.ideas,
-      keepBothFamilies: b.keepBothFamilies ?? [],
-      keepBothPeople: b.keepBothPeople ?? [],
-      useTheirBudget: b.useTheirBudget ?? [],
-    }
-    const result = await db.$transaction(async (tx) => {
-      const claimed = await tx.moveRequest.updateMany({
-        where: { id: r.id, status: 'PENDING' },
-        data: { status: 'APPROVED', decidedById: userId, decidedAt: new Date() },
-      })
-      if (claimed.count === 0) throw conflict('This request has already been decided')
-      return applyMove(tx, r.fromGroupId!, r.groupId, choices)
-    }, { timeout: 60_000 })
-    return { status: 'APPROVED', sourceRemoved: result.sourceRemoved }
-  })
+  app.post<{ Params: { id: string }; Body: Choices }>(
+    '/move-requests/:id/approve',
+    {
+      schema: { body: choicesSchema },
+    },
+    async (request) => {
+      const userId = userIdOf(request)
+      const { r, isOwner } = await loadRequest(userId, request.params.id)
+      if (!isOwner) throw forbidden()
+      await requirePending(r)
+      const b = request.body
+      const choices: Choices = {
+        familyIds: within(r.familyIds, b.familyIds),
+        occasionIds: within(r.occasionIds, b.occasionIds),
+        ideas: r.ideas && b.ideas,
+        keepBothFamilies: b.keepBothFamilies ?? [],
+        keepBothPeople: b.keepBothPeople ?? [],
+        useTheirBudget: b.useTheirBudget ?? [],
+      }
+      const result = await db.$transaction(
+        async (tx) => {
+          const claimed = await tx.moveRequest.updateMany({
+            where: { id: r.id, status: 'PENDING' },
+            data: { status: 'APPROVED', decidedById: userId, decidedAt: new Date() },
+          })
+          if (claimed.count === 0) throw conflict('This request has already been decided')
+          return applyMove(tx, r.fromGroupId!, r.groupId, choices)
+        },
+        { timeout: 60_000 },
+      )
+      return { status: 'APPROVED', sourceRemoved: result.sourceRemoved }
+    },
+  )
 
   app.post<{ Params: { id: string } }>('/move-requests/:id/decline', async (request) => {
     const userId = userIdOf(request)

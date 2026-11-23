@@ -6,11 +6,34 @@ import AiSetting from '../AiSetting.tsx'
 import { me, membership, renderApp } from '../../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', async () => {
-  class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
-  return { ApiError, getMe: vi.fn(), getAiSettings: vi.fn(), saveAiSettings: vi.fn(), removeAiSettings: vi.fn(), captureLink: vi.fn(), capturePhoto: vi.fn() }
+  class ApiError extends Error {
+    constructor(
+      public status: number,
+      message: string,
+    ) {
+      super(message)
+    }
+  }
+  return {
+    ApiError,
+    getMe: vi.fn(),
+    getAiSettings: vi.fn(),
+    saveAiSettings: vi.fn(),
+    removeAiSettings: vi.fn(),
+    captureLink: vi.fn(),
+    capturePhoto: vi.fn(),
+  }
 })
 
-const draft = { title: 'Forerunner 165', brand: 'Garmin', price: 329.99, currency: 'CAD', store: null, url: 'https://shop/w', imageUrl: 'https://shop/w.jpg' }
+const draft = {
+  title: 'Forerunner 165',
+  brand: 'Garmin',
+  price: 329.99,
+  currency: 'CAD',
+  store: null,
+  url: 'https://shop/w',
+  imageUrl: 'https://shop/w.jpg',
+}
 
 describe('capture', () => {
   it('fills only what was found and keeps a link or photo the user already has', () => {
@@ -22,12 +45,20 @@ describe('capture', () => {
     expect(set.url).not.toHaveBeenCalled()
     expect(set.photo).toHaveBeenCalledWith('https://shop/w.jpg')
     expect(note).toBe('Filled in the name, brand, price, picture. Check before saving. Price read as 329.99 CAD.')
-    expect(applyDraft({ ...draft, title: null, brand: null, price: null, imageUrl: null }, set, { url: false, photo: true })).toMatch(/Couldn't find/)
+    expect(applyDraft({ ...draft, title: null, brand: null, price: null, imageUrl: null }, set, { url: false, photo: true })).toMatch(
+      /Couldn't find/,
+    )
   })
 
   it('offers to read an uploaded photo when the group has an AI key', async () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Ours', 'MEMBER')]))
-    vi.mocked(getAiSettings).mockResolvedValue({ provider: 'anthropic', model: null, defaultModel: 'claude-opus-5-5', keyHint: '1234', configured: true })
+    vi.mocked(getAiSettings).mockResolvedValue({
+      provider: 'anthropic',
+      model: null,
+      defaultModel: 'claude-opus-5-5',
+      keyHint: '1234',
+      configured: true,
+    })
     vi.mocked(capturePhoto).mockResolvedValue(draft)
     const onDraft = vi.fn()
     renderApp(<FillFromPhoto groupId="g1" photoUrl="/files/g1/a.jpg?sig=x" onDraft={onDraft} />)
@@ -44,8 +75,20 @@ describe('capture', () => {
 
   it('lets the owner choose a provider and save a key, keeping the saved key when left blank', async () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Ours')]))
-    vi.mocked(getAiSettings).mockResolvedValue({ provider: 'anthropic', model: null, defaultModel: 'claude-opus-5-5', keyHint: '1234', configured: true })
-    vi.mocked(saveAiSettings).mockResolvedValue({ provider: 'openai', model: 'gpt-x', defaultModel: null, keyHint: 'abcd', configured: true })
+    vi.mocked(getAiSettings).mockResolvedValue({
+      provider: 'anthropic',
+      model: null,
+      defaultModel: 'claude-opus-5-5',
+      keyHint: '1234',
+      configured: true,
+    })
+    vi.mocked(saveAiSettings).mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-x',
+      defaultModel: null,
+      keyHint: 'abcd',
+      configured: true,
+    })
     renderApp(<AiSetting groupId="g1" isOwner />)
     expect(await screen.findByText(/A key ending in 1234 is saved/)).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Provider'), { target: { value: 'openai' } })

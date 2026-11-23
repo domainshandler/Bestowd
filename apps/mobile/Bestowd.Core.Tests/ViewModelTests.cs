@@ -10,22 +10,42 @@ public class ViewModelTests
 {
     private static Occasion Occ(string name, OccasionStatus status = OccasionStatus.NotStarted, string group = "Mine", decimal? budget = 40, decimal spent = 0) => new()
     {
-        Id = name, Name = name, Status = status, GroupName = group, Currency = "CAD", PersonId = "p1",
-        SubjectName = "Maya", SubjectFamilyName = "Chen family", EffectiveBudget = budget, Spent = spent,
+        Id = name,
+        Name = name,
+        Status = status,
+        GroupName = group,
+        Currency = "CAD",
+        PersonId = "p1",
+        SubjectName = "Maya",
+        SubjectFamilyName = "Chen family",
+        EffectiveBudget = budget,
+        Spent = spent,
         NextOccurrence = new DateTime(2026, 11, 22, 0, 0, 0, DateTimeKind.Utc),
     };
 
     private static Gift G(string id, GiftDirection dir = GiftDirection.Given, string? occasion = null, int year = 2026, decimal? amount = 45, bool hidden = false, bool thanked = false, GiftStatus? status = GiftStatus.Given) => new()
     {
-        Id = id, Title = id, Direction = dir, OccasionName = occasion, CounterpartyName = "Maya", Amount = amount,
-        ValueHidden = hidden, ThankYouSent = thanked, Status = dir == GiftDirection.Given ? status : null,
+        Id = id,
+        Title = id,
+        Direction = dir,
+        OccasionName = occasion,
+        CounterpartyName = "Maya",
+        Amount = amount,
+        ValueHidden = hidden,
+        ThankYouSent = thanked,
+        Status = dir == GiftDirection.Given ? status : null,
         Date = new DateTime(year, 3, 9, 0, 0, 0, DateTimeKind.Utc),
         OccasionDate = occasion is null ? null : new DateTime(year, 12, 25, 0, 0, 0, DateTimeKind.Utc),
     };
 
     private static Occasion BirthdayOcc() => new()
     {
-        Id = "Maya's birthday", Name = "Maya's birthday", Type = OccasionType.Birthday, PersonId = "p1", Currency = "CAD", EffectiveBudget = 40,
+        Id = "Maya's birthday",
+        Name = "Maya's birthday",
+        Type = OccasionType.Birthday,
+        PersonId = "p1",
+        Currency = "CAD",
+        EffectiveBudget = 40,
         NextOccurrence = new DateTime(2026, 11, 22, 0, 0, 0, DateTimeKind.Utc),
     };
 
@@ -348,7 +368,9 @@ public class ViewModelTests
         var (api, _, _) = Fake.Api();
         var vm = new AccountViewModel(api, new Session(api, new Api.MemoryTokenStore(), groups, new NoPush(), new MemorySettingsStore()), groups, new FakeNavigator(), new FakePrompts())
         {
-            GroupName = "Family", Currency = "cad", ReminderDays = "14, 3",
+            GroupName = "Family",
+            Currency = "cad",
+            ReminderDays = "14, 3",
         };
         Assert.Equal("""{"name":"Family","currency":"CAD","defaultBudgets":{},"defaultReminderDays":[14,3]}""", vm.BuildSettingsPatch()!.ToJson());
 
@@ -369,7 +391,10 @@ public class ViewModelTests
         var session = new Session(api, new Api.MemoryTokenStore(), groups, new NoPush(), new MemorySettingsStore());
         var vm = new LogGiftViewModel(api, groups, session, new FakeNavigator(), new DataChanged())
         {
-            Title = "Cookie tin", Subject = new SubjectOption("Chen family", null, "f1"), Amount = "30", IsReceived = true,
+            Title = "Cookie tin",
+            Subject = new SubjectOption("Chen family", null, "f1"),
+            Amount = "30",
+            IsReceived = true,
             Date = new DateTime(2026, 2, 1),
         };
         var received = vm.BuildBody()!;
@@ -395,7 +420,11 @@ public class ViewModelTests
     {
         Assert.Equal("Turns 5 · Nov 22", FamilyViewModel.MemberLine(new ProfilePerson
         {
-            Name = "Maya", BirthYear = 2021, BirthMonth = 11, BirthDay = 22, NextBirthday = new DateTime(2026, 11, 22, 0, 0, 0, DateTimeKind.Utc),
+            Name = "Maya",
+            BirthYear = 2021,
+            BirthMonth = 11,
+            BirthDay = 22,
+            NextBirthday = new DateTime(2026, 11, 22, 0, 0, 0, DateTimeKind.Utc),
         }));
         Assert.Equal("Parent · Jul 14", FamilyViewModel.MemberLine(new ProfilePerson { Name = "Jenny", Relationship = "Parent", BirthMonth = 7, BirthDay = 14 }));
         Assert.Equal("No birthday yet", FamilyViewModel.MemberLine(new ProfilePerson { Name = "X" }));

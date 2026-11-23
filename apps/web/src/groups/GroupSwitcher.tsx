@@ -12,7 +12,11 @@ export default function GroupSwitcher({ className = '' }: { className?: string }
         onChange={(e) => setGroupId(e.target.value)}
         className="min-h-[36px] border border-line rounded-lg px-2 bg-white text-ink text-sm font-medium"
       >
-        {memberships.map((m) => <option key={m.groupId} value={m.groupId}>{m.groupName}</option>)}
+        {memberships.map((m) => (
+          <option key={m.groupId} value={m.groupId}>
+            {m.groupName}
+          </option>
+        ))}
       </select>
     </label>
   )

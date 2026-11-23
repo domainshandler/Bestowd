@@ -29,18 +29,22 @@ export async function uploadRoutes(app: FastifyInstance) {
   app.addContentTypeParser(Object.keys(TYPES), { parseAs: 'buffer', bodyLimit: MAX_PHOTO_BYTES }, (_req, body, done) => done(null, body))
 
   // Upload a photo for the group; returns the link to store on an idea or gift.
-  app.post<{ Params: { groupId: string }; Body: Buffer }>('/groups/:groupId/photos', { preHandler: app.authenticate, bodyLimit: MAX_PHOTO_BYTES }, async (request, reply) => {
-    const { groupId } = request.params
-    await requireMember(userIdOf(request), groupId)
-    const type = TYPES[(request.headers['content-type'] ?? '').split(';')[0]!.trim()]
-    const body = request.body
-    if (!type || !Buffer.isBuffer(body) || body.length < 12 || !type.magic(body)) throw badRequest('Upload a JPEG, PNG or WebP photo')
-    const name = `${randomUUID()}.${type.ext}`
-    const dir = path.join(env.UPLOAD_DIR, groupId)
-    await mkdir(dir, { recursive: true })
-    await writeFile(path.join(dir, name), body)
-    return reply.code(201).send({ url: photoPath(groupId, name) })
-  })
+  app.post<{ Params: { groupId: string }; Body: Buffer }>(
+    '/groups/:groupId/photos',
+    { preHandler: app.authenticate, bodyLimit: MAX_PHOTO_BYTES },
+    async (request, reply) => {
+      const { groupId } = request.params
+      await requireMember(userIdOf(request), groupId)
+      const type = TYPES[(request.headers['content-type'] ?? '').split(';')[0].trim()]
+      const body = request.body
+      if (!type || !Buffer.isBuffer(body) || body.length < 12 || !type.magic(body)) throw badRequest('Upload a JPEG, PNG or WebP photo')
+      const name = `${randomUUID()}.${type.ext}`
+      const dir = path.join(env.UPLOAD_DIR, groupId)
+      await mkdir(dir, { recursive: true })
+      await writeFile(path.join(dir, name), body)
+      return reply.code(201).send({ url: photoPath(groupId, name) })
+    },
+  )
 
   app.get<{ Params: { groupId: string; name: string }; Querystring: { sig?: string } }>('/files/:groupId/:name', async (request, reply) => {
     const { groupId, name } = request.params
@@ -50,7 +54,10 @@ export async function uploadRoutes(app: FastifyInstance) {
     if (given.length !== expected.length || !timingSafeEqual(given, expected)) throw notFound()
     try {
       const file = await readFile(path.join(env.UPLOAD_DIR, groupId, name))
-      return reply.header('content-type', CONTENT_TYPE[name.split('.').pop()!]!).header('cache-control', 'private, max-age=31536000, immutable').send(file)
+      return reply
+        .header('content-type', CONTENT_TYPE[name.split('.').pop()!])
+        .header('cache-control', 'private, max-age=31536000, immutable')
+        .send(file)
     } catch {
       throw notFound()
     }

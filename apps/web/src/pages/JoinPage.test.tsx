@@ -5,7 +5,14 @@ import JoinPage from './JoinPage.tsx'
 import { me, membership, renderApp } from '../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', async () => {
-  class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
+  class ApiError extends Error {
+    constructor(
+      public status: number,
+      message: string,
+    ) {
+      super(message)
+    }
+  }
   return { ApiError, getMe: vi.fn(), getInvite: vi.fn(), acceptInvite: vi.fn(), listFamilies: vi.fn(), getMovable: vi.fn() }
 })
 
@@ -27,7 +34,9 @@ describe('JoinPage', () => {
     fireEvent.click(screen.getByLabelText('Sizes'))
     fireEvent.click(screen.getByLabelText('What to avoid'))
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }))
-    await waitFor(() => expect(acceptInvite).toHaveBeenCalledWith('tok123', { sourceFamilyId: 'home', sharedFields: ['birthday', 'likes', 'sizes'] }))
+    await waitFor(() =>
+      expect(acceptInvite).toHaveBeenCalledWith('tok123', { sourceFamilyId: 'home', sharedFields: ['birthday', 'likes', 'sizes'] }),
+    )
     expect(await screen.findByText('Connected.')).toBeInTheDocument()
   })
 
@@ -46,8 +55,13 @@ describe('JoinPage', () => {
     vi.mocked(getMe).mockResolvedValue(me([membership('g1', 'Mine')]))
     vi.mocked(getInvite).mockResolvedValue({ ...preview, kind: 'GROUP', familyName: null })
     vi.mocked(getMovable).mockResolvedValue({
-      groupId: 'g1', groupName: 'Mine', ideas: 2,
-      families: [{ id: 'hh', name: 'My household', isOwnHousehold: true, people: 1, gifts: 2 }, { id: 'f1', name: 'Book club', isOwnHousehold: false, people: 0, gifts: 1 }],
+      groupId: 'g1',
+      groupName: 'Mine',
+      ideas: 2,
+      families: [
+        { id: 'hh', name: 'My household', isOwnHousehold: true, people: 1, gifts: 2 },
+        { id: 'f1', name: 'Book club', isOwnHousehold: false, people: 0, gifts: 1 },
+      ],
       occasions: [{ id: 'o1', name: 'Christmas' }],
     })
     vi.mocked(acceptInvite).mockResolvedValue({ groupId: 'g9', alreadyMember: false, moveRequestId: 'm1' })
@@ -57,7 +71,9 @@ describe('JoinPage', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /Book club/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: /Gift ideas/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Join group' }))
-    await waitFor(() => expect(acceptInvite).toHaveBeenCalledWith('grp', { bring: { familyIds: ['hh'], occasionIds: ['o1'], ideas: false } }))
+    await waitFor(() =>
+      expect(acceptInvite).toHaveBeenCalledWith('grp', { bring: { familyIds: ['hh'], occasionIds: ['o1'], ideas: false } }),
+    )
   })
 
   it('asks a signed-out visitor to sign in', async () => {

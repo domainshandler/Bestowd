@@ -10,9 +10,14 @@ export async function createTestApp(): Promise<FastifyInstance> {
 }
 
 /** A user with a provisioned personal group and household, as after a first sign-in. */
-export async function createTestUser(app: FastifyInstance, overrides: Partial<{
-  googleId: string; email: string; name: string
-}> = {}) {
+export async function createTestUser(
+  app: FastifyInstance,
+  overrides: Partial<{
+    googleId: string
+    email: string
+    name: string
+  }> = {},
+) {
   const unique = `${Math.random().toString(36).slice(2)}-${Date.now()}`
   const user = await db.user.create({
     data: {

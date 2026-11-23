@@ -5,9 +5,9 @@ import { db } from '../src/db.js'
 import type { FastifyInstance } from 'fastify'
 
 let app: FastifyInstance
-let a: Awaited<ReturnType<typeof createTestUser>>  // inviter
-let b: Awaited<ReturnType<typeof createTestUser>>  // the Chens, accepting
-let c: Awaited<ReturnType<typeof createTestUser>>  // outsider
+let a: Awaited<ReturnType<typeof createTestUser>> // inviter
+let b: Awaited<ReturnType<typeof createTestUser>> // the Chens, accepting
+let c: Awaited<ReturnType<typeof createTestUser>> // outsider
 let chenInA: string
 
 beforeAll(async () => {
@@ -17,7 +17,17 @@ beforeAll(async () => {
   c = await createTestUser(app, { name: 'Carol' })
   chenInA = (await db.family.create({ data: { groupId: a.groupId, name: 'Chen family' } })).id
   await db.person.create({
-    data: { groupId: b.groupId, familyId: b.householdId, name: 'Lily', birthYear: 2018, birthMonth: 5, birthDay: 2, likes: ['Dinosaurs'], avoid: ['Glitter'], foodNotes: 'Vegetarian' },
+    data: {
+      groupId: b.groupId,
+      familyId: b.householdId,
+      name: 'Lily',
+      birthYear: 2018,
+      birthMonth: 5,
+      birthDay: 2,
+      likes: ['Dinosaurs'],
+      avoid: ['Glitter'],
+      foodNotes: 'Vegetarian',
+    },
   })
 })
 
@@ -60,7 +70,10 @@ describe('family invites and connections', () => {
 
     const profile = await api().get(`/families/${chenInA}`).set('Authorization', a.authHeader)
     expect(profile.body.connection).toMatchObject({ id: connectionId, sourceFamilyName: "Wei's household", sharedFields: ['likes'] })
-    expect(profile.body.connection.people).toEqual([{ id: expect.any(String), name: 'Wei Chen', likes: [] }, { id: expect.any(String), name: 'Lily', likes: ['Dinosaurs'] }])
+    expect(profile.body.connection.people).toEqual([
+      { id: expect.any(String), name: 'Wei Chen', likes: [] },
+      { id: expect.any(String), name: 'Lily', likes: ['Dinosaurs'] },
+    ])
 
     const list = await api().get(`/groups/${a.groupId}/families`).set('Authorization', a.authHeader)
     expect(list.body.find((f: any) => f.id === chenInA).onBestowd).toBe(true)
@@ -84,7 +97,13 @@ describe('family invites and connections', () => {
     await accept(b, res.body.token, { sourceFamilyId: b.householdId })
     const profile = await api().get(`/families/${chenInA}`).set('Authorization', a.authHeader)
     expect(profile.body.connection.people.find((p: any) => p.name === 'Lily')).toEqual({
-      id: expect.any(String), name: 'Lily', birthMonth: 5, birthDay: 2, birthYear: 2018, likes: ['Dinosaurs'], avoid: ['Glitter'],
+      id: expect.any(String),
+      name: 'Lily',
+      birthMonth: 5,
+      birthDay: 2,
+      birthYear: 2018,
+      likes: ['Dinosaurs'],
+      avoid: ['Glitter'],
     })
   })
 })
@@ -126,14 +145,22 @@ describe('group invites', () => {
 
     const me = await api().get('/me').set('Authorization', c.authHeader)
     expect(me.body.primaryGroupId).toBe(a.groupId)
-    expect(me.body.memberships.map((m: any) => [m.groupId, m.role])).toEqual([[a.groupId, 'MEMBER'], [c.groupId, 'OWNER']])
+    expect(me.body.memberships.map((m: any) => [m.groupId, m.role])).toEqual([
+      [a.groupId, 'MEMBER'],
+      [c.groupId, 'OWNER'],
+    ])
 
     const people = await api().get(`/groups/${a.groupId}/people`).set('Authorization', c.authHeader)
     const holders = people.body.filter((p: any) => p.isAccountHolder).map((p: any) => [p.name, p.familyId])
-    expect(holders).toEqual(expect.arrayContaining([['Alice', a.householdId], ['Carol', a.householdId]]))
+    expect(holders).toEqual(
+      expect.arrayContaining([
+        ['Alice', a.householdId],
+        ['Carol', a.householdId],
+      ]),
+    )
   })
 
-  it("reports an existing member without using up the link", async () => {
+  it('reports an existing member without using up the link', async () => {
     const res = await invite(a, a.groupId, { kind: 'GROUP' })
     expect((await accept(a, res.body.token)).body).toEqual({ groupId: a.groupId, alreadyMember: true })
     expect((await api().get(`/invites/${res.body.token}`)).status).toBe(200)

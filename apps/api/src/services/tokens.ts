@@ -11,8 +11,16 @@ export const DEFAULT_SHARED_FIELDS: ShareableField[] = ['birthday', 'likes', 'av
 /** A person as seen through a family connection: id and name plus only the shared fields. */
 export function sharedPersonView(
   person: {
-    id: string; name: string; birthMonth: number | null; birthDay: number | null; birthYear: number | null
-    likes: string[]; avoid: string[]; sizes: unknown; foodNotes: string | null; photoUrl: string | null
+    id: string
+    name: string
+    birthMonth: number | null
+    birthDay: number | null
+    birthYear: number | null
+    likes: string[]
+    avoid: string[]
+    sizes: unknown
+    foodNotes: string | null
+    photoUrl: string | null
   },
   fields: string[],
 ) {

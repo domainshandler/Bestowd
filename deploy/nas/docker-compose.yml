@@ -13,7 +13,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bestowd -d bestowd"]
+      test: ['CMD-SHELL', 'pg_isready -U bestowd -d bestowd']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,7 +39,7 @@ services:
     volumes:
       - uploads:/data/uploads
     ports:
-      - "3000:3000"
+      - '3000:3000'
 
   web:
     build:
@@ -50,7 +50,7 @@ services:
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - '8080:80'
 
 volumes:
   db-data:

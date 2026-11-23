@@ -7,7 +7,14 @@ import { useAuth } from './useAuth.ts'
 vi.mock('@bestowd/api-client', () => ({
   googleLogin: vi.fn().mockResolvedValue({
     token: 'test-jwt',
-    user: { id: '1', email: 'alice@example.com', name: 'Alice', identitySource: 'google', emailVerified: true, createdAt: new Date().toISOString() },
+    user: {
+      id: '1',
+      email: 'alice@example.com',
+      name: 'Alice',
+      identitySource: 'google',
+      emailVerified: true,
+      createdAt: new Date().toISOString(),
+    },
   }),
   getAuthMe: vi.fn(),
 }))
@@ -29,12 +36,24 @@ describe('AuthContext', () => {
   })
 
   it('starts with no user', () => {
-    render(<AuthProvider><MemoryRouter><TestConsumer /></MemoryRouter></AuthProvider>)
+    render(
+      <AuthProvider>
+        <MemoryRouter>
+          <TestConsumer />
+        </MemoryRouter>
+      </AuthProvider>,
+    )
     expect(screen.getByTestId('user').textContent).toBe('none')
   })
 
   it('sets user and token after login', async () => {
-    render(<AuthProvider><MemoryRouter><TestConsumer /></MemoryRouter></AuthProvider>)
+    render(
+      <AuthProvider>
+        <MemoryRouter>
+          <TestConsumer />
+        </MemoryRouter>
+      </AuthProvider>,
+    )
     await act(async () => {
       screen.getByText('Login').click()
     })
@@ -43,9 +62,19 @@ describe('AuthContext', () => {
   })
 
   it('clears user and token after logout', async () => {
-    render(<AuthProvider><MemoryRouter><TestConsumer /></MemoryRouter></AuthProvider>)
-    await act(async () => { screen.getByText('Login').click() })
-    await act(async () => { screen.getByText('Logout').click() })
+    render(
+      <AuthProvider>
+        <MemoryRouter>
+          <TestConsumer />
+        </MemoryRouter>
+      </AuthProvider>,
+    )
+    await act(async () => {
+      screen.getByText('Login').click()
+    })
+    await act(async () => {
+      screen.getByText('Logout').click()
+    })
     expect(screen.getByTestId('user').textContent).toBe('none')
     expect(localStorage.getItem('bestowd_token')).toBeNull()
   })

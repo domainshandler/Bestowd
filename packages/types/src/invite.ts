@@ -40,7 +40,13 @@ export interface MoveSelection {
   ideas: boolean
 }
 
-export interface MovableFamily { id: string; name: string; isOwnHousehold: boolean; people: number; gifts: number }
+export interface MovableFamily {
+  id: string
+  name: string
+  isOwnHousehold: boolean
+  people: number
+  gifts: number
+}
 
 /** What you could bring from your own group (one you own and are alone in). */
 export interface MovableItems {
@@ -63,7 +69,10 @@ export interface MoveRequestSummary {
   counts: { families: number; people: number; gifts: number; occasions: number; ideas: number }
 }
 
-export interface NameMatch { id: string; name: string }
+export interface NameMatch {
+  id: string
+  name: string
+}
 
 /** The owner's view of a pending request: items, look-alikes and differences to decide on. */
 export interface MoveReview {
@@ -71,7 +80,14 @@ export interface MoveReview {
   currency: { from: string; to: string } | null
   families: (MovableFamily & { match: NameMatch | null })[]
   people: { id: string; name: string; familyId: string; match: NameMatch }[]
-  occasions: { id: string; name: string; match: NameMatch | null; budgetDiffers: boolean; theirBudget: number | null; ourBudget: number | null }[]
+  occasions: {
+    id: string
+    name: string
+    match: NameMatch | null
+    budgetDiffers: boolean
+    theirBudget: number | null
+    ourBudget: number | null
+  }[]
   ideas: number
 }
 
@@ -98,7 +114,11 @@ export interface LeaveGroupBody {
 }
 
 /** Something the group's members should know, e.g. someone left. */
-export interface GroupNotice { id: string; text: string; createdAt: string }
+export interface GroupNotice {
+  id: string
+  text: string
+  createdAt: string
+}
 
 /** Before leaving: families you could take a copy of, and your other groups to put them in. */
 export interface LeaveOptions {

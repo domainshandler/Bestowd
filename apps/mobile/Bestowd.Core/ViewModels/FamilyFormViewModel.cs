@@ -9,7 +9,7 @@ public sealed partial class FamilyFormViewModel(BestowdApi api, INavigator nav, 
 {
     private string _groupId = "";
     [ObservableProperty] public partial string? FamilyId { get; private set; }
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial FamilyType Type { get; set; } = FamilyType.Family;
     [ObservableProperty] public partial string Notes { get; set; } = "";
 

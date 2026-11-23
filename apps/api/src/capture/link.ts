@@ -17,8 +17,16 @@ export function isPrivateAddress(ip: string): boolean {
     return v === '::1' || v === '::' || v.startsWith('fc') || v.startsWith('fd') || v.startsWith('fe80')
   }
   const [a = 0, b = 0] = ip.split('.').map(Number)
-  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224
+  return (
+    a === 10 ||
+    a === 127 ||
+    a === 0 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    a >= 224
+  )
 }
 
 async function assertPublic(url: URL): Promise<void> {
@@ -52,14 +60,23 @@ export async function fetchPage(link: string): Promise<{ url: string; html: stri
       if (done) break
       size += value.length
       chunks.push(value)
-      if (size >= MAX_PAGE_BYTES) { await reader.cancel(); break }
+      if (size >= MAX_PAGE_BYTES) {
+        await reader.cancel()
+        break
+      }
     }
     return { url: url.toString(), html: Buffer.concat(chunks).toString('utf8') }
   }
   throw new LinkError('That link redirects too many times')
 }
 
-const decode = (s: string) => s.replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+const decode = (s: string) =>
+  s
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
 
 function meta(html: string, names: string[]): string | null {
   for (const name of names) {
@@ -82,13 +99,17 @@ function jsonLd(html: string): Record<string, any>[] {
     }
   }
   for (const m of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try { walk(JSON.parse(m[1]!)) } catch { /* a broken block: skip it */ }
+    try {
+      walk(JSON.parse(m[1]))
+    } catch {
+      /* a broken block: skip it */
+    }
   }
   return out
 }
 
 const isType = (o: Record<string, any>, t: string) => [].concat(o['@type'] ?? []).some((x: string) => String(x).toLowerCase() === t)
-const first = <T,>(v: T | T[] | undefined): T | undefined => (Array.isArray(v) ? v[0] : v)
+const first = <T>(v: T | T[] | undefined): T | undefined => (Array.isArray(v) ? v[0] : v)
 const num = (v: unknown) => (v === undefined || v === null || v === '' ? null : Number(String(v).replace(/[^0-9.]/g, '')) || null)
 
 /** The product a store page describes. Missing details stay null. */
@@ -101,11 +122,11 @@ export function readProductPage(html: string, pageUrl: string): ProductDraft {
   const site = meta(html, ['og:site_name']) ?? new URL(pageUrl).hostname.replace(/^www\./, '')
   return cleanDraft({
     title: product?.name ?? meta(html, ['og:title', 'twitter:title']) ?? decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? ''),
-    brand: typeof brand === 'string' ? brand : (brand as any)?.name ?? meta(html, ['product:brand', 'og:brand']),
+    brand: typeof brand === 'string' ? brand : ((brand as any)?.name ?? meta(html, ['product:brand', 'og:brand'])),
     price: num(offer?.price ?? offer?.lowPrice ?? priceSpec?.price) ?? num(meta(html, ['product:price:amount', 'og:price:amount'])),
     currency: offer?.priceCurrency ?? priceSpec?.priceCurrency ?? meta(html, ['product:price:currency', 'og:price:currency']),
     store: site,
     url: meta(html, ['og:url']) ?? pageUrl,
-    imageUrl: typeof image === 'string' ? image : (image as any)?.url ?? meta(html, ['og:image', 'twitter:image']),
+    imageUrl: typeof image === 'string' ? image : ((image as any)?.url ?? meta(html, ['og:image', 'twitter:image'])),
   })
 }

@@ -6,10 +6,22 @@ import GiftForm from './GiftForm.tsx'
 import { me, membership, occasion, renderApp } from '../../test-utils.tsx'
 
 vi.mock('@bestowd/api-client', () => ({
-  getMe: vi.fn(), listFamilies: vi.fn(), listOccasions: vi.fn(), listPeople: vi.fn(), createGift: vi.fn(), updateGift: vi.fn(),
+  getMe: vi.fn(),
+  listFamilies: vi.fn(),
+  listOccasions: vi.fn(),
+  listPeople: vi.fn(),
+  createGift: vi.fn(),
+  updateGift: vi.fn(),
 }))
 
-const christmas = occasion({ id: 'xmas', name: 'Christmas', scope: 'GROUP', personId: null, familyId: null, nextOccurrence: '2026-12-25T00:00:00.000Z' })
+const christmas = occasion({
+  id: 'xmas',
+  name: 'Christmas',
+  scope: 'GROUP',
+  personId: null,
+  familyId: null,
+  nextOccurrence: '2026-12-25T00:00:00.000Z',
+})
 const birthday = occasion({ id: 'bday', name: "Mia's birthday", personId: 'p1' })
 
 function setup() {
@@ -25,7 +37,7 @@ describe('GiftForm occasions', () => {
     renderApp(<GiftForm open onClose={() => {}} groupId="g1" />)
     expect(await screen.findByRole('option', { name: /Christmas/ })).toBeInTheDocument()
     expect(screen.getByLabelText('Occasion')).not.toBeDisabled()
-    expect(vi.mocked(listOccasions).mock.calls[0]![1]).not.toHaveProperty('personId')
+    expect(vi.mocked(listOccasions).mock.calls[0][1]).not.toHaveProperty('personId')
   })
 
   it('picking a person’s occasion fills in who it’s for', async () => {

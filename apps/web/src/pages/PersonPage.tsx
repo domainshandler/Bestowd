@@ -42,7 +42,10 @@ export default function PersonPage() {
   const [modal, setModal] = useState<null | 'edit' | 'gift' | 'occasion'>(null)
   const close = () => setModal(null)
   const archive = useSave((archived: boolean) => updatePerson(id, { archived }))
-  const remove = useSave(() => deletePerson(id), () => navigate(person.data ? `/families/${person.data.familyId}` : '/people'))
+  const remove = useSave(
+    () => deletePerson(id),
+    () => navigate(person.data ? `/families/${person.data.familyId}` : '/people'),
+  )
 
   const history = useMemo(() => byYear((gifts.data?.gifts ?? []).filter((g) => g.direction === direction)), [gifts.data, direction])
 
@@ -68,7 +71,12 @@ export default function PersonPage() {
           </p>
           {p.archivedAt && <Badge className="self-start">Archived</Badge>}
         </div>
-        <button type="button" aria-label={`Edit ${p.name}`} onClick={() => setModal('edit')} className="w-11 h-11 rounded-full border border-line bg-white flex items-center justify-center">
+        <button
+          type="button"
+          aria-label={`Edit ${p.name}`}
+          onClick={() => setModal('edit')}
+          className="w-11 h-11 rounded-full border border-line bg-white flex items-center justify-center"
+        >
           <Icon name="edit" size={18} />
         </button>
       </div>
@@ -76,8 +84,17 @@ export default function PersonPage() {
       <NotesCard person={p} />
 
       <section className="flex flex-col gap-2.5">
-        <SectionHeader title="Occasions" action={<Button variant="ghost" className="min-h-0 h-9 px-2" onClick={() => setModal('occasion')}>+ Add</Button>} />
-        {occasions.data?.occasions.map((o) => <OccasionRow key={o.id} occasion={o} />)}
+        <SectionHeader
+          title="Occasions"
+          action={
+            <Button variant="ghost" className="min-h-0 h-9 px-2" onClick={() => setModal('occasion')}>
+              + Add
+            </Button>
+          }
+        />
+        {occasions.data?.occasions.map((o) => (
+          <OccasionRow key={o.id} occasion={o} />
+        ))}
         {occasions.data && occasions.data.occasions.length === 0 && (
           <EmptyState>No occasions yet.{!bday && ' Add a birthday to get reminders.'}</EmptyState>
         )}
@@ -85,7 +102,15 @@ export default function PersonPage() {
 
       <section className="flex flex-col gap-2.5">
         <SectionHeader title="Gift history" />
-        <Segmented label="Direction" value={direction} onChange={setDirection} options={[{ value: 'GIVEN', label: 'Given' }, { value: 'RECEIVED', label: 'Received' }]} />
+        <Segmented
+          label="Direction"
+          value={direction}
+          onChange={setDirection}
+          options={[
+            { value: 'GIVEN', label: 'Given' },
+            { value: 'RECEIVED', label: 'Received' },
+          ]}
+        />
         {gifts.isLoading && <Loading />}
         {history.length === 0 && gifts.data && (
           <EmptyState>{direction === 'GIVEN' ? `Nothing given to ${p.name} yet.` : `Nothing received from ${p.name} yet.`}</EmptyState>
@@ -94,19 +119,30 @@ export default function PersonPage() {
           <div key={year} className="flex flex-col gap-2">
             <h3 className="text-[13px] font-semibold text-muted tracking-wide uppercase mt-1">{year}</h3>
             <Card className="divide-y divide-divider">
-              {list.map((g) => <GiftRow key={g.id} gift={g} currency={currency} showYear={false} />)}
+              {list.map((g) => (
+                <GiftRow key={g.id} gift={g} currency={currency} showYear={false} />
+              ))}
             </Card>
           </div>
         ))}
-        <Button variant="dashed" onClick={() => setModal('gift')}><Icon name="plus" size={18} /> Log a gift</Button>
+        <Button variant="dashed" onClick={() => setModal('gift')}>
+          <Icon name="plus" size={18} /> Log a gift
+        </Button>
       </section>
 
       <section className="flex flex-col gap-2.5">
-        <SectionHeader title="Ideas" action={<Link to={`/ideas?personId=${p.id}`} className="text-sm font-medium">See all</Link>} />
+        <SectionHeader
+          title="Ideas"
+          action={
+            <Link to={`/ideas?personId=${p.id}`} className="text-sm font-medium">
+              See all
+            </Link>
+          }
+        />
         {repeats.length > 0 && (
           <p className="flex items-center gap-2 text-[13px] text-chip-ink bg-amber-soft rounded-xl px-3 py-2.5">
             <Icon name="info" size={16} />
-            {repeats.length === 1 ? `"${repeats[0]!.title}" repeats` : `${repeats.length} ideas repeat`} something you've given before.
+            {repeats.length === 1 ? `"${repeats[0].title}" repeats` : `${repeats.length} ideas repeat`} something you've given before.
           </p>
         )}
         {ideas.data?.ideas.slice(0, 3).map((i) => (
@@ -119,13 +155,26 @@ export default function PersonPage() {
       </section>
 
       <div className="flex gap-2 flex-wrap">
-        <Button variant="secondary" onClick={() => archive.mutate(!p.archivedAt)}>{p.archivedAt ? 'Restore' : 'Archive'} {p.name}</Button>
-        {!p.isAccountHolder && <Button variant="danger" onClick={() => { if (window.confirm(`Delete ${p.name} and their gift history?`)) remove.mutate(undefined) }}>Delete</Button>}
+        <Button variant="secondary" onClick={() => archive.mutate(!p.archivedAt)}>
+          {p.archivedAt ? 'Restore' : 'Archive'} {p.name}
+        </Button>
+        {!p.isAccountHolder && (
+          <Button
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(`Delete ${p.name} and their gift history?`)) remove.mutate(undefined)
+            }}
+          >
+            Delete
+          </Button>
+        )}
       </div>
 
       {modal === 'edit' && <PersonForm open onClose={close} familyId={p.familyId} person={p} />}
       {modal === 'gift' && <GiftForm open onClose={close} groupId={p.groupId} defaults={{ personId: p.id }} />}
-      {modal === 'occasion' && <OccasionForm open onClose={close} groupId={p.groupId} subject={{ personId: p.id, familyId: null }} subjectName={p.name} />}
+      {modal === 'occasion' && (
+        <OccasionForm open onClose={close} groupId={p.groupId} subject={{ personId: p.id, familyId: null }} subjectName={p.name} />
+      )}
     </div>
   )
 }
