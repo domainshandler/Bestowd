@@ -1,5 +1,7 @@
 # Bestowd dev API + Postgres on the home NAS (192.168.1.103). Dev only; safe to throw away.
 # From this folder:  docker compose up -d --build
+# Project name is fixed so it never collides with other compose projects on the NAS (e.g. "bestowd").
+name: bestowd-dev
 services:
   db:
     image: postgres:16-alpine
