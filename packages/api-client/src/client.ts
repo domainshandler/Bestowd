@@ -1,4 +1,5 @@
-const API_BASE = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3000'
+// Vite fills in import.meta.env on the web; elsewhere it is missing and the local API is used.
+const API_BASE = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_API_URL ?? 'http://localhost:3000'
 const TOKEN_KEY = 'bestowd_token'
 
 export class ApiError extends Error {
@@ -25,7 +26,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     },
   })
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
     throw new ApiError(res.status, body.error ?? res.statusText)
   }
   if (res.status === 204) return undefined as T

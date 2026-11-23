@@ -50,7 +50,7 @@ export function createFcmSender(serviceAccountJson: string, fetchImpl: typeof fe
 /** For environments without FCM credentials: logs instead of sending. */
 export const loggingSender: PushSender = {
   async send(_token, message) {
-    console.log(`[push] ${message.title}: ${message.body}`)
+    console.info(`[push] ${message.title}: ${message.body}`)
     return 'sent'
   },
 }

@@ -69,7 +69,7 @@ export default function SnapCapture({ groupId, shrink = shrinkPhoto }: { groupId
           <div className="flex flex-col gap-3">
             <img
               src={photoSrc(photoUrl)}
-              alt="Your photo"
+              alt="What you snapped"
               className="w-full max-h-64 object-contain rounded-xl border border-line bg-ground"
             />
             <Button onClick={() => setKind('idea')}>A gift idea</Button>

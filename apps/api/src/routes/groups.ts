@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify'
-import type { Prisma } from '@prisma/client'
 import { db } from '../db.js'
 import { toGroupDto } from '../dto.js'
 import { requireMember, requireOwner, userIdOf } from '../services/access.js'

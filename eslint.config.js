@@ -19,15 +19,20 @@ export default tseslint.config(
     rules: {
       // Promises must be awaited, returned or explicitly discarded with `void`.
       '@typescript-eslint/no-floating-promises': 'error',
-      // Allow async handlers on JSX props like onClick.
-      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
+      // Allow async handlers on JSX props like onClick, and on Fastify route options like preHandler
+      // (Fastify accepts async hooks, but its types also list the callback form, which this rule checks against).
+      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false, properties: false } }],
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      // Fastify plugins and test mocks are async by contract, with or without an await inside.
+      '@typescript-eslint/require-await': 'off',
       eqeqeq: ['error', 'smart'],
-      'no-console': ['error', { allow: ['warn', 'error'] }],
+      // Use the request logger in routes; console.info/warn/error are for the background jobs.
+      'no-console': ['error', { allow: ['info', 'warn', 'error'] }],
       // Keep files and functions a reviewable size.
       'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['warn', { max: 150, skipBlankLines: true, skipComments: true }],
+      // The largest today are about 260 lines (route registrations, big forms); this stops them growing further.
+      'max-lines-per-function': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
     },
   },
 
@@ -37,6 +42,7 @@ export default tseslint.config(
     extends: [...tseslint.configs.recommended],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
     },
   },

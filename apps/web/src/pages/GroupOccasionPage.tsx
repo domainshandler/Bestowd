@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { deleteOccasion, getOccasion, listFamilies, setOccasionFamilies, updateOccasion } from '@bestowd/api-client'
-import type { FamilyType, Occasion } from '@bestowd/types'
+import type { Occasion } from '@bestowd/types'
 import GiftForm from '../components/forms/GiftForm.tsx'
 import FamilyTypeBudgets, { type TypeBudgetText, typeBudgetText, typeBudgetsFrom } from '../components/forms/FamilyTypeBudgets.tsx'
 import { numberOrNull, useSave } from '../components/forms/useSave.ts'
@@ -146,7 +146,9 @@ function EditCoverage({ o, onClose }: { o: Occasion; onClose: () => void }) {
     })
 
   return (
+    // Clicking the backdrop closes it; keyboard users close it with Escape.
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/40"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()

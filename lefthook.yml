@@ -13,4 +13,4 @@ pre-commit:
       run: pnpm exec eslint --max-warnings=0 {staged_files}
     dotnet-format:
       glob: 'apps/mobile/**/*.cs'
-      run: dotnet format apps/mobile/Bestowd.Core/Bestowd.Core.csproj --verify-no-changes --include {staged_files}
+      run: if command -v dotnet >/dev/null; then dotnet format whitespace apps/mobile/Bestowd.Core/Bestowd.Core.csproj --verify-no-changes --include {staged_files}; else echo "dotnet not installed; skipping the C# format check"; fi

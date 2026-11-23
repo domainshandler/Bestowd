@@ -85,7 +85,15 @@ async function readWithClaude(photo: Photo, s: AiSettings): Promise<ProductReadi
   }
 }
 
-async function postJson(url: string, headers: Record<string, string>, body: unknown, provider: string): Promise<any> {
+/** The parts of the OpenAI and Gemini replies that carry the answer. */
+interface OpenAiReply {
+  choices?: { message?: { content?: string | null } }[]
+}
+interface GeminiReply {
+  candidates?: { content?: { parts?: { text?: string }[] } }[]
+}
+
+async function postJson<T>(url: string, headers: Record<string, string>, body: unknown, provider: string): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
@@ -95,7 +103,7 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
   if (res.status === 401 || res.status === 403) throw new AiError(`The ${provider} API key was rejected. Check it in Settings.`)
   if (res.status === 429) throw new AiError(`The ${provider} account is over its limit. Try again later.`)
   if (!res.ok) throw new AiError(`${provider} didn't accept the request (${res.status}). Check the model name in Settings.`)
-  return res.json()
+  return (await res.json()) as T
 }
 
 const parseReading = (text: unknown): ProductReading => {
@@ -107,7 +115,7 @@ const parseReading = (text: unknown): ProductReading => {
 }
 
 async function readWithOpenAi(photo: Photo, s: AiSettings): Promise<ProductReading> {
-  const body = await postJson(
+  const body = await postJson<OpenAiReply>(
     'https://api.openai.com/v1/chat/completions',
     { authorization: `Bearer ${s.apiKey}` },
     {
@@ -125,12 +133,12 @@ async function readWithOpenAi(photo: Photo, s: AiSettings): Promise<ProductReadi
     },
     'OpenAI',
   )
-  return parseReading(body?.choices?.[0]?.message?.content)
+  return parseReading(body.choices?.[0]?.message?.content)
 }
 
 async function readWithGemini(photo: Photo, s: AiSettings): Promise<ProductReading> {
   const model = encodeURIComponent(modelFor(s))
-  const body = await postJson(
+  const body = await postJson<GeminiReply>(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     { 'x-goog-api-key': s.apiKey },
     {
@@ -150,7 +158,7 @@ async function readWithGemini(photo: Photo, s: AiSettings): Promise<ProductReadi
     },
     'Google',
   )
-  return parseReading(body?.candidates?.[0]?.content?.parts?.[0]?.text)
+  return parseReading(body.candidates?.[0]?.content?.parts?.[0]?.text)
 }
 
 /** Reads name, brand, price, currency and store from a photo. Throws AiError with a message for the user. */

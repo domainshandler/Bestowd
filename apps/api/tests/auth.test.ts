@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import supertest from 'supertest'
 import { buildApp } from '../src/app.js'
 import { db } from '../src/db.js'
-import { verifyGoogleToken } from '../src/services/google-auth.js'
 import { cleanupUser } from './helpers.js'
 import type { FastifyInstance } from 'fastify'
 

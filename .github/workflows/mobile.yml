@@ -21,7 +21,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Core tests
+      - name: Format (C#)
+        run: |
+          dotnet format whitespace Bestowd.Core/Bestowd.Core.csproj --verify-no-changes
+          dotnet format whitespace Bestowd.Core.Tests/Bestowd.Core.Tests.csproj --verify-no-changes
+      - name: Core tests (analyzers run as part of the build; warnings are errors)
         run: dotnet test Bestowd.Core.Tests
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android

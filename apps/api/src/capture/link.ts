@@ -89,13 +89,15 @@ function meta(html: string, names: string[]): string | null {
 }
 
 /** Every schema.org object in the page's JSON-LD, flattened out of @graph and arrays. */
-function jsonLd(html: string): Record<string, any>[] {
-  const out: Record<string, any>[] = []
+type Json = Record<string, unknown>
+
+function jsonLd(html: string): Json[] {
+  const out: Json[] = []
   const walk = (v: unknown) => {
     if (Array.isArray(v)) v.forEach(walk)
     else if (v && typeof v === 'object') {
-      out.push(v as Record<string, any>)
-      if ('@graph' in v) walk((v as any)['@graph'])
+      out.push(v as Json)
+      if ('@graph' in v) walk((v as Json)['@graph'])
     }
   }
   for (const m of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
@@ -108,25 +110,34 @@ function jsonLd(html: string): Record<string, any>[] {
   return out
 }
 
-const isType = (o: Record<string, any>, t: string) => [].concat(o['@type'] ?? []).some((x: string) => String(x).toLowerCase() === t)
-const first = <T>(v: T | T[] | undefined): T | undefined => (Array.isArray(v) ? v[0] : v)
-const num = (v: unknown) => (v === undefined || v === null || v === '' ? null : Number(String(v).replace(/[^0-9.]/g, '')) || null)
+const isType = (o: Json, t: string) =>
+  ([] as unknown[]).concat(o['@type'] ?? []).some((x) => typeof x === 'string' && x.toLowerCase() === t)
+/** A JSON-LD value may be one item or a list: the first. */
+const first = (v: unknown): unknown => (Array.isArray(v) ? (v as unknown[])[0] : v)
+const asObject = (v: unknown): Json | undefined => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Json) : undefined)
+const asText = (v: unknown): string | undefined => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : undefined)
+const num = (v: unknown) => {
+  const text = asText(v)
+  return text ? Number(text.replace(/[^0-9.]/g, '')) || null : null
+}
 
 /** The product a store page describes. Missing details stay null. */
 export function readProductPage(html: string, pageUrl: string): ProductDraft {
   const product = jsonLd(html).find((o) => isType(o, 'product'))
-  const offer = first(product?.offers) as Record<string, any> | undefined
-  const priceSpec = first(offer?.priceSpecification) as Record<string, any> | undefined
-  const brand = first(product?.brand) as unknown
-  const image = first(product?.image) as unknown
+  const offer = asObject(first(product?.offers))
+  const priceSpec = asObject(first(offer?.priceSpecification))
+  const brand = first(product?.brand)
+  const image = first(product?.image)
   const site = meta(html, ['og:site_name']) ?? new URL(pageUrl).hostname.replace(/^www\./, '')
   return cleanDraft({
-    title: product?.name ?? meta(html, ['og:title', 'twitter:title']) ?? decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? ''),
-    brand: typeof brand === 'string' ? brand : ((brand as any)?.name ?? meta(html, ['product:brand', 'og:brand'])),
+    title:
+      asText(product?.name) ?? meta(html, ['og:title', 'twitter:title']) ?? decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? ''),
+    brand: asText(brand) ?? asText(asObject(brand)?.name) ?? meta(html, ['product:brand', 'og:brand']),
     price: num(offer?.price ?? offer?.lowPrice ?? priceSpec?.price) ?? num(meta(html, ['product:price:amount', 'og:price:amount'])),
-    currency: offer?.priceCurrency ?? priceSpec?.priceCurrency ?? meta(html, ['product:price:currency', 'og:price:currency']),
+    currency:
+      asText(offer?.priceCurrency) ?? asText(priceSpec?.priceCurrency) ?? meta(html, ['product:price:currency', 'og:price:currency']),
     store: site,
     url: meta(html, ['og:url']) ?? pageUrl,
-    imageUrl: typeof image === 'string' ? image : ((image as any)?.url ?? meta(html, ['og:image', 'twitter:image'])),
+    imageUrl: asText(image) ?? asText(asObject(image)?.url) ?? meta(html, ['og:image', 'twitter:image']),
   })
 }

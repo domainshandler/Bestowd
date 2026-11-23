@@ -141,7 +141,9 @@ export function Modal({ open, title, onClose, children }: { open: boolean; title
   }, [open, onClose])
   if (!open) return null
   return (
+    // Clicking the backdrop closes it; keyboard users close it with Escape.
     <div
+      role="presentation"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/40"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()

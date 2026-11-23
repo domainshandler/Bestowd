@@ -169,7 +169,7 @@ export async function runReminderScan(now: Date = new Date()): Promise<DueRemind
     }
   }
 
-  for (const r of due) console.log(`[reminder] ${r.email}: ${r.body}`)
+  for (const r of due) console.info(`[reminder] ${r.email}: ${r.body}`)
   return due
 }
 
@@ -179,8 +179,8 @@ export function startReminderJob() {
   cron.schedule('0 9 * * *', () => {
     runReminderScan()
       .then((due) => deliverReminders(due, sender))
-      .then((stats) => console.log(`[reminder] push sent ${stats.sent}, removed ${stats.removed} stale tokens, ${stats.failed} failed`))
+      .then((stats) => console.info(`[reminder] push sent ${stats.sent}, removed ${stats.removed} stale tokens, ${stats.failed} failed`))
       .catch((err) => console.error('[reminder] scan failed', err))
   })
-  console.log(`[reminder] Daily reminder job scheduled (${env.FCM_SERVICE_ACCOUNT ? 'push via FCM' : 'logging only'})`)
+  console.info(`[reminder] Daily reminder job scheduled (${env.FCM_SERVICE_ACCOUNT ? 'push via FCM' : 'logging only'})`)
 }

@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin'
 import fjwt from '@fastify/jwt'
 import { env } from '../config.js'
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import type { FastifyRequest, FastifyReply, preHandlerAsyncHookHandler } from 'fastify'
 
 export default fp(async (app) => {
   await app.register(fjwt, {
@@ -9,17 +9,17 @@ export default fp(async (app) => {
     sign: { expiresIn: '7d' },
   })
 
-  app.decorate('authenticate', async (request: any, reply: any) => {
+  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify()
     } catch {
-      reply.status(401).send({ error: 'Unauthorized' })
+      await reply.status(401).send({ error: 'Unauthorized' })
     }
   })
 })
 
 declare module 'fastify' {
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+    authenticate: preHandlerAsyncHookHandler
   }
 }

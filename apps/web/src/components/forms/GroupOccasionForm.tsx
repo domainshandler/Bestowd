@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { createGroupOccasion, listFamilies, listHolidays } from '@bestowd/api-client'
-import type { FamilyType } from '@bestowd/types'
 import { Button, Checkbox, Field, FormError, Modal, Select, TextInput } from '../ui.tsx'
 import { FAMILY_TYPE_LABEL, formatDate } from '../../lib/format.ts'
 import { numberOrNull, useSave } from './useSave.ts'
@@ -33,9 +32,10 @@ export default function GroupOccasionForm({ open, onClose, groupId }: { open: bo
   const available = holidays.data?.holidays.filter((h) => h.occasionId === null && h.nextDate !== null) ?? []
   // Start on the first holiday the group hasn't added yet (else your own occasion).
   const [touched, setTouched] = useState(false)
+  const firstAvailable = available[0]?.key
   useEffect(() => {
-    if (!touched && available[0]) setHolidayKey(available[0].key)
-  }, [touched, available[0]?.key])
+    if (!touched && firstAvailable) setHolidayKey(firstAvailable)
+  }, [touched, firstAvailable])
   const chosen = holidays.data?.holidays.find((h) => h.key === holidayKey)
   const custom = holidayKey === CUSTOM
 
