@@ -6,6 +6,7 @@ import { useAuth } from '../auth/useAuth.ts'
 import { useGroup } from '../groups/GroupContext.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
 import HolidaySuggestions from '../components/HolidaySuggestions.tsx'
+import { PendingMoves } from '../components/MoveRequests.tsx'
 import GiftForm from '../components/forms/GiftForm.tsx'
 import { Button, Chips, EmptyState, Icon, LoadError, Loading } from '../components/ui.tsx'
 import { formatMoney } from '../lib/format.ts'
@@ -51,6 +52,7 @@ export default function HomePage() {
         )}
       </section>
 
+      {groupId && <PendingMoves groupId={groupId} />}
       {groupId && <HolidaySuggestions groupId={groupId} />}
 
       <Chips label="Occasion type" value={filter} onChange={setFilter} options={[

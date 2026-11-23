@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, acceptInvite, getInvite, getMovable, listFamilies } from '@bestowd/api-client'
-import type { MovableData, ShareableField } from '@bestowd/types'
+import type { MoveSelection, ShareableField } from '@bestowd/types'
+import { BringChecklist, isEmpty, selectAll } from '../components/MoveRequests.tsx'
 import { useAuth } from '../auth/useAuth.ts'
 import { useGroup } from '../groups/GroupContext.tsx'
 import { Button, Card, Checkbox, Field, FormError, Loading, Select } from '../components/ui.tsx'
@@ -16,17 +17,6 @@ const FIELDS: { field: ShareableField; label: string }[] = [
   { field: 'photo', label: 'Photos' },
 ]
 const DEFAULT_FIELDS: ShareableField[] = ['birthday', 'likes', 'avoid']
-
-const count = (n: number, one: string, many: string) => (n > 0 ? `${n} ${n === 1 ? one : many}` : null)
-
-/** "2 families, 3 gifts and 1 idea": what moving your own group brings along. */
-export function movableSummary(m: MovableData): string {
-  const parts = [
-    count(m.families, 'family', 'families'), count(m.people, 'person', 'people'), count(m.gifts, 'gift', 'gifts'),
-    count(m.ideas, 'idea', 'ideas'), count(m.occasions, 'occasion', 'occasions'),
-  ].filter((x): x is string => x !== null)
-  return parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
-}
 
 /** On a phone, offer to open the invite in the Bestowd app (it handles bestowd://join/<token>). */
 const ON_PHONE = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent)
@@ -42,7 +32,7 @@ export default function JoinPage() {
   const [sourceGroupId, setSourceGroupId] = useState('')
   const [sourceFamilyId, setSourceFamilyId] = useState('')
   const [fields, setFields] = useState<ShareableField[]>(DEFAULT_FIELDS)
-  const [bringData, setBringData] = useState(true)
+  const [bringChoice, setBringChoice] = useState<MoveSelection | null>(null)
   const movable = useQuery({
     queryKey: ['invite-movable', inviteToken],
     queryFn: () => getMovable(inviteToken),
@@ -61,12 +51,14 @@ export default function JoinPage() {
   }, [families.data])
 
   const accept = useMutation({
-    mutationFn: () => acceptInvite(inviteToken, preview.data?.kind === 'FAMILY' ? { sourceFamilyId, sharedFields: fields } : { bringData: Boolean(movable.data) && bringData }),
+    mutationFn: () => acceptInvite(inviteToken, preview.data?.kind === 'FAMILY' ? { sourceFamilyId, sharedFields: fields } : (bring && !isEmpty(bring) ? { bring } : {})),
     onSuccess: async (result) => {
       await qc.invalidateQueries()
       if ('groupId' in result) { setGroupId(result.groupId); navigate('/') }
     },
   })
+
+  const bring = movable.data ? (bringChoice ?? selectAll(movable.data)) : null
 
   if (preview.isLoading) return <Centered><Loading /></Centered>
   if (preview.isError) {
@@ -140,12 +132,15 @@ export default function JoinPage() {
               </fieldset>
             </>
           )}
-          {!isFamily && movable.data && (
-            <Card className="p-4 flex flex-col gap-1">
-              <Checkbox label={`Bring my things into ${p.groupName}`} checked={bringData} onChange={setBringData}
-                hint={`${movableSummary(movable.data)} from ${movable.data.groupName}. Your household joins theirs, and ${movable.data.groupName} is removed.`} />
-              {!bringData && <p className="text-xs text-muted pb-1">{movable.data.groupName} stays as a separate group you can switch to.</p>}
-            </Card>
+          {!isFamily && movable.data && bring && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-semibold">Bring your things along?</p>
+              <BringChecklist movable={movable.data} value={bring} onChange={setBringChoice} />
+              <p className="text-xs text-muted">
+                {p.groupName}'s owner reviews what you bring before it's added. Anything that looks like what they already have, they can combine.
+                {' '}Once everything has moved, {movable.data.groupName} is removed.
+              </p>
+            </div>
           )}
           <FormError error={accept.error} />
           <Button type="submit" disabled={accept.isPending || (isFamily && !sourceFamilyId)}>

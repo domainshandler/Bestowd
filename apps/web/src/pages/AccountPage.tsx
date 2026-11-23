@@ -6,6 +6,7 @@ import type { OccasionType } from '@bestowd/types'
 import { useAuth } from '../auth/useAuth.ts'
 import { GROUP_KEY, useGroup } from '../groups/GroupContext.tsx'
 import InviteLinkModal from '../components/forms/InviteLinkModal.tsx'
+import { BringMyThings, LeaveGroup, PendingMoves, StartGroup } from '../components/MoveRequests.tsx'
 import GroupOccasionForm from '../components/forms/GroupOccasionForm.tsx'
 import OccasionRow from '../components/OccasionRow.tsx'
 import { ChooseHolidays } from '../components/HolidaySuggestions.tsx'
@@ -148,6 +149,8 @@ export default function AccountPage() {
       {groupId && (
         <section className="flex flex-col gap-2.5">
           <SectionHeader title={multipleGroups ? `${group?.groupName} settings` : 'Group settings'} />
+          <PendingMoves groupId={groupId} />
+          <BringMyThings groupId={groupId} groupName={group?.groupName ?? 'this group'} />
           <HolidaysSetting groupId={groupId} />
           <Card className="p-4 flex flex-col gap-4">
             {group?.role === 'OWNER'
@@ -162,6 +165,15 @@ export default function AccountPage() {
       )}
 
       {groupId && <GroupOccasions groupId={groupId} />}
+
+      <section className="flex flex-col gap-1.5">
+        <SectionHeader title="Groups" />
+        <p className="text-sm text-muted">You can be in several groups and switch between them. Leaving keeps what you added in the group.</p>
+        <div className="flex flex-wrap gap-2">
+          <StartGroup />
+          {groupId && <LeaveGroup groupId={groupId} groupName={group?.groupName ?? 'this group'} />}
+        </div>
+      </section>
 
       <Button variant="danger" className="self-start" onClick={handleLogout}>Sign out</Button>
       {inviting && groupId && <InviteLinkModal open onClose={() => setInviting(false)} groupId={groupId} kind="GROUP" />}
