@@ -147,6 +147,16 @@ export async function moveGroupInto(tx: Tx, sourceId: string, targetId: string):
   await tx.occasion.updateMany({ where: { familyId: srcHousehold.id }, data: { familyId: tgtHousehold.id } })
   await tx.familyConnection.updateMany({ where: { sourceFamilyId: srcHousehold.id }, data: { sourceFamilyId: tgtHousehold.id } })
 
+  // Group-wide occasions coming over that cover new families also cover the families already in the target.
+  const incoming = await tx.occasion.findMany({ where: { groupId: sourceId, personId: null, familyId: null, includeNewFamilies: true }, select: { id: true } })
+  const existing = await tx.family.findMany({ where: { groupId: targetId, status: { not: 'ARCHIVED' } }, select: { id: true } })
+  if (incoming.length > 0 && existing.length > 0) {
+    await tx.occasionFamily.createMany({
+      data: incoming.flatMap((o) => existing.map((f) => ({ occasionId: o.id, familyId: f.id }))),
+      skipDuplicates: true,
+    })
+  }
+
   // Everything else moves as is.
   const moved = await tx.family.findMany({ where: { groupId: sourceId, householdOfGroupId: null }, select: { id: true } })
   await tx.family.updateMany({ where: { groupId: sourceId, householdOfGroupId: null }, data: into })

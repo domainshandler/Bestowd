@@ -46,6 +46,7 @@ describe('bringing your data when you join a group', () => {
   let gift: string
   let idea: string
   let hostChristmas: string
+  let hostFriends: string
 
   beforeAll(async () => {
     const g = joiner.groupId
@@ -58,8 +59,11 @@ describe('bringing your data when you join a group', () => {
     // Both groups track Christmas; the joiner's covers the daycare and their household.
     const christmas = await api().post(`/groups/${g}/occasions`).set('Authorization', joiner.authHeader).send({ groupWide: true, holidayKey: 'christmas' })
     expect(christmas.status).toBe(201)
+    hostFriends = (await db.family.create({ data: { groupId: host.groupId, name: 'The Parks', type: 'FRIENDS' } })).id
     const hostXmas = await api().post(`/groups/${host.groupId}/occasions`).set('Authorization', host.authHeader).send({ groupWide: true, holidayKey: 'christmas' })
     hostChristmas = hostXmas.body.id
+    // Easter only the joiner tracks; it should come to cover the host's own families too.
+    expect((await api().post(`/groups/${g}/occasions`).set('Authorization', joiner.authHeader).send({ groupWide: true, holidayKey: 'easter' })).status).toBe(201)
 
     gift = (await db.giftEntry.create({
       data: { groupId: g, direction: 'GIVEN', title: 'Crayons', date: new Date('2026-11-01'), familyId: daycare, occasionId: christmas.body.id, createdById: joiner.user.id },
@@ -72,7 +76,7 @@ describe('bringing your data when you join a group', () => {
   it('says what would come along, and nothing for someone with no data', async () => {
     const t = await token()
     const res = await api().get(`/invites/${t}/movable`).set('Authorization', joiner.authHeader)
-    expect(res.body.movable).toEqual({ groupId: joiner.groupId, groupName: "Sheldon's group", families: 1, people: 2, gifts: 3, ideas: 1, occasions: 1 })
+    expect(res.body.movable).toEqual({ groupId: joiner.groupId, groupName: "Sheldon's group", families: 1, people: 2, gifts: 3, ideas: 1, occasions: 2 })
     expect((await api().get(`/invites/${t}/movable`).set('Authorization', empty.authHeader)).body.movable).toBeNull()
     expect((await api().get(`/invites/${t}/movable`)).status).toBe(401)
   })
@@ -98,7 +102,9 @@ describe('bringing your data when you join a group', () => {
     expect(gifts.find((x) => x.id === gift)!.occasionId).toBe(hostChristmas)
     expect(await db.occasion.count({ where: { groupId: host.groupId, holidayKey: 'christmas' } })).toBe(1)
     const coverage = await db.occasionFamily.findMany({ where: { occasionId: hostChristmas } })
-    expect(coverage.map((c) => c.familyId).sort()).toEqual([daycare, host.householdId].sort())
+    expect(coverage.map((c) => c.familyId).sort()).toEqual([daycare, host.householdId, hostFriends].sort())
+    const easter = await db.occasion.findFirstOrThrow({ where: { groupId: host.groupId, holidayKey: 'easter' }, include: { coverage: true } })
+    expect(easter.coverage.map((c) => c.familyId).sort()).toEqual([daycare, host.householdId, hostFriends].sort())
 
     expect((await db.idea.findUniqueOrThrow({ where: { id: idea } })).groupId).toBe(host.groupId)
     expect((await db.person.findUniqueOrThrow({ where: { id: kid } })).groupId).toBe(host.groupId)
