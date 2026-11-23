@@ -253,6 +253,13 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     partial void OnIsReceivedChanged(bool value) { OnPropertyChanged(nameof(SubjectLabel)); OnPropertyChanged(nameof(AmountLabel)); }
     partial void OnSubjectChanged(SubjectOption? value) => LoadOccasionsCommand.Execute(null);
 
+    /// <summary>Picking an occasion first fills in who it's for, when it belongs to one person or family.</summary>
+    partial void OnOccasionChanged(Occasion? value)
+    {
+        if (Subject is not null || value is null || value.IsGroupWide) return;
+        Subject = Subjects.FirstOrDefault(s => value.PersonId is { } p ? s.PersonId == p : s.PersonId is null && s.FamilyId == value.FamilyId);
+    }
+
     public void Apply(IDictionary<string, object> p)
     {
         _groupId = Params.Get(p, Params.GroupId) ?? groups.GroupId ?? "";
@@ -265,17 +272,22 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     }
 
     [RelayCommand]
-    public Task LoadAsync() => RunAsync(async () =>
+    public async Task LoadAsync()
     {
-        var people = api.ListPeopleAsync(_groupId);
-        var families = api.ListFamiliesAsync(_groupId);
-        Subjects = SubjectOption.Build(await people, await families);
-        if (GiftId is not null)
+        var loaded = await RunAsync(async () =>
         {
-            Fill(await api.GetGiftAsync(GiftId));
-        }
-        else Subject = Subjects.FirstOrDefault(s => (_defaultPersonId is not null && s.PersonId == _defaultPersonId) || (_defaultPersonId is null && _defaultFamilyId is not null && s.FamilyId == _defaultFamilyId));
-    });
+            var people = api.ListPeopleAsync(_groupId);
+            var families = api.ListFamiliesAsync(_groupId);
+            Subjects = SubjectOption.Build(await people, await families);
+            if (GiftId is not null)
+            {
+                Fill(await api.GetGiftAsync(GiftId));
+            }
+            else Subject = Subjects.FirstOrDefault(s => (_defaultPersonId is not null && s.PersonId == _defaultPersonId) || (_defaultPersonId is null && _defaultFamilyId is not null && s.FamilyId == _defaultFamilyId));
+        });
+        // Setting Subject above can't load occasions while this load is still busy, so load them now.
+        if (loaded) await LoadOccasionsAsync();
+    }
 
     private void Fill(Gift g)
     {
@@ -295,13 +307,19 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
 
     private string? _pendingOccasionId;
 
+    /// <summary>
+    /// The occasions to pick from: the chosen person's or family's (group-wide ones included), or every occasion in
+    /// the group when nobody is chosen yet. The picked occasion stays selected if it's still in the list.
+    /// </summary>
     [RelayCommand]
-    public Task LoadOccasionsAsync() => Subject is null ? Task.CompletedTask : RunAsync(async () =>
+    public Task LoadOccasionsAsync() => RunAsync(async () =>
     {
-        var list = await api.ListOccasionsAsync(_groupId, Subject.PersonId, Subject.FamilyId,
+        var keep = Occasion?.Id ?? _pendingOccasionId;
+        var list = await api.ListOccasionsAsync(_groupId, Subject?.PersonId, Subject?.PersonId is null ? Subject?.FamilyId : null,
             DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-365)), DateOnly.FromDateTime(DateTime.UtcNow.AddDays(365)));
         Occasions = list.Occasions;
-        Occasion = Occasions.FirstOrDefault(o => o.Id == _pendingOccasionId);
+        Occasion = Occasions.FirstOrDefault(o => o.Id == keep);
+        _pendingOccasionId = null;
     });
 
     private bool CanSave() => Title.Trim().Length > 0 && Subject is not null;

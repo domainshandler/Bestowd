@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createGift, listOccasions, updateGift } from '@bestowd/api-client'
 import type { CreateGiftBody, Gift, GiftDirection, GiftStatus, Reaction } from '@bestowd/types'
@@ -33,14 +33,27 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
   const [reaction, setReaction] = useState<Reaction | ''>(gift?.reaction ?? '')
   const [notes, setNotes] = useState(gift?.notes ?? '')
 
-  // Occasions for the chosen person or family, from a year back to a year ahead.
+  // Occasions for the chosen person or family (group-wide ones included), or every occasion in the group when nobody
+  // is chosen yet; from a year back to a year ahead.
   const yearAgo = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10)
   const yearAhead = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10)
   const occasions = useQuery({
     queryKey: ['occasions', groupId, who, 'picker'],
-    queryFn: () => listOccasions(groupId, { from: yearAgo, to: yearAhead, ...(who.personId ? { personId: who.personId } : { familyId: who.familyId! }) }),
-    enabled: Boolean(who.personId || who.familyId),
+    queryFn: () => listOccasions(groupId, {
+      from: yearAgo, to: yearAhead,
+      ...(who.personId ? { personId: who.personId } : who.familyId ? { familyId: who.familyId } : {}),
+    }),
   })
+  // Keep the picked occasion when the list changes, unless it no longer applies to who it's for.
+  useEffect(() => {
+    if (occasionId && occasions.data && !occasions.data.occasions.some((o) => o.id === occasionId)) setOccasionId('')
+  }, [occasions.data, occasionId])
+  // Picking an occasion first fills in who it's for, when it belongs to one person or family.
+  const chooseOccasion = (id: string) => {
+    setOccasionId(id)
+    const o = occasions.data?.occasions.find((x) => x.id === id)
+    if (o && o.scope !== 'GROUP' && !who.personId && !who.familyId) setWho({ personId: o.personId, familyId: o.personId ? null : o.familyId })
+  }
 
   const received = direction === 'RECEIVED'
   const save = useSave(() => {
@@ -69,10 +82,10 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
             options={[{ value: 'GIVEN', label: 'I gave' }, { value: 'RECEIVED', label: 'We received' }]} />
         )}
         <Field label="Gift">{(id) => <TextInput id={id} required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Wooden art easel" />}</Field>
-        <Field label={received ? 'From' : 'To'}>{(id) => <SubjectSelect id={id} groupId={groupId} value={who} onChange={(s) => { setWho(s); setOccasionId('') }} />}</Field>
+        <Field label={received ? 'From' : 'To'}>{(id) => <SubjectSelect id={id} groupId={groupId} value={who} onChange={setWho} />}</Field>
         <Field label="Occasion">
           {(id) => (
-            <Select id={id} value={occasionId} onChange={(e) => setOccasionId(e.target.value)} disabled={!who.personId && !who.familyId}>
+            <Select id={id} value={occasionId} onChange={(e) => chooseOccasion(e.target.value)}>
               <option value="">None</option>
               {occasions.data?.occasions.map((o) => (
                 <option key={o.id} value={o.id}>{o.name}{o.nextOccurrence ? ` · ${formatDate(o.nextOccurrence)}` : ''}</option>
