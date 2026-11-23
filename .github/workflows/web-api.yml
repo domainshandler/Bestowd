@@ -1,0 +1,50 @@
+name: API and web
+
+on:
+  push:
+    paths-ignore: ['apps/mobile/**', 'docs/**', '**/*.md']
+  pull_request:
+    paths-ignore: ['apps/mobile/**', 'docs/**', '**/*.md']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bestowd
+          POSTGRES_PASSWORD: bestowd
+          POSTGRES_DB: bestowd_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U bestowd" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bestowd:bestowd@localhost:5432/bestowd_test
+      DIRECT_URL: postgresql://bestowd:bestowd@localhost:5432/bestowd_test
+      JWT_SECRET: ci-only-0123456789abcdef0123456789abcdef
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      GOOGLE_CLIENT_ID: ci
+      GMAIL_USER: ci@example.com
+      GMAIL_APP_PASSWORD: ci
+      WEB_APP_URL: http://localhost:5173
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @bestowd/types --filter @bestowd/api-client build
+      - name: Format
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint --max-warnings=0
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Database
+        run: pnpm --filter @bestowd/api exec prisma migrate deploy
+      - name: Tests
+        run: pnpm test

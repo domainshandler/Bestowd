@@ -1,0 +1,16 @@
+# Runs on staged files before each commit. Skip once with: LEFTHOOK=0 git commit ...
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.{ts,tsx,js,mjs,json,css,html}'
+      exclude: 'apps/mobile/**|pnpm-lock.yaml'
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+    lint:
+      glob: '*.{ts,tsx}'
+      exclude: 'apps/mobile/**'
+      run: pnpm exec eslint --max-warnings=0 {staged_files}
+    dotnet-format:
+      glob: 'apps/mobile/**/*.cs'
+      run: dotnet format apps/mobile/Bestowd.Core/Bestowd.Core.csproj --verify-no-changes --include {staged_files}
