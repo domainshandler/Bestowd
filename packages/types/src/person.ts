@@ -5,6 +5,8 @@ export interface Person {
   groupId: string
   familyId: string
   name: string
+  /** This person signs in to the group (they're in its household). */
+  isAccountHolder: boolean
   relationship: string | null
   birthMonth: number | null
   birthDay: number | null

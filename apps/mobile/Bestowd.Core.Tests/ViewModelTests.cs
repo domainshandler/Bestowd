@@ -170,6 +170,29 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task Join_offers_to_bring_your_own_things_and_sends_the_choice()
+    {
+        var (api, handler, _) = Fake.Api();
+        handler.On("GET /me", Json.Me());
+        handler.On("GET /invites/grp", """{"kind":"GROUP","inviterName":"Renny","groupName":"Renny's family","familyName":null,"expiresAt":"2026-12-01T00:00:00Z"}""");
+        handler.On("GET /invites/grp/movable", """{"movable":{"groupId":"g1","groupName":"Sheldon's group","families":1,"people":2,"gifts":2,"ideas":0,"occasions":1}}""");
+        handler.On("POST /invites/grp/accept", """{"groupId":"g9","alreadyMember":false,"movedGroupId":"g1"}""");
+        var groups = new GroupState(new MemorySettingsStore());
+        var session = new Session(api, new Api.MemoryTokenStore("tok"), groups, new NoPush(), new MemorySettingsStore());
+        await session.LoadAsync();
+        var vm = new JoinViewModel(api, session, groups, new FakeNavigator(), new DataChanged());
+        vm.Apply(new Dictionary<string, object> { [Params.Token] = "grp" });
+
+        await vm.LoadAsync();
+        Assert.Equal("Bring my things into Renny's family", vm.BringTitle);
+        Assert.Equal("1 family, 2 people, 2 gifts and 1 occasion from Sheldon's group. Your household joins theirs, and Sheldon's group is removed.", vm.BringHint);
+        Assert.True(vm.BringData);
+        Assert.True(vm.BodyForAccept().BringData);
+        vm.BringData = false;
+        Assert.False(vm.BodyForAccept().BringData);
+    }
+
+    [Fact]
     public async Task Join_marks_a_used_link_as_unusable()
     {
         var (api, handler, _) = Fake.Api();

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import type { Prisma } from '@prisma/client'
 import { db } from '../db.js'
 import { iso, toPersonDto } from '../dto.js'
-import { badRequest } from '../http-error.js'
+import { badRequest, conflict } from '../http-error.js'
 import { loadOr404, requireMember, userIdOf } from '../services/access.js'
 import { ageOn } from '../services/age.js'
 import { personGiftsWhere } from '../services/gift-totals.js'
@@ -129,6 +129,7 @@ export async function personRoutes(app: FastifyInstance) {
 
   app.delete<{ Params: { id: string } }>('/people/:id', async (request, reply) => {
     const person = await loadOr404(userIdOf(request), await db.person.findUnique({ where: { id: request.params.id } }))
+    if (person.userId) throw conflict("This person signs in to the group, so they can't be deleted")
     await db.person.delete({ where: { id: person.id } })
     return reply.code(204).send()
   })

@@ -7,6 +7,7 @@ import { badRequest, conflict, gone, notFound } from '../http-error.js'
 import { requireMember, userIdOf } from '../services/access.js'
 import { DEFAULT_SHARED_FIELDS, INVITE_TTL_MS, SHAREABLE_FIELDS, newToken } from '../services/tokens.js'
 import { nullableId } from './schemas.js'
+import { addAccountHolder, movableData, moveGroupInto } from '../services/groups.js'
 
 async function usableInvite(token: string) {
   const invite = await db.inviteLink.findUnique({
@@ -63,7 +64,14 @@ export async function inviteRoutes(app: FastifyInstance) {
     }
   })
 
-  app.post<{ Params: { token: string }; Body: { sourceFamilyId?: string; sharedFields?: string[] } }>('/invites/:token/accept', {
+  // For a group invite: what the signed-in user could bring from their own group, or null when nothing.
+  app.get<{ Params: { token: string } }>('/invites/:token/movable', { preHandler: app.authenticate }, async (request) => {
+    const invite = await usableInvite(request.params.token)
+    if (invite.kind !== 'GROUP') return { movable: null }
+    return { movable: await movableData(userIdOf(request), invite.groupId) }
+  })
+
+  app.post<{ Params: { token: string }; Body: { sourceFamilyId?: string; sharedFields?: string[]; bringData?: boolean } }>('/invites/:token/accept', {
     preHandler: app.authenticate,
     schema: {
       body: {
@@ -72,6 +80,7 @@ export async function inviteRoutes(app: FastifyInstance) {
         properties: {
           sourceFamilyId: { type: 'string', minLength: 1, maxLength: 64 },
           sharedFields: { type: 'array', maxItems: SHAREABLE_FIELDS.length, items: { type: 'string', enum: [...SHAREABLE_FIELDS] } },
+          bringData: { type: 'boolean' },
         },
       },
     },
@@ -87,11 +96,17 @@ export async function inviteRoutes(app: FastifyInstance) {
     if (invite.kind === 'GROUP') {
       const existing = await db.groupMembership.findUnique({ where: { groupId_userId: { groupId: invite.groupId, userId } } })
       if (existing) return { groupId: invite.groupId, alreadyMember: true }
+      const movable = request.body.bringData ? await movableData(userId, invite.groupId) : null
+      const user = await db.user.findUniqueOrThrow({ where: { id: userId } })
       await db.$transaction(async (tx) => {
         if ((await claim(tx)).count === 0) throw gone('This invite has already been used')
         await tx.groupMembership.create({ data: { groupId: invite.groupId, userId, role: 'MEMBER' } })
-      })
-      return { groupId: invite.groupId, alreadyMember: false }
+        if (movable) await moveGroupInto(tx, movable.groupId, invite.groupId)
+        await addAccountHolder(tx, invite.groupId, user)
+        // The group you joined is the one the app opens to; your own group stays as a second one.
+        await tx.user.update({ where: { id: userId }, data: { primaryGroupId: invite.groupId } })
+      }, { timeout: 30_000 })
+      return { groupId: invite.groupId, alreadyMember: false, movedGroupId: movable?.groupId ?? null }
     }
 
     const { sourceFamilyId, sharedFields = DEFAULT_SHARED_FIELDS } = request.body

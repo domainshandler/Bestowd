@@ -99,6 +99,7 @@ model User {
   createdInvites  InviteLink[]      @relation("InviteCreatedBy")
   acceptedInvites InviteLink[]      @relation("InviteAcceptedBy")
   devices         Device[]
+  people          Person[]
 }
 
 model Group {
@@ -167,6 +168,8 @@ model Person {
   id           String    @id @default(cuid())
   groupId      String
   familyId     String
+  /// Set when this person signs in to the group. They're in its household.
+  userId       String?
   name         String
   relationship String?
   birthMonth   Int?
@@ -184,11 +187,13 @@ model Person {
 
   group     Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   family    Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   occasions Occasion[]
   gifts     GiftEntry[]
   credits   GiftCredit[]
   ideaTags  IdeaPerson[]
 
+  @@unique([groupId, userId])
   @@index([familyId])
 }
 

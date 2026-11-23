@@ -120,7 +120,7 @@ export default function PersonPage() {
 
       <div className="flex gap-2 flex-wrap">
         <Button variant="secondary" onClick={() => archive.mutate(!p.archivedAt)}>{p.archivedAt ? 'Restore' : 'Archive'} {p.name}</Button>
-        <Button variant="danger" onClick={() => { if (window.confirm(`Delete ${p.name} and their gift history?`)) remove.mutate(undefined) }}>Delete</Button>
+        {!p.isAccountHolder && <Button variant="danger" onClick={() => { if (window.confirm(`Delete ${p.name} and their gift history?`)) remove.mutate(undefined) }}>Delete</Button>}
       </div>
 
       {modal === 'edit' && <PersonForm open onClose={close} familyId={p.familyId} person={p} />}

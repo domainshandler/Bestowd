@@ -33,6 +33,7 @@ namespace Bestowd.Core.Api;
 [JsonSerializable(typeof(InviteLink))]
 [JsonSerializable(typeof(InvitePreview))]
 [JsonSerializable(typeof(AcceptInviteResult))]
+[JsonSerializable(typeof(MovableResponse))]
 [JsonSerializable(typeof(ErrorBody))]
 [JsonSerializable(typeof(GoogleLoginBody))]
 [JsonSerializable(typeof(CreateFamilyBody))]

@@ -98,7 +98,7 @@
 
                 <HorizontalStackLayout Spacing="8">
                     <Button Text="{Binding ArchiveText}" Style="{StaticResource Secondary}" Command="{Binding ToggleArchiveCommand}" />
-                    <Button Text="Delete" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" />
+                    <Button Text="Delete" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" IsVisible="{Binding Person.IsAccountHolder, Converter={StaticResource Not}}" />
                 </HorizontalStackLayout>
             </VerticalStackLayout>
         </ScrollView>

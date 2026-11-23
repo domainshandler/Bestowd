@@ -59,6 +59,15 @@
                             </VerticalStackLayout>
                         </Border>
                     </VerticalStackLayout>
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding Movable, Converter={StaticResource Has}}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <VerticalStackLayout VerticalOptions="Center" Spacing="2">
+                                <Label Text="{Binding BringTitle}" Style="{StaticResource Strong}" />
+                                <Label Text="{Binding BringHint}" Style="{StaticResource Small}" />
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="1" IsToggled="{Binding BringData}" VerticalOptions="Center" SemanticProperties.Description="{Binding BringTitle}" />
+                        </Grid>
+                    </Border>
                     <Button Text="Accept" Command="{Binding AcceptCommand}" IsVisible="{Binding Connected, Converter={StaticResource Not}}" />
                 </VerticalStackLayout>
             </VerticalStackLayout>

@@ -60,7 +60,7 @@ describe('family invites and connections', () => {
 
     const profile = await api().get(`/families/${chenInA}`).set('Authorization', a.authHeader)
     expect(profile.body.connection).toMatchObject({ id: connectionId, sourceFamilyName: "Wei's household", sharedFields: ['likes'] })
-    expect(profile.body.connection.people).toEqual([{ id: expect.any(String), name: 'Lily', likes: ['Dinosaurs'] }])
+    expect(profile.body.connection.people).toEqual([{ id: expect.any(String), name: 'Wei Chen', likes: [] }, { id: expect.any(String), name: 'Lily', likes: ['Dinosaurs'] }])
 
     const list = await api().get(`/groups/${a.groupId}/families`).set('Authorization', a.authHeader)
     expect(list.body.find((f: any) => f.id === chenInA).onBestowd).toBe(true)
@@ -83,7 +83,7 @@ describe('family invites and connections', () => {
     const res = await invite(a, a.groupId, { kind: 'FAMILY', familyId: chenInA })
     await accept(b, res.body.token, { sourceFamilyId: b.householdId })
     const profile = await api().get(`/families/${chenInA}`).set('Authorization', a.authHeader)
-    expect(profile.body.connection.people[0]).toEqual({
+    expect(profile.body.connection.people.find((p: any) => p.name === 'Lily')).toEqual({
       id: expect.any(String), name: 'Lily', birthMonth: 5, birthDay: 2, birthYear: 2018, likes: ['Dinosaurs'], avoid: ['Glitter'],
     })
   })
@@ -114,7 +114,7 @@ describe('invite rules', () => {
 })
 
 describe('group invites', () => {
-  it('adds the acceptor as a MEMBER and keeps their primary group', async () => {
+  it('adds the acceptor as a MEMBER, in the household, and opens to the joined group', async () => {
     const res = await invite(a, a.groupId, { kind: 'GROUP' })
     expect(res.status).toBe(201)
     const preview = await api().get(`/invites/${res.body.token}`)
@@ -122,11 +122,15 @@ describe('group invites', () => {
 
     const joined = await accept(c, res.body.token) // no body
     expect(joined.status).toBe(200)
-    expect(joined.body).toEqual({ groupId: a.groupId, alreadyMember: false })
+    expect(joined.body).toEqual({ groupId: a.groupId, alreadyMember: false, movedGroupId: null })
 
     const me = await api().get('/me').set('Authorization', c.authHeader)
-    expect(me.body.primaryGroupId).toBe(c.groupId)
-    expect(me.body.memberships.map((m: any) => [m.groupId, m.role])).toEqual([[c.groupId, 'OWNER'], [a.groupId, 'MEMBER']])
+    expect(me.body.primaryGroupId).toBe(a.groupId)
+    expect(me.body.memberships.map((m: any) => [m.groupId, m.role])).toEqual([[a.groupId, 'MEMBER'], [c.groupId, 'OWNER']])
+
+    const people = await api().get(`/groups/${a.groupId}/people`).set('Authorization', c.authHeader)
+    const holders = people.body.filter((p: any) => p.isAccountHolder).map((p: any) => [p.name, p.familyId])
+    expect(holders).toEqual(expect.arrayContaining([['Alice', a.householdId], ['Carol', a.householdId]]))
   })
 
   it("reports an existing member without using up the link", async () => {

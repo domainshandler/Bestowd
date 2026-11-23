@@ -60,7 +60,7 @@ export function toFamilyDto(family: {
 }
 
 export function toPersonDto(person: {
-  id: string; groupId: string; familyId: string; name: string; relationship: string | null
+  id: string; groupId: string; familyId: string; userId?: string | null; name: string; relationship: string | null
   birthMonth: number | null; birthDay: number | null; birthYear: number | null
   likes: string[]; avoid: string[]; sizes: Prisma.JsonValue; foodNotes: string | null
   photoUrl: string | null; notes: string | null; archivedAt: Date | null; createdAt: Date; updatedAt: Date
@@ -70,6 +70,8 @@ export function toPersonDto(person: {
     groupId: person.groupId,
     familyId: person.familyId,
     name: person.name,
+    /** This person signs in to the group. */
+    isAccountHolder: (person.userId ?? null) !== null,
     relationship: person.relationship,
     birthMonth: person.birthMonth,
     birthDay: person.birthDay,

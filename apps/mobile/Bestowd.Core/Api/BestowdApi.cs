@@ -154,6 +154,10 @@ public sealed class BestowdApi(HttpClient http, ITokenStore tokens)
     public Task<InvitePreview> GetInviteAsync(string token, CancellationToken ct = default) =>
         GetAsync($"/invites/{Uri.EscapeDataString(token)}", Json.InvitePreview, ct);
 
+    /// <summary>Group invites: what you could bring from your own group, or null.</summary>
+    public async Task<MovableData?> GetMovableAsync(string token, CancellationToken ct = default) =>
+        (await GetAsync($"/invites/{Uri.EscapeDataString(token)}/movable", Json.MovableResponse, ct)).Movable;
+
     public Task<AcceptInviteResult> AcceptInviteAsync(string token, AcceptInviteBody body, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/invites/{Uri.EscapeDataString(token)}/accept", Body(body, Json.AcceptInviteBody), Json.AcceptInviteResult, ct);
 

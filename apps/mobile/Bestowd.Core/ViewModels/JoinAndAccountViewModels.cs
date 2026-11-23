@@ -23,6 +23,9 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
     [ObservableProperty] public partial IReadOnlyList<FamilyListItem> Families { get; private set; } = [];
     [ObservableProperty] public partial FamilyListItem? SourceFamily { get; set; }
     [ObservableProperty] public partial bool Connected { get; private set; }
+    /// <summary>Group invites: what you'd bring from your own group, when there's anything.</summary>
+    [ObservableProperty] public partial MovableData? Movable { get; private set; }
+    [ObservableProperty] public partial bool BringData { get; set; } = true;
 
     public IReadOnlyList<ShareOption> Fields { get; } =
     [
@@ -39,7 +42,9 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
     public string Title => Preview is null ? "" : IsFamily ? $"Connect as {Preview.FamilyName} on Bestowd" : $"Join {Preview.GroupName}";
     public string Explanation => Preview is null ? "" : IsFamily
         ? $"{Preview.InviterName} will see the details you choose below, read-only. Nothing else in your account is shared."
-        : $"You'll see and add to everything in {Preview.GroupName}: families, gifts and ideas. Your own group stays yours.";
+        : $"You'll see and add to everything in {Preview.GroupName}: families, gifts and ideas, and you'll be in its household.";
+    public string BringTitle => Preview is null ? "" : $"Bring my things into {Preview.GroupName}";
+    public string BringHint => Movable is null ? "" : $"{Movable.Summary} from {Movable.GroupName}. Your household joins theirs, and {Movable.GroupName} is removed.";
 
     public void Apply(IDictionary<string, object> parameters) => Token = Params.Get(parameters, Params.Token) ?? "";
 
@@ -72,13 +77,18 @@ public sealed partial class JoinViewModel(BestowdApi api, Session session, Group
                 SourceFamily = Families.FirstOrDefault(f => f.IsOwnHousehold) ?? Families.FirstOrDefault();
             });
         }
+        else if (!IsFamily && session.IsSignedIn)
+        {
+            try { Movable = await api.GetMovableAsync(Token); }
+            catch (Exception e) when (e is ApiException or HttpRequestException) { Movable = null; }
+        }
         HasLoaded = true;
-        foreach (var name in new[] { nameof(IsFamily), nameof(NeedsSignIn), nameof(Title), nameof(Explanation) }) OnPropertyChanged(name);
+        foreach (var name in new[] { nameof(IsFamily), nameof(NeedsSignIn), nameof(Title), nameof(Explanation), nameof(BringTitle), nameof(BringHint) }) OnPropertyChanged(name);
     }
 
     public AcceptInviteBody BodyForAccept() => IsFamily
         ? new AcceptInviteBody { SourceFamilyId = SourceFamily?.Id, SharedFields = Fields.Where(f => f.IsOn).Select(f => f.Field).ToList() }
-        : new AcceptInviteBody();
+        : new AcceptInviteBody { BringData = Movable is not null && BringData };
 
     [RelayCommand]
     public async Task AcceptAsync()

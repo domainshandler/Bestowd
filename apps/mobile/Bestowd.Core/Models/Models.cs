@@ -106,6 +106,8 @@ public class Person
     public string GroupId { get; init; } = "";
     public string FamilyId { get; init; } = "";
     public string Name { get; init; } = "";
+    /// <summary>This person signs in to the group (they're in its household).</summary>
+    public bool IsAccountHolder { get; init; }
     public string? Relationship { get; init; }
     public int? BirthMonth { get; init; }
     public int? BirthDay { get; init; }
@@ -409,6 +411,36 @@ public sealed class AcceptInviteResult
     public string? ConnectionId { get; init; }
     public string? GroupId { get; init; }
     public bool AlreadyMember { get; init; }
+    public string? MovedGroupId { get; init; }
+}
+
+/// <summary>What joining a group could bring from your own group (only when you're its sole owner).</summary>
+public sealed class MovableData
+{
+    public string GroupId { get; init; } = "";
+    public string GroupName { get; init; } = "";
+    public int Families { get; init; }
+    public int People { get; init; }
+    public int Gifts { get; init; }
+    public int Ideas { get; init; }
+    public int Occasions { get; init; }
+
+    /// <summary>"2 families, 3 gifts and 1 idea".</summary>
+    public string Summary
+    {
+        get
+        {
+            static string? Count(int n, string one, string many) => n > 0 ? $"{n} {(n == 1 ? one : many)}" : null;
+            var parts = new[] { Count(Families, "family", "families"), Count(People, "person", "people"), Count(Gifts, "gift", "gifts"), Count(Ideas, "idea", "ideas"), Count(Occasions, "occasion", "occasions") }
+                .OfType<string>().ToList();
+            return parts.Count <= 1 ? parts.FirstOrDefault() ?? "" : $"{string.Join(", ", parts[..^1])} and {parts[^1]}";
+        }
+    }
+}
+
+public sealed class MovableResponse
+{
+    public MovableData? Movable { get; init; }
 }
 
 public sealed class ErrorBody
@@ -535,6 +567,8 @@ public sealed class AcceptInviteBody
 {
     public string? SourceFamilyId { get; init; }
     public List<string>? SharedFields { get; init; }
+    /// <summary>Group invites: move everything from your own group into the one you're joining.</summary>
+    public bool? BringData { get; init; }
 }
 
 public sealed class RegisterDeviceBody
