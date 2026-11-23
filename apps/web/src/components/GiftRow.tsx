@@ -16,7 +16,7 @@ export default function GiftRow({ gift, currency, showYear = true }: { gift: Gif
   const when = g.occasionName
     ? `${g.occasionName}${showYear && g.occasionDate ? ` ${new Date(g.occasionDate).getUTCFullYear()}` : ''}`
     : formatDate(g.date, showYear ? { month: 'short', year: 'numeric' } : { month: 'short', day: 'numeric' })
-  const line = [`${received ? 'From' : 'To'} ${g.counterpartyName}`, when, g.reaction ? REACTION_LABEL[g.reaction] : null].filter(Boolean).join(' · ')
+  const line = [g.brand, `${received ? 'From' : 'To'} ${g.counterpartyName}`, when, g.reaction ? REACTION_LABEL[g.reaction] : null].filter(Boolean).join(' · ')
 
   return (
     <div className="flex items-center gap-3 p-3.5">
@@ -27,6 +27,7 @@ export default function GiftRow({ gift, currency, showYear = true }: { gift: Gif
         <span className="text-[15px] font-semibold truncate">{g.title}</span>
         <span className="text-[13px] text-muted truncate">{line}</span>
       </button>
+      {g.url && <a href={g.url} target="_blank" rel="noreferrer noopener" className="text-xs text-brand flex-none" aria-label={`Open ${g.title} in store`}><Icon name="link" size={16} /></a>}
       <div className="flex flex-col items-end gap-1 flex-none">
         {!received && g.status === 'BOUGHT' && <Badge>Bought</Badge>}
         {!received && g.amount !== null && <span className="text-[15px] font-semibold">{formatMoney(g.amount, currency)}</span>}

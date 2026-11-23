@@ -25,6 +25,8 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
   const [occasionId, setOccasionId] = useState(gift?.occasionId ?? defaults.occasionId ?? '')
   const [amount, setAmount] = useState(gift?.amount?.toString() ?? '')
   const [category, setCategory] = useState(gift?.category ?? '')
+  const [brand, setBrand] = useState(gift?.brand ?? '')
+  const [url, setUrl] = useState(gift?.url ?? '')
   const [status, setStatus] = useState<GiftStatus>(gift?.status ?? 'GIVEN')
   const [valueHidden, setValueHidden] = useState(gift?.valueHidden ?? true)
   const [hasGiftReceipt, setHasGiftReceipt] = useState(gift?.hasGiftReceipt ?? false)
@@ -62,6 +64,8 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
       occasionId: occasionId || null,
       amount: numberOrNull(amount),
       category: category.trim() || null,
+      brand: brand.trim() || null,
+      url: url.trim() || null,
       reaction: reaction || null,
       notes: notes.trim() || null,
     }
@@ -97,7 +101,11 @@ export default function GiftForm({ open, onClose, groupId, defaults = {}, gift }
           <Field label="Date">{(id) => <TextInput id={id} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
           <Field label={received ? 'Estimated value' : 'Price'}>{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
         </div>
-        <Field label="Category" hint="Used to warn about repeats, e.g. Puzzle, Lego, Books">{(id) => <TextInput id={id} maxLength={60} value={category} onChange={(e) => setCategory(e.target.value)} />}</Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Brand">{(id) => <TextInput id={id} maxLength={80} value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Garmin" />}</Field>
+          <Field label="Category" hint="Warns about repeats">{(id) => <TextInput id={id} maxLength={60} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Smartwatch" />}</Field>
+        </div>
+        <Field label="Link to product">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>
         {received ? (
           <>
             <Checkbox label="Keep value hidden" hint="Shown only when you choose" checked={valueHidden} onChange={setValueHidden} />

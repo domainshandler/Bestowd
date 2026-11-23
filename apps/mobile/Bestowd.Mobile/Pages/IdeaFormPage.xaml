@@ -18,6 +18,10 @@
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Title}" Placeholder="Watercolour paint kit" MaxLength="200" /></Border>
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
+                <Label Text="Brand" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Brand}" Placeholder="Crayola" MaxLength="80" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
                 <Label Text="Category" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" Placeholder="Art" MaxLength="60" /></Border>
             </VerticalStackLayout>

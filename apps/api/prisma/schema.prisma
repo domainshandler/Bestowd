@@ -267,7 +267,10 @@ model GiftEntry {
   groupId        String
   direction      GiftDirection
   title          String
+  brand          String?
   category       String?
+  /// Product page, e.g. the store listing.
+  url            String?
   occasionId     String?
   occasionDate   DateTime?
   date           DateTime
@@ -313,6 +316,7 @@ model Idea {
   id          String     @id @default(cuid())
   groupId     String
   title       String
+  brand       String?
   category    String?
   url         String?
   imageUrl    String?

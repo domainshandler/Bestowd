@@ -311,6 +311,9 @@ public sealed class Gift
     public string GroupId { get; init; } = "";
     public GiftDirection Direction { get; init; }
     public string Title { get; init; } = "";
+    public string? Brand { get; init; }
+    /// <summary>Product page.</summary>
+    public string? Url { get; init; }
     public string? Category { get; init; }
     public string? OccasionId { get; init; }
     public DateTime? OccasionDate { get; init; }
@@ -358,6 +361,7 @@ public sealed class Idea
     public string Id { get; init; } = "";
     public string GroupId { get; init; } = "";
     public string Title { get; init; } = "";
+    public string? Brand { get; init; }
     public string? Category { get; init; }
     public string? Url { get; init; }
     public string? ImageUrl { get; init; }
@@ -683,6 +687,8 @@ public sealed class CreateGiftBody
 {
     public GiftDirection Direction { get; init; }
     public string Title { get; init; } = "";
+    public string? Brand { get; init; }
+    public string? Url { get; init; }
     public string Date { get; init; } = "";
     public string? PersonId { get; init; }
     public string? FamilyId { get; init; }
@@ -702,6 +708,7 @@ public sealed class CreateGiftBody
 public sealed class CreateIdeaBody
 {
     public string Title { get; init; } = "";
+    public string? Brand { get; init; }
     public string? Category { get; init; }
     public string? Url { get; init; }
     public decimal? Price { get; init; }

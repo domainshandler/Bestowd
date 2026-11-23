@@ -39,6 +39,14 @@
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Amount}" Keyboard="Numeric" /></Border>
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
+                <Label Text="Brand" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Brand}" Placeholder="Garmin" MaxLength="80" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Link to product" Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Url}" Keyboard="Url" Placeholder="https://" /></Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4">
                 <Label Text="Category (warns about repeats, e.g. Puzzle)" Style="{StaticResource FieldLabel}" />
                 <Border Style="{StaticResource FieldBox}"><Entry Text="{Binding Category}" MaxLength="60" /></Border>
             </VerticalStackLayout>

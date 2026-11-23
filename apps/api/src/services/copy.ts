@@ -112,7 +112,7 @@ export async function copyFamilies(
       const tags = [...new Set(i.tags.map((t) => personMap.get(t.personId)).filter((x): x is string => x !== undefined))]
       const copy = await tx.idea.create({
         data: {
-          groupId: destId, title: i.title, category: i.category, url: i.url, imageUrl: i.imageUrl, price: i.price, notes: i.notes,
+          groupId: destId, title: i.title, brand: i.brand, category: i.category, url: i.url, imageUrl: i.imageUrl, price: i.price, notes: i.notes,
           ageMin: i.ageMin, ageMax: i.ageMax, status: i.status, occasionId: i.occasionId ? occasionMap.get(i.occasionId) ?? null : null,
           createdById: i.createdById, tags: { create: tags.map((personId) => ({ personId })) },
         },
@@ -124,7 +124,7 @@ export async function copyFamilies(
   for (const g of gifts) {
     const copy = await tx.giftEntry.create({
       data: {
-        groupId: destId, direction: g.direction, title: g.title, category: g.category,
+        groupId: destId, direction: g.direction, title: g.title, brand: g.brand, url: g.url, category: g.category,
         occasionId: g.occasionId ? occasionMap.get(g.occasionId) ?? null : null, occasionDate: g.occasionDate, date: g.date,
         personId: g.personId ? personMap.get(g.personId)! : null, familyId: g.familyId ? familyMap.get(g.familyId)! : null,
         amount: g.amount, status: g.status, valueHidden: g.valueHidden, hasGiftReceipt: g.hasGiftReceipt, returnBy: g.returnBy,

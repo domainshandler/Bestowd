@@ -12,6 +12,7 @@ export interface Idea {
   id: string
   groupId: string
   title: string
+  brand: string | null
   category: string | null
   url: string | null
   imageUrl: string | null
@@ -43,6 +44,7 @@ export interface IdeaList {
 
 export interface CreateIdeaBody {
   title: string
+  brand?: string | null
   category?: string | null
   url?: string | null
   imageUrl?: string | null

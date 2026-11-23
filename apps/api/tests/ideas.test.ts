@@ -117,6 +117,13 @@ describe('ideas', () => {
     expect((await auth(api().post(`/ideas/${idea.body.id}/buy`)).send({})).status).toBe(409)
   })
 
+  it("buying carries the idea's brand, link, photo and notes into the gift", async () => {
+    const idea = await createIdea({ title: 'Smartwatch', brand: 'Garmin', url: 'https://shop.example/watch', imageUrl: 'https://shop.example/watch.jpg', notes: 'The green strap', price: 199 })
+    expect(idea.body.brand).toBe('Garmin')
+    const res = await auth(api().post(`/ideas/${idea.body.id}/buy`)).send({ personId: leo })
+    expect(res.body.gift).toMatchObject({ title: 'Smartwatch', brand: 'Garmin', url: 'https://shop.example/watch', photoUrl: 'https://shop.example/watch.jpg', notes: 'The green strap', amount: 199 })
+  })
+
   it('buying without an occasion needs a recipient', async () => {
     const idea = await createIdea({ title: 'No recipient' })
     expect((await auth(api().post(`/ideas/${idea.body.id}/buy`)).send({})).status).toBe(400)

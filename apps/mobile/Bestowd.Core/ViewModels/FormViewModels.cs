@@ -25,6 +25,13 @@ public abstract partial class FormViewModel(INavigator nav, DataChanged changes)
 
     [RelayCommand] public Task CancelAsync() => Nav.GoBackAsync();
 
+    /// <summary>A product link must be a web address.</summary>
+    protected static void CheckLink(string? text)
+    {
+        if (text?.Trim() is { Length: > 0 } u && !(u.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || u.StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+            throw new FormException("Links start with https://");
+    }
+
     protected static decimal? ParseMoney(string? text) =>
         string.IsNullOrWhiteSpace(text) ? null
         : decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out var d) && d >= 0 ? d
@@ -240,6 +247,8 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     [ObservableProperty] public partial DateTime Date { get; set; } = DateTime.Today;
     [ObservableProperty] public partial string Amount { get; set; } = "";
     [ObservableProperty] public partial string Category { get; set; } = "";
+    [ObservableProperty] public partial string Brand { get; set; } = "";
+    [ObservableProperty] public partial string Url { get; set; } = "";
     [ObservableProperty] public partial bool BoughtNotGiven { get; set; }
     [ObservableProperty] public partial bool ValueHidden { get; set; } = true;
     [ObservableProperty] public partial bool HasGiftReceipt { get; set; }
@@ -297,6 +306,8 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         Date = g.Date.ToUniversalTime().Date;
         Amount = g.Amount?.ToString(CultureInfo.CurrentCulture) ?? "";
         Category = g.Category ?? "";
+        Brand = g.Brand ?? "";
+        Url = g.Url ?? "";
         BoughtNotGiven = g.Status == GiftStatus.Bought;
         ValueHidden = g.ValueHidden;
         HasGiftReceipt = g.HasGiftReceipt;
@@ -327,7 +338,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
     public CreateGiftBody? BuildBody()
     {
         decimal? amount = null;
-        if (!Validate(() => amount = ParseMoney(Amount)) || Subject is null) return null;
+        if (!Validate(() => { amount = ParseMoney(Amount); CheckLink(Url); }) || Subject is null) return null;
         string? Text(string s) => s.Trim() is { Length: > 0 } t ? t : null;
         return new CreateGiftBody
         {
@@ -336,6 +347,7 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
             Date = DateOnly.FromDateTime(Date).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             PersonId = Subject.PersonId, FamilyId = Subject.FamilyId,
             OccasionId = Occasion?.Id, Amount = amount, Category = Text(Category), Notes = Text(Notes),
+            Brand = Text(Brand), Url = Text(Url),
             Status = IsReceived ? null : BoughtNotGiven ? GiftStatus.Bought : GiftStatus.Given,
             ValueHidden = IsReceived ? ValueHidden : null,
             HasGiftReceipt = IsReceived ? HasGiftReceipt : null,
@@ -359,7 +371,8 @@ public sealed partial class LogGiftViewModel(BestowdApi api, GroupState groups, 
         }
         var patch = new Patch().Set("title", body.Title).SetDate("date", DateOnly.ParseExact(body.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture))
             .Set("personId", body.PersonId).Set("familyId", body.FamilyId).Set("occasionId", body.OccasionId)
-            .Set("amount", body.Amount).Set("category", body.Category).Set("notes", body.Notes);
+            .Set("amount", body.Amount).Set("category", body.Category).Set("notes", body.Notes)
+            .Set("brand", body.Brand).Set("url", body.Url);
         if (IsReceived) patch.Set("valueHidden", ValueHidden).Set("hasGiftReceipt", HasGiftReceipt).Set("thankYouSent", ThankYouSent);
         else patch.SetEnum("status", body.Status!.Value);
         await SaveAndCloseAsync(() => api.UpdateGiftAsync(GiftId, patch));
@@ -373,6 +386,7 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
     private string _groupId = "";
     private string? _personId, _occasionId;
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SaveCommand))] public partial string Title { get; set; } = "";
+    [ObservableProperty] public partial string Brand { get; set; } = "";
     [ObservableProperty] public partial string Category { get; set; } = "";
     [ObservableProperty] public partial string Price { get; set; } = "";
     [ObservableProperty] public partial string Url { get; set; } = "";
@@ -404,13 +418,12 @@ public sealed partial class IdeaFormViewModel(BestowdApi api, INavigator nav, Da
             min = ParseInt(AgeMin, 0, 120, "Age");
             max = ParseInt(AgeMax, 0, 120, "Age");
             if (min > max) throw new FormException("The first age can't be above the second.");
-            if (Url.Trim() is { Length: > 0 } u && !(u.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || u.StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
-                throw new FormException("Links start with https://");
+            CheckLink(Url);
         })) return null;
         string? Text(string s) => s.Trim() is { Length: > 0 } t ? t : null;
         return new CreateIdeaBody
         {
-            Title = Title.Trim(), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
+            Title = Title.Trim(), Brand = Text(Brand), Category = Text(Category), Price = price, Url = Text(Url), Notes = Text(Notes),
             AgeMin = min, AgeMax = max, OccasionId = _occasionId,
             PersonIds = People.ChosenIds.ToList(),
         };

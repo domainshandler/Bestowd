@@ -24,6 +24,7 @@ function IdeaCard({ idea, featured, currency, onBuy, onDismiss, busy }: {
         </span>
       </div>
       {featured && <p className="font-display text-lg font-bold">{idea.title}</p>}
+      {idea.brand && <p className="text-[13px] font-medium text-chip-ink">{idea.brand}</p>}
       {idea.notes && <p className="text-sm leading-snug text-muted">{idea.notes}</p>}
       {idea.repeat && (
         <p className="text-[13px] text-amber-ink">You gave “{idea.repeat.title}” in {formatDate(idea.repeat.date, { month: 'short', year: 'numeric' })}.</p>

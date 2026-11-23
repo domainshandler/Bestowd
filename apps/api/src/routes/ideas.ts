@@ -13,6 +13,7 @@ import { id, idList, isoDate, money as moneySchema, nullableId, nullableString, 
 
 interface IdeaBody {
   title?: string
+  brand?: string | null
   category?: string | null
   url?: string | null
   imageUrl?: string | null
@@ -28,6 +29,7 @@ interface IdeaBody {
 const age = { type: ['integer', 'null'], minimum: 0, maximum: 120 }
 const ideaProperties = {
   title: { type: 'string', minLength: 1, maxLength: 200 },
+  brand: nullableString(80),
   category: nullableString(60),
   url: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
   imageUrl: { type: ['string', 'null'], maxLength: 2000, pattern: '^https?://' },
@@ -47,6 +49,7 @@ function toIdeaDto(idea: IdeaRow) {
     id: idea.id,
     groupId: idea.groupId,
     title: idea.title,
+    brand: idea.brand,
     category: idea.category,
     url: idea.url,
     imageUrl: idea.imageUrl,
@@ -189,7 +192,12 @@ export async function ideaRoutes(app: FastifyInstance) {
         direction: 'GIVEN',
         status: 'BOUGHT',
         title: idea.title,
+        // The idea's details carry over to the gift.
+        brand: idea.brand,
         category: idea.category,
+        url: idea.url,
+        photoUrl: idea.imageUrl,
+        notes: idea.notes,
         ideaId: idea.id,
         occasionId,
         amount: body.amount === undefined ? (idea.price === null ? null : Number(idea.price)) : body.amount,

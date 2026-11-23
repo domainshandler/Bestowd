@@ -79,6 +79,7 @@ public sealed record GiftItem(Gift Gift, string Title, string Line, string? Amou
             ? g.OccasionName + (showYear && g.OccasionDate is { } od ? $" {od.ToUniversalTime().Year}" : "")
             : showYear ? Format.MonthYear(g.Date) : Format.ShortDate(g.Date);
         var parts = new List<string> { $"{(received ? "From" : "To")} {g.CounterpartyName}", when };
+        if (g.Brand is { Length: > 0 } brand) parts.Insert(0, brand);
         if (g.Reaction is { } r) parts.Add(Format.Label(r));
 
         string? amount = null;

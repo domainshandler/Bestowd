@@ -10,6 +10,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
 }) {
   const people = useQuery({ queryKey: ['people', groupId], queryFn: () => listPeople(groupId) })
   const [title, setTitle] = useState('')
+  const [brand, setBrand] = useState('')
   const [category, setCategory] = useState('')
   const [price, setPrice] = useState('')
   const [url, setUrl] = useState('')
@@ -20,6 +21,7 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
 
   const save = useSave(() => createIdea(groupId, {
     title: title.trim(),
+    brand: brand.trim() || null,
     category: category.trim() || null,
     price: numberOrNull(price),
     url: url.trim() || null,
@@ -36,10 +38,13 @@ export default function IdeaForm({ open, onClose, groupId, personId, occasionId 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Field label="Idea">{(id) => <TextInput id={id} required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Watercolour paint kit" />}</Field>
         <div className="grid grid-cols-2 gap-2">
+          <Field label="Brand">{(id) => <TextInput id={id} maxLength={80} value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Crayola" />}</Field>
           <Field label="Category">{(id) => <TextInput id={id} maxLength={60} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Art" />}</Field>
-          <Field label="Price">{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
         </div>
-        <Field label="Link">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Price">{(id) => <TextInput id={id} type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
+          <Field label="Link">{(id) => <TextInput id={id} type="url" pattern="https?://.*" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />}</Field>
+        </div>
         <fieldset>
           <legend className="text-sm font-medium mb-1">Good for ages</legend>
           <div className="grid grid-cols-2 gap-2">

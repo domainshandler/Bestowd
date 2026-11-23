@@ -9,6 +9,8 @@ import { advanceOccasionStatus } from './occasion-status.js'
 export interface GiftInput {
   direction: GiftDirection
   title: string
+  brand?: string | null
+  url?: string | null
   date: Date
   personId?: string | null
   familyId?: string | null
@@ -55,6 +57,8 @@ export function toGiftDto(g: GiftRow) {
     groupId: g.groupId,
     direction: g.direction,
     title: g.title,
+    brand: g.brand,
+    url: g.url,
     category: g.category,
     occasionId: g.occasionId,
     occasionDate: iso(g.occasionDate),
