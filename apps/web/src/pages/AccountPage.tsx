@@ -1,16 +1,36 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getGroup, updateGroup } from '@bestowd/api-client'
+import { getGroup, listOccasions, updateGroup } from '@bestowd/api-client'
 import type { OccasionType } from '@bestowd/types'
 import { useAuth } from '../auth/useAuth.ts'
 import { GROUP_KEY, useGroup } from '../groups/GroupContext.tsx'
 import InviteLinkModal from '../components/forms/InviteLinkModal.tsx'
+import GroupOccasionForm from '../components/forms/GroupOccasionForm.tsx'
+import OccasionRow from '../components/OccasionRow.tsx'
 import { useSave } from '../components/forms/useSave.ts'
-import { Avatar, Badge, Button, Card, Field, FormError, Icon, SectionHeader, TextInput } from '../components/ui.tsx'
+import { Avatar, Badge, Button, Card, EmptyState, Field, FormError, Icon, SectionHeader, TextInput } from '../components/ui.tsx'
 import { OCCASION_TYPE_LABEL } from '../lib/format.ts'
 
 const TYPES = Object.keys(OCCASION_TYPE_LABEL) as OccasionType[]
+
+/** Holidays and other occasions for the whole group, e.g. Christmas covering every family. */
+function GroupOccasions({ groupId }: { groupId: string }) {
+  const [adding, setAdding] = useState(false)
+  const yearAhead = new Date(Date.now() + 366 * 86_400_000).toISOString().slice(0, 10)
+  const occasions = useQuery({ queryKey: ['occasions', groupId, 'group-wide'], queryFn: () => listOccasions(groupId, { to: yearAhead }) })
+  const groupWide = occasions.data?.occasions.filter((o) => o.scope === 'GROUP') ?? []
+  return (
+    <section className="flex flex-col gap-2.5">
+      <SectionHeader title="Group occasions" action={<Button variant="ghost" onClick={() => setAdding(true)}><Icon name="plus" size={16} /> Add</Button>} />
+      {occasions.isSuccess && groupWide.length === 0 && (
+        <EmptyState>Holidays you celebrate with several families, like Christmas or Diwali. Add one to track a gift and budget for each family.</EmptyState>
+      )}
+      {groupWide.map((o) => <OccasionRow key={o.id} occasion={o} />)}
+      {adding && <GroupOccasionForm open onClose={() => setAdding(false)} groupId={groupId} />}
+    </section>
+  )
+}
 
 function GroupSettings({ groupId }: { groupId: string }) {
   const group = useQuery({ queryKey: ['group', groupId], queryFn: () => getGroup(groupId) })
@@ -114,6 +134,8 @@ export default function AccountPage() {
           </Card>
         </section>
       )}
+
+      {groupId && <GroupOccasions groupId={groupId} />}
 
       <Button variant="danger" className="self-start" onClick={handleLogout}>Sign out</Button>
       {inviting && groupId && <InviteLinkModal open onClose={() => setInviting(false)} groupId={groupId} kind="GROUP" />}

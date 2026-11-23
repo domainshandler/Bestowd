@@ -12,6 +12,7 @@ import GiftsPage from './pages/GiftsPage.tsx'
 import IdeasPage from './pages/IdeasPage.tsx'
 import JoinPage from './pages/JoinPage.tsx'
 import AccountPage from './pages/AccountPage.tsx'
+import GroupOccasionPage from './pages/GroupOccasionPage.tsx'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="/gifts" element={<GiftsPage />} />
               <Route path="/ideas" element={<IdeasPage />} />
               <Route path="/account" element={<AccountPage />} />
+              <Route path="/occasions/:id" element={<GroupOccasionPage />} />
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
             </Route>
           </Route>

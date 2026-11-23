@@ -2,7 +2,7 @@ import type { Person } from './person.js'
 import type { Occasion } from './occasion.js'
 import type { GiftTotals } from './gift.js'
 
-export type FamilyType = 'FAMILY' | 'FRIENDS' | 'SCHOOL' | 'OTHER'
+export type FamilyType = 'FAMILY' | 'FRIENDS' | 'SCHOOL' | 'NEIGHBOURS' | 'OTHER'
 export type FamilyStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED'
 
 export interface Family {

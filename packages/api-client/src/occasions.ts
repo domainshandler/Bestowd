@@ -1,7 +1,7 @@
 import { apiFetch } from './client.js'
 import { json, toQuery } from './query.js'
 import type {
-  CreateOccasionBody, GroupOccasions, HomeOccasions, Occasion, OccasionQuery, UpdateOccasionBody,
+  CreateGroupOccasionBody, CreateOccasionBody, GroupOccasions, Holiday, HomeOccasions, Occasion, OccasionQuery, UpdateOccasionBody,
 } from '@bestowd/types'
 
 /** Home: upcoming occasions across all of the user's groups (default: next 30 days). */
@@ -19,6 +19,21 @@ export function getOccasion(id: string): Promise<Occasion> {
 
 export function createOccasion(groupId: string, body: CreateOccasionBody): Promise<Occasion> {
   return apiFetch(`/groups/${groupId}/occasions`, { method: 'POST', body: json(body) })
+}
+
+/** A group-wide occasion: a built-in holiday or your own, covering families in the group. */
+export function createGroupOccasion(groupId: string, body: CreateGroupOccasionBody): Promise<Occasion> {
+  return apiFetch(`/groups/${groupId}/occasions`, { method: 'POST', body: json(body) })
+}
+
+/** The built-in holidays, each with its next date and the group's occasion for it (if added). */
+export function listHolidays(groupId: string): Promise<Holiday[]> {
+  return apiFetch(`/groups/${groupId}/holidays`)
+}
+
+/** Sets which families a group-wide occasion covers, with optional budget overrides (null = defaults). */
+export function setOccasionFamilies(id: string, families: { familyId: string; budget?: number | null }[]): Promise<Occasion> {
+  return apiFetch(`/occasions/${id}/families`, { method: 'PUT', body: json({ families }) })
 }
 
 export function updateOccasion(id: string, body: UpdateOccasionBody): Promise<Occasion> {

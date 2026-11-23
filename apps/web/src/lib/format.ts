@@ -53,5 +53,5 @@ export function todayInput(now = new Date()): string {
 }
 
 export const OCCASION_TYPE_LABEL = { BIRTHDAY: 'Birthday', HOLIDAY: 'Holiday', ONE_OFF: 'Event' } as const
-export const FAMILY_TYPE_LABEL = { FAMILY: 'Family', FRIENDS: 'Friends', SCHOOL: 'School', OTHER: 'Other' } as const
+export const FAMILY_TYPE_LABEL = { FAMILY: 'Family', FRIENDS: 'Friends', SCHOOL: 'School', NEIGHBOURS: 'Neighbours', OTHER: 'Other' } as const
 export const REACTION_LABEL = { LOVED_IT: 'Loved it', LIKED_IT: 'Liked it', ALREADY_HAD_IT: 'Already had it', NOT_A_HIT: 'Not a hit' } as const

@@ -16,15 +16,18 @@ export const STATUS_TONE: Record<OccasionStatus, Tone> = {
   GIVEN: 'brand',
 }
 
-/** Where tapping an occasion goes: the person, else the family. */
+/** Where tapping an occasion goes: a group-wide occasion's own page, else the person, else the family. */
 export function occasionHref(o: Occasion): string {
+  if (o.scope === 'GROUP') return `/occasions/${o.id}`
   if (o.personId) return `/people/${o.personId}`
   return `/families/${o.familyId ?? o.subjectFamilyId}`
 }
 
 export default function OccasionRow({ occasion, showGroup = false }: { occasion: Occasion; showGroup?: boolean }) {
   const o = occasion
-  const details = [o.personId ? o.subjectFamilyName : null, showGroup ? o.groupName : null].filter(Boolean)
+  // A group-wide occasion shown for the whole group says how many families are covered.
+  const progress = o.coverage && !o.subjectFamilyId ? `${o.coverage.coveredCount} of ${o.subjectName} have a gift` : null
+  const details = [progress, o.personId ? o.subjectFamilyName : null, showGroup ? o.groupName : null].filter(Boolean)
   return (
     <Link to={occasionHref(o)} className="bg-white border border-line rounded-2xl p-3.5 flex gap-3.5 items-center hover:border-brand/40">
       {o.nextOccurrence && <DateTile iso={o.nextOccurrence} />}

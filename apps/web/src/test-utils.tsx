@@ -35,12 +35,12 @@ export function renderApp(ui: ReactElement, { route = '/', path = '*', token = '
 
 export function occasion(over: Partial<Occasion> = {}): Occasion {
   return {
-    id: 'o1', groupId: 'g1', groupName: "Renny's group", currency: 'CAD', personId: 'p1', familyId: null, type: 'BIRTHDAY',
+    id: 'o1', groupId: 'g1', groupName: "Renny's group", currency: 'CAD', personId: 'p1', familyId: null, scope: 'SUBJECT', holidayKey: null, type: 'BIRTHDAY',
     name: "Maya's birthday", date: '2019-11-22T00:00:00.000Z', recursAnnually: true, recurrenceEndsAt: null,
-    nextOccurrence: '2026-11-22T00:00:00.000Z', budget: null, status: 'NOT_STARTED', needsCard: false, cardDone: false,
+    nextOccurrence: '2026-11-22T00:00:00.000Z', budget: null, familyTypeBudgets: {}, includeNewFamilies: true, status: 'NOT_STARTED', needsCard: false, cardDone: false,
     reminderDays: [], partyAt: null, location: null, rsvp: 'NONE', hostGiftRequest: null,
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
-    subjectName: 'Maya', subjectFamilyId: 'f1', subjectFamilyName: 'Chen family', effectiveBudget: 40, spent: 0, overBudget: false, needsGift: true,
+    subjectName: 'Maya', subjectFamilyId: 'f1', subjectFamilyName: 'Chen family', effectiveBudget: 40, spent: 0, overBudget: false, needsGift: true, coverage: null,
     ...over,
   }
 }
