@@ -3,7 +3,7 @@ import type { OccasionStatus } from '@prisma/client'
 import { db } from '../db.js'
 import { env } from '../config.js'
 import { addDays, computeNextOccurrence, startOfUtcDay } from './next-occurrence.js'
-import { activeSubjectWhere } from './occasions.js'
+import { GROUP_WIDE, activeSubjectWhere, occasionInclude, serialiseOccasions } from './occasions.js'
 import { createFcmSender, deliverReminders, loggingSender } from './push.js'
 
 export type ReminderKind = 'OCCASION' | 'BUY' | 'CARD' | 'THANK_YOU'
@@ -46,13 +46,23 @@ export function occasionReminderKinds(o: {
   return kinds
 }
 
-export function occasionMessage(kind: ReminderKind, o: { name: string; daysUntil: number; status: OccasionStatus }): { title: string; body: string } {
+export function occasionMessage(
+  kind: ReminderKind,
+  o: { name: string; daysUntil: number; status: OccasionStatus; coverage?: { familyCount: number; coveredCount: number } | null },
+): { title: string; body: string } {
+  const left = o.coverage ? o.coverage.familyCount - o.coverage.coveredCount : 0
+  const families = `${left} of ${o.coverage?.familyCount} ${o.coverage?.familyCount === 1 ? 'family' : 'families'}`
   switch (kind) {
     case 'BUY':
-      return { title: o.name, body: `${o.name} is in a week and nothing is planned yet. Time to pick a gift.` }
+      return o.coverage
+        ? { title: o.name, body: `${o.name} is in a week and ${families} still need a gift.` }
+        : { title: o.name, body: `${o.name} is in a week and nothing is planned yet. Time to pick a gift.` }
     case 'CARD':
       return { title: `Card for ${o.name}`, body: `${o.name} is ${inDays(o.daysUntil)}. Don't forget the card.` }
     default:
+      if (o.coverage) {
+        return { title: o.name, body: `${o.name} is ${inDays(o.daysUntil)}${left > 0 ? ` and ${families} still need a gift` : ''}.` }
+      }
       return {
         title: o.name,
         body: `${o.name} is ${inDays(o.daysUntil)}${o.status === 'NOT_STARTED' ? ' and still needs a gift' : ''}.`,
@@ -87,12 +97,21 @@ export async function runReminderScan(now: Date = new Date()): Promise<DueRemind
     where: { nextOccurrence: { gte: today }, ...activeSubjectWhere },
     include: { group: { include: members } },
   })
+  // Group-wide occasions: progress comes from per-family coverage (status = all families covered or not).
+  const groupWideRows = await db.occasion.findMany({ where: { id: { in: occasions.map((o) => o.id) }, ...GROUP_WIDE }, include: occasionInclude })
+  const groupWide = new Map((await serialiseOccasions(groupWideRows)).map((dto) => [dto.id, dto]))
+
   for (const occasion of occasions) {
     const daysUntil = Math.round((occasion.nextOccurrence!.getTime() - today.getTime()) / DAY)
     const reminderDays = occasion.reminderDays.length ? occasion.reminderDays : occasion.group.defaultReminderDays
-    for (const kind of occasionReminderKinds({ ...occasion, daysUntil, reminderDays })) {
-      const message = occasionMessage(kind, { ...occasion, daysUntil })
-      const data = { kind, occasionId: occasion.id, ...(occasion.personId ? { personId: occasion.personId } : { familyId: occasion.familyId! }) }
+    const shared = groupWide.get(occasion.id)
+    const status = shared ? shared.status : occasion.status
+    const coverage = shared?.coverage ?? null
+    if (shared && coverage?.familyCount === 0) continue
+    for (const kind of occasionReminderKinds({ ...occasion, status, daysUntil, reminderDays })) {
+      const message = occasionMessage(kind, { ...occasion, status, daysUntil, coverage })
+      const subject: Record<string, string> = occasion.personId ? { personId: occasion.personId } : occasion.familyId ? { familyId: occasion.familyId } : { scope: 'GROUP' }
+      const data = { kind, occasionId: occasion.id, ...subject }
       for (const m of occasion.group.memberships) {
         due.push({ kind, userId: m.userId, email: m.user.email, groupId: occasion.groupId, occasionId: occasion.id, giftEntryId: null, occasionName: occasion.name, daysUntil, ...message, data })
       }

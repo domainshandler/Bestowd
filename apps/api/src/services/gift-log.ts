@@ -92,6 +92,8 @@ export async function checkGiftRefs(groupId: string, input: Partial<GiftInput>):
 export async function advanceForGift(gift: { direction: GiftDirection; status: GiftStatus | null; occasionId: string | null; occasionDate: Date | null }) {
   if (gift.direction !== 'GIVEN' || !gift.occasionId || !gift.occasionDate || !gift.status) return
   const occasion = await db.occasion.findUnique({ where: { id: gift.occasionId } })
+  // Group-wide occasions track progress per family from their gifts, not with the occasion's own status.
+  if (occasion && occasion.personId === null && occasion.familyId === null) return
   if (occasion?.nextOccurrence?.getTime() === gift.occasionDate.getTime()) {
     await advanceOccasionStatus(occasion.id, gift.status)
   }

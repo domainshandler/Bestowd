@@ -17,6 +17,7 @@ enum FamilyType {
   FAMILY
   FRIENDS
   SCHOOL
+  NEIGHBOURS
   OTHER
 }
 
@@ -151,6 +152,7 @@ model Family {
   occasions         Occasion[]
   gifts             GiftEntry[]
   invites           InviteLink[]
+  occasionCoverage  OccasionFamily[]
   connection        FamilyConnection?  @relation("ConnectedFamily")
   sharedConnections FamilyConnection[] @relation("SourceFamily")
 
@@ -187,35 +189,56 @@ model Person {
 }
 
 model Occasion {
-  id               String         @id @default(cuid())
-  groupId          String
-  personId         String?
-  familyId         String?
-  type             OccasionType
-  name             String
-  date             DateTime
-  recursAnnually   Boolean        @default(true)
-  recurrenceEndsAt DateTime?
-  nextOccurrence   DateTime?
-  budget           Decimal?       @db.Decimal(10, 2)
-  status           OccasionStatus @default(NOT_STARTED)
-  needsCard        Boolean        @default(false)
-  cardDone         Boolean        @default(false)
-  reminderDays     Int[]          @default([])
-  partyAt          DateTime?
-  location         String?
-  rsvp             Rsvp           @default(NONE)
-  hostGiftRequest  String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  groupId            String
+  personId           String?
+  familyId           String?
+  type               OccasionType
+  name               String
+  date               DateTime
+  recursAnnually     Boolean        @default(true)
+  recurrenceEndsAt   DateTime?
+  nextOccurrence     DateTime?
+  budget             Decimal?       @db.Decimal(10, 2)
+  status             OccasionStatus @default(NOT_STARTED)
+  needsCard          Boolean        @default(false)
+  cardDone           Boolean        @default(false)
+  reminderDays       Int[]          @default([])
+  partyAt            DateTime?
+  location           String?
+  rsvp               Rsvp           @default(NONE)
+  hostGiftRequest    String?
+  /// Group-wide occasions (no person or family): the built-in holiday this is, from src/holidays/catalog.ts.
+  holidayKey         String?
+  /// Group-wide occasions: budget per family type, e.g. {"SCHOOL": 20}. Overrides `budget`.
+  familyTypeBudgets  Json           @default("{}")
+  /// Group-wide occasions: families added to the group later are covered too.
+  includeNewFamilies Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  group  Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  person Person?     @relation(fields: [personId], references: [id], onDelete: Cascade)
-  family Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  gifts  GiftEntry[]
-  ideas  Idea[]
+  group    Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  person   Person?          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  family   Family?          @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  gifts    GiftEntry[]
+  ideas    Idea[]
+  coverage OccasionFamily[]
 
+  @@unique([groupId, holidayKey])
   @@index([groupId, nextOccurrence])
+}
+
+/// A family covered by a group-wide occasion, with an optional budget just for them.
+model OccasionFamily {
+  occasionId String
+  familyId   String
+  budget     Decimal? @db.Decimal(10, 2)
+
+  occasion Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@id([occasionId, familyId])
+  @@index([familyId])
 }
 
 model GiftEntry {

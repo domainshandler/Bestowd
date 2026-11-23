@@ -1,10 +1,14 @@
 import type { FastifyInstance } from 'fastify'
 import type { OccasionStatus, OccasionType, Prisma, Rsvp } from '@prisma/client'
 import { db } from '../db.js'
-import { assertSubject, loadOr404, requireMember, userIdOf } from '../services/access.js'
+import { HOLIDAYS, findHoliday, nextHolidayDate } from '../holidays/catalog.js'
+import { badRequest, conflict } from '../http-error.js'
+import { assertInGroup, assertSubject, loadOr404, requireMember, userIdOf } from '../services/access.js'
 import { addDays, computeNextOccurrence, startOfUtcDay } from '../services/next-occurrence.js'
-import { activeSubjectWhere, occasionInclude, plannedSpend, serialiseOccasions } from '../services/occasions.js'
-import { isoDate, money, nullableId, nullableIsoDate, nullableString, parseDate } from './schemas.js'
+import {
+  GROUP_WIDE, aboutFamilyWhere, activeSubjectWhere, isGroupWide, occasionInclude, plannedSpend, serialiseOccasions,
+} from '../services/occasions.js'
+import { idList, isoDate, money, nullableId, nullableIsoDate, nullableString, parseDate } from './schemas.js'
 
 interface OccasionBody {
   type?: OccasionType
@@ -21,7 +25,19 @@ interface OccasionBody {
   location?: string | null
   rsvp?: Rsvp
   hostGiftRequest?: string | null
+  familyTypeBudgets?: Record<string, number>
+  includeNewFamilies?: boolean
 }
+
+interface CreateBody extends OccasionBody {
+  /** No person or family: the occasion covers families in the group (all non-archived ones unless familyIds). */
+  groupWide?: boolean
+  /** A built-in holiday (group-wide only). Name, type and dates come from the catalog unless given. */
+  holidayKey?: string
+  familyIds?: string[]
+}
+
+const FAMILY_TYPES = ['FAMILY', 'FRIENDS', 'SCHOOL', 'NEIGHBOURS', 'OTHER']
 
 const occasionProperties = {
   type: { type: 'string', enum: ['BIRTHDAY', 'HOLIDAY', 'ONE_OFF'] },
@@ -38,6 +54,13 @@ const occasionProperties = {
   location: nullableString(300),
   rsvp: { type: 'string', enum: ['NONE', 'YES', 'NO', 'MAYBE'] },
   hostGiftRequest: nullableString(1000),
+  // propertyNames (not additionalProperties) so an unknown family type is rejected, not silently dropped.
+  familyTypeBudgets: {
+    type: 'object',
+    propertyNames: { enum: FAMILY_TYPES },
+    additionalProperties: { type: 'number', minimum: 0, maximum: 99_999_999 },
+  },
+  includeNewFamilies: { type: 'boolean' },
 }
 
 interface ListQuery {
@@ -79,28 +102,84 @@ function withoutDates<T extends OccasionBody>(body: T) {
   return rest
 }
 
+/** The families a new group-wide occasion covers: the ones given, or every non-archived family. */
+async function initialCoverage(groupId: string, familyIds: string[] | undefined): Promise<string[]> {
+  if (familyIds) {
+    await assertInGroup('family', groupId, familyIds)
+    return [...new Set(familyIds)]
+  }
+  const families = await db.family.findMany({ where: { groupId, status: { not: 'ARCHIVED' } }, select: { id: true } })
+  return families.map((f) => f.id)
+}
+
 export async function occasionRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
 
-  app.post<{ Params: { groupId: string }; Body: OccasionBody & { type: OccasionType; name: string; date: string } }>('/groups/:groupId/occasions', {
-    schema: { body: { type: 'object', additionalProperties: false, required: ['type', 'name', 'date'], properties: occasionProperties } },
+  // The built-in holidays, with each one's next date and the group's occasion for it (if added).
+  app.get<{ Params: { groupId: string } }>('/groups/:groupId/holidays', async (request) => {
+    const { groupId } = request.params
+    await requireMember(userIdOf(request), groupId)
+    const added = await db.occasion.findMany({ where: { groupId, holidayKey: { not: null } }, select: { id: true, holidayKey: true } })
+    const today = startOfUtcDay(new Date())
+    return HOLIDAYS.map((h) => ({
+      key: h.key,
+      name: h.name,
+      note: h.note ?? null,
+      nextDate: nextHolidayDate(h.rule, today)?.toISOString() ?? null,
+      occasionId: added.find((o) => o.holidayKey === h.key)?.id ?? null,
+    }))
+  })
+
+  app.post<{ Params: { groupId: string }; Body: CreateBody }>('/groups/:groupId/occasions', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        properties: { ...occasionProperties, groupWide: { type: 'boolean' }, holidayKey: { type: 'string', maxLength: 64 }, familyIds: idList },
+      },
+    },
   }, async (request, reply) => {
     const { groupId } = request.params
     await requireMember(userIdOf(request), groupId)
-    const body = request.body
-    await assertSubject(groupId, body)
+    const { groupWide = false, holidayKey, familyIds, ...body } = request.body
+
+    let coverage: string[] = []
+    if (groupWide) {
+      if (body.personId || body.familyId) throw badRequest('A group-wide occasion has no person or family')
+      coverage = await initialCoverage(groupId, familyIds)
+    } else {
+      if (holidayKey || familyIds) throw badRequest('holidayKey and familyIds are for group-wide occasions')
+      await assertSubject(groupId, body)
+    }
+
+    if (holidayKey) {
+      const holiday = findHoliday(holidayKey)
+      if (!holiday) throw badRequest(`Unknown holiday: ${holidayKey}`)
+      const next = nextHolidayDate(holiday.rule, new Date())
+      if (!next) throw badRequest(`${holiday.name} has no upcoming date`)
+      if (await db.occasion.findFirst({ where: { groupId, holidayKey } })) throw conflict(`${holiday.name} is already in this group`)
+      body.type = 'HOLIDAY'
+      body.name ??= holiday.name
+      body.date = next.toISOString()
+      body.recursAnnually = true
+    }
+    if (!body.type || !body.name || !body.date) throw badRequest('type, name and date are required')
 
     const recursAnnually = body.recursAnnually ?? body.type !== 'ONE_OFF'
     const { date, recurrenceEndsAt, partyAt } = dates(body)
     const created = await db.occasion.create({
       data: {
         ...withoutDates(body),
+        type: body.type,
+        name: body.name,
         groupId,
+        holidayKey: holidayKey ?? null,
         recursAnnually,
         date: date!,
         recurrenceEndsAt,
         partyAt,
-        nextOccurrence: computeNextOccurrence({ date: date!, recursAnnually, recurrenceEndsAt: recurrenceEndsAt ?? null }),
+        nextOccurrence: computeNextOccurrence({ date: date!, recursAnnually, recurrenceEndsAt: recurrenceEndsAt ?? null, holidayKey }),
+        ...(coverage.length ? { coverage: { create: coverage.map((familyId) => ({ familyId })) } } : {}),
       },
       include: occasionInclude,
     })
@@ -115,21 +194,29 @@ export async function occasionRoutes(app: FastifyInstance) {
     await requireMember(userIdOf(request), groupId)
     const { type, personId, familyId } = request.query
 
+    // A person's occasions include group-wide ones covering their family, shown as that family's share.
+    const personFamilyId = personId
+      ? (await db.person.findFirst({ where: { id: personId, groupId }, select: { familyId: true } }))?.familyId
+      : undefined
+    const forFamilyId = familyId ?? personFamilyId
+
     const where: Prisma.OccasionWhereInput = {
       groupId,
       nextOccurrence: windowWhere(request.query),
       AND: [
         activeSubjectWhere,
-        ...(familyId ? [{ OR: [{ familyId }, { person: { is: { familyId } } }] }] : []),
+        ...(familyId ? [aboutFamilyWhere(familyId)] : []),
+        ...(personId
+          ? [{ OR: [{ personId }, ...(personFamilyId ? [{ ...GROUP_WIDE, coverage: { some: { familyId: personFamilyId } } }] : [])] }]
+          : []),
       ],
       ...(type ? { type } : {}),
-      ...(personId ? { personId } : {}),
     }
     const [group, rows] = await Promise.all([
       db.group.findUniqueOrThrow({ where: { id: groupId } }),
       db.occasion.findMany({ where, include: occasionInclude, orderBy: { nextOccurrence: 'asc' } }),
     ])
-    const occasions = await serialiseOccasions(rows)
+    const occasions = await serialiseOccasions(rows, { forFamilyId })
     return { currency: group.currency, occasions, plannedSpend: plannedSpend(occasions) }
   })
 
@@ -154,6 +241,12 @@ export async function occasionRoutes(app: FastifyInstance) {
   }, async (request) => {
     const occasion = await loadOr404(userIdOf(request), await db.occasion.findUnique({ where: { id: request.params.id } }))
     const body = request.body
+    const groupWide = isGroupWide(occasion)
+
+    if (groupWide && (body.personId || body.familyId)) throw badRequest("A group-wide occasion can't move to a person or family")
+    if (occasion.holidayKey && (body.date !== undefined || body.recursAnnually !== undefined)) {
+      throw badRequest("A built-in holiday's date comes from its rule")
+    }
 
     // A new subject replaces the old one entirely.
     const subjectChange = body.personId || body.familyId
@@ -174,6 +267,44 @@ export async function occasionRoutes(app: FastifyInstance) {
       },
       include: occasionInclude,
     })
+    const [dto] = await serialiseOccasions([updated])
+    return dto
+  })
+
+  // Group-wide occasions: the covered families and each one's budget override (null = use the defaults).
+  app.put<{ Params: { id: string }; Body: { families: { familyId: string; budget?: number | null }[] } }>('/occasions/:id/families', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['families'],
+        properties: {
+          families: {
+            type: 'array',
+            maxItems: 500,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['familyId'],
+              properties: { familyId: { type: 'string', minLength: 1, maxLength: 64 }, budget: money },
+            },
+          },
+        },
+      },
+    },
+  }, async (request) => {
+    const occasion = await loadOr404(userIdOf(request), await db.occasion.findUnique({ where: { id: request.params.id } }))
+    if (!isGroupWide(occasion)) throw badRequest('Only group-wide occasions cover families')
+    const families = request.body.families
+    const ids = families.map((f) => f.familyId)
+    if (new Set(ids).size !== ids.length) throw badRequest('A family is listed twice')
+    await assertInGroup('family', occasion.groupId, ids)
+
+    await db.$transaction([
+      db.occasionFamily.deleteMany({ where: { occasionId: occasion.id } }),
+      db.occasionFamily.createMany({ data: families.map((f) => ({ occasionId: occasion.id, familyId: f.familyId, budget: f.budget ?? null })) }),
+    ])
+    const updated = await db.occasion.findUniqueOrThrow({ where: { id: occasion.id }, include: occasionInclude })
     const [dto] = await serialiseOccasions([updated])
     return dto
   })

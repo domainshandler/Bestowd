@@ -7,7 +7,7 @@ import { loadOr404, requireMember, userIdOf } from '../services/access.js'
 import { ageOn } from '../services/age.js'
 import { familyGiftsWhere, giftTotals } from '../services/gift-totals.js'
 import { startOfUtcDay } from '../services/next-occurrence.js'
-import { occasionInclude, serialiseOccasions } from '../services/occasions.js'
+import { GROUP_WIDE, aboutFamilyWhere, occasionInclude, serialiseOccasions } from '../services/occasions.js'
 import { sharedPersonView } from '../services/tokens.js'
 import { nullableString } from './schemas.js'
 
@@ -21,7 +21,7 @@ interface FamilyBody {
 
 const familyProperties = {
   name: { type: 'string', minLength: 1, maxLength: 100 },
-  type: { type: 'string', enum: ['FAMILY', 'FRIENDS', 'SCHOOL', 'OTHER'] },
+  type: { type: 'string', enum: ['FAMILY', 'FRIENDS', 'SCHOOL', 'NEIGHBOURS', 'OTHER'] },
   photoUrl: nullableString(2000),
   notes: nullableString(5000),
 }
@@ -56,15 +56,20 @@ export async function familyRoutes(app: FastifyInstance) {
       where: {
         groupId,
         nextOccurrence: { gte: startOfUtcDay(new Date()) },
-        OR: [{ familyId: { in: ids } }, { person: { is: { familyId: { in: ids }, archivedAt: null } } }],
+        OR: [
+          { familyId: { in: ids } },
+          { person: { is: { familyId: { in: ids }, archivedAt: null } } },
+          { ...GROUP_WIDE, coverage: { some: { familyId: { in: ids } } } },
+        ],
       },
-      include: { person: { select: { name: true, familyId: true } } },
+      include: { person: { select: { name: true, familyId: true } }, coverage: { select: { familyId: true } } },
       orderBy: { nextOccurrence: 'asc' },
     })
     const nextByFamily = new Map<string, (typeof upcoming)[number]>()
     for (const o of upcoming) {
-      const familyId = o.familyId ?? o.person!.familyId
-      if (!nextByFamily.has(familyId)) nextByFamily.set(familyId, o)
+      // A group-wide occasion is next for every family it covers.
+      const familyIds = o.familyId ? [o.familyId] : o.person ? [o.person.familyId] : o.coverage.map((c) => c.familyId)
+      for (const familyId of familyIds) if (!nextByFamily.has(familyId)) nextByFamily.set(familyId, o)
     }
 
     return families.map((f) => {
@@ -86,6 +91,9 @@ export async function familyRoutes(app: FastifyInstance) {
     const { groupId } = request.params
     await requireMember(userIdOf(request), groupId)
     const family = await db.family.create({ data: { ...request.body, groupId } })
+    // Group-wide occasions that take new families (e.g. Christmas) cover this one too.
+    const groupWide = await db.occasion.findMany({ where: { groupId, ...GROUP_WIDE, includeNewFamilies: true }, select: { id: true } })
+    if (groupWide.length) await db.occasionFamily.createMany({ data: groupWide.map((o) => ({ occasionId: o.id, familyId: family.id })) })
     return reply.code(201).send(toFamilyDto(family))
   })
 
@@ -134,7 +142,7 @@ export async function familyProfile(familyId: string) {
   const occasions = await db.occasion.findMany({
     where: {
       nextOccurrence: { gte: today, lte: yearAhead },
-      OR: [{ familyId }, { person: { is: { familyId, archivedAt: null } } }],
+      ...aboutFamilyWhere(familyId),
     },
     include: occasionInclude,
     orderBy: { nextOccurrence: 'asc' },
@@ -147,7 +155,7 @@ export async function familyProfile(familyId: string) {
       age: ageOn(p, today),
       nextBirthday: birthdays[0]?.nextOccurrence?.toISOString() ?? null,
     })),
-    occasions: await serialiseOccasions(occasions),
+    occasions: await serialiseOccasions(occasions, { forFamilyId: familyId }),
     totals: await giftTotals({ groupId: family.groupId, ...familyGiftsWhere(familyId) }),
     connection: await connectionView(familyId),
   }
