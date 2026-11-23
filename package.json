@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || echo \"Skipping git hooks: no git repository here (e.g. a Docker build)\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
