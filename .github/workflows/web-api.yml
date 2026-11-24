@@ -38,6 +38,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @bestowd/types --filter @bestowd/api-client build
+      - name: Prisma client
+        run: pnpm --filter @bestowd/api exec prisma generate
       - name: Format
         run: pnpm format:check
       - name: Lint

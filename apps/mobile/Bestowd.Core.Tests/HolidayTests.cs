@@ -60,7 +60,7 @@ public class HolidayTests
         var vm = new HomeViewModel(api, nav, Group(), changes);
         await vm.TrackHolidayCommand.ExecuteAsync(new HolidaySuggestion("christmas", "Christmas", ""));
 
-        var body = JsonDocument.Parse(handler.Last.Body!).RootElement;
+        var body = JsonElement.Parse(handler.Last.Body!);
         Assert.True(body.GetProperty("groupWide").GetBoolean());
         Assert.Equal("christmas", body.GetProperty("holidayKey").GetString());
         Assert.Equal((Routes.GroupOccasion, "xmas"), (nav.Visited.Single().Route, (string)nav.Visited.Single().Parameters![Params.Id]));
@@ -102,7 +102,7 @@ public class HolidayTests
 
         vm.Holidays[1].IsOn = true;
         await vm.SaveCommand.ExecuteAsync(null);
-        var keys = JsonDocument.Parse(handler.Last.Body!).RootElement.GetProperty("keys").EnumerateArray().Select(k => k.GetString());
+        var keys = JsonElement.Parse(handler.Last.Body!).GetProperty("keys").EnumerateArray().Select(k => k.GetString());
         Assert.Equal(["christmas", "diwali"], keys);
         Assert.Equal(1, nav.BackCount);
     }

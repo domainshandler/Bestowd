@@ -99,7 +99,7 @@ public class GroupOccasionTests
         vm.TypeBudgets.Single(t => t.Type == FamilyType.Neighbours).Text = "10";
         await vm.SaveCommand.ExecuteAsync(null);
 
-        var body = JsonDocument.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Post).Body!).RootElement;
+        var body = JsonElement.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Post).Body!);
         Assert.True(body.GetProperty("groupWide").GetBoolean());
         Assert.Equal("diwali", body.GetProperty("holidayKey").GetString());
         Assert.Equal(["f1"], body.GetProperty("familyIds").EnumerateArray().Select(e => e.GetString()));
@@ -124,7 +124,7 @@ public class GroupOccasionTests
         vm.Name = "Teacher appreciation";
         vm.Date = new DateTime(2027, 5, 4);
         await vm.SaveCommand.ExecuteAsync(null);
-        var body = JsonDocument.Parse(handler.Last.Body!).RootElement;
+        var body = JsonElement.Parse(handler.Last.Body!);
         Assert.Equal("Teacher appreciation", body.GetProperty("name").GetString());
         Assert.Equal("2027-05-04", body.GetProperty("date").GetString());
         Assert.Equal("HOLIDAY", body.GetProperty("type").GetString());
@@ -150,10 +150,10 @@ public class GroupOccasionTests
         vm.Families[0].Budget = "120";
         await vm.SaveCommand.ExecuteAsync(null);
 
-        var patch = JsonDocument.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Patch).Body!).RootElement;
+        var patch = JsonElement.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Patch).Body!);
         Assert.Equal(50, patch.GetProperty("budget").GetDecimal());
         Assert.Equal(20, patch.GetProperty("familyTypeBudgets").GetProperty("SCHOOL").GetDecimal());
-        var put = JsonDocument.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Put).Body!).RootElement.GetProperty("families");
+        var put = JsonElement.Parse(handler.Requests.Single(r => r.Method == HttpMethod.Put).Body!).GetProperty("families");
         Assert.Equal(["f1", "f2", "f3"], put.EnumerateArray().Select(f => f.GetProperty("familyId").GetString()));
         Assert.Equal(120, put[0].GetProperty("budget").GetDecimal());
         Assert.False(put[2].TryGetProperty("budget", out _));

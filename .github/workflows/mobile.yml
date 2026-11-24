@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: apps/mobile/global.json
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -43,8 +43,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: apps/mobile/global.json
       - name: Install MAUI iOS workload
         run: dotnet workload install maui-ios
       - name: Build iOS (simulator)
-        run: dotnet build Bestowd.Mobile -f net10.0-ios
+        # Restore only the iOS target, so the Android workload isn't needed here.
+        run: dotnet build Bestowd.Mobile -f net10.0-ios -p:TargetFrameworks=net10.0-ios
