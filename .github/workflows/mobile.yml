@@ -41,6 +41,10 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
+      # .NET for iOS needs the newest Xcode, which the runner has installed but does not select by default.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: apps/mobile/global.json
