@@ -1,4 +1,6 @@
+#if DEBUG
 using Microsoft.Extensions.Logging;
+#endif
 using Bestowd.Core.Api;
 using Bestowd.Core.Auth;
 using Bestowd.Core.Groups;

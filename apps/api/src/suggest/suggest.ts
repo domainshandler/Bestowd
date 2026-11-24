@@ -37,12 +37,12 @@ const COLUMN: Record<SuggestField, Prisma.Sql> = {
   category: Prisma.raw('"category"'),
 }
 
-/** The group's own values for a field, most used then most recent first. */
+/** The group's own values for a field, most used then most recent first. Byte order ("C") picks "Garmin" over "garmin" whatever the database's locale. */
 async function yours(groupId: string, field: SuggestField, q: string): Promise<string[]> {
   const col = COLUMN[field]
   const like = `${fold(q).replace(/[\\%_]/g, '\\$&')}%`
   const rows = await db.$queryRaw<{ value: string }[]>`
-    SELECT MIN(v) AS value FROM (
+    SELECT MIN(v COLLATE "C") AS value FROM (
       SELECT ${col} AS v, "updatedAt" AS at FROM "GiftEntry" WHERE "groupId" = ${groupId} AND ${col} IS NOT NULL
       UNION ALL
       SELECT ${col} AS v, "updatedAt" AS at FROM "Idea" WHERE "groupId" = ${groupId} AND ${col} IS NOT NULL
@@ -72,7 +72,7 @@ export async function popular(now = Date.now()): Promise<Record<SuggestField, st
   for (const field of SUGGEST_FIELDS) {
     const col = COLUMN[field]
     const rows = await db.$queryRaw<{ value: string }[]>`
-      SELECT MIN(v) AS value FROM (
+      SELECT MIN(v COLLATE "C") AS value FROM (
         SELECT ${col} AS v, "groupId" AS g FROM "GiftEntry" WHERE ${col} IS NOT NULL AND "createdAt" >= ${since}
         UNION ALL
         SELECT ${col} AS v, "groupId" AS g FROM "Idea" WHERE ${col} IS NOT NULL AND "createdAt" >= ${since}

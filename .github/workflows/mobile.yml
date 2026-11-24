@@ -44,8 +44,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: apps/mobile/global.json
-      - name: Install MAUI iOS workload
-        run: dotnet workload install maui-ios
+      # The project targets Android on every OS, so restoring it needs the Android workload too.
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-ios maui-android
       - name: Build iOS (simulator)
-        # Restore only the iOS target, so the Android workload isn't needed here.
-        run: dotnet build Bestowd.Mobile -f net10.0-ios -p:TargetFrameworks=net10.0-ios
+        run: dotnet build Bestowd.Mobile -f net10.0-ios
