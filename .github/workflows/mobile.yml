@@ -36,6 +36,9 @@ jobs:
 
   ios:
     runs-on: macos-latest
+    # Not blocking yet: .NET for iOS 27.2 needs Xcode 27.2, and GitHub's macOS image has Xcode 26.6 at most.
+    # Make it blocking again once the image catches up (or when iOS work starts).
+    continue-on-error: true
     defaults:
       run:
         working-directory: apps/mobile
